@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/daemon.mjs && node --check src/cli.mjs",
+    "check": "node --check src/daemon.mjs && node --check src/cli.mjs && node --check api/status.mjs && node --check supabase/functions/teleeg-worker/strategy.mjs",
     "scan": "node src/cli.mjs scan",
     "monitor": "node src/cli.mjs monitor",
     "status": "node src/cli.mjs status",

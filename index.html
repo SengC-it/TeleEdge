@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>TeleEdge · Paper Console</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background:#070b13; color:#e8eefc; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 18% 0%,#12324a 0,transparent 34rem),#070b13; }
+    main { width:min(1080px,calc(100% - 32px)); margin:auto; padding:48px 0 72px; }
+    header { display:flex; justify-content:space-between; gap:24px; align-items:flex-start; margin-bottom:28px; }
+    h1 { font-size:clamp(32px,6vw,64px); line-height:.94; letter-spacing:-.055em; margin:0 0 14px; }
+    .eyebrow,.label { color:#7f95b7; text-transform:uppercase; letter-spacing:.13em; font-size:12px; font-weight:700; }
+    .sub { color:#a8b5ca; margin:0; max-width:680px; line-height:1.6; }
+    .badge { border:1px solid #30425d; border-radius:999px; padding:9px 13px; font-size:13px; white-space:nowrap; }
+    .badge.ready { color:#66f0bd; border-color:#256a59; background:#0c2b25; }
+    .badge.degraded { color:#ffb37a; border-color:#744227; background:#2d1b10; }
+    .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+    .card { border:1px solid #1c2a3e; border-radius:18px; padding:20px; background:rgba(12,18,30,.78); box-shadow:0 18px 70px rgba(0,0,0,.18); }
+    .value { font-size:30px; letter-spacing:-.04em; margin-top:10px; font-variant-numeric:tabular-nums; }
+    .wide { grid-column:span 2; }
+    .detail { display:grid; grid-template-columns:1fr 1fr; gap:14px 28px; margin-top:12px; }
+    .row { border-top:1px solid #182438; padding-top:13px; }
+    .row p { margin:6px 0 0; color:#d6e0ef; word-break:break-word; }
+    .muted { color:#7f95b7; }
+    footer { margin-top:18px; color:#657792; font-size:13px; line-height:1.5; }
+    @media (max-width:760px) { header{display:block}.badge{display:inline-block;margin-top:18px}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2} }
+    @media (max-width:460px) { .grid{grid-template-columns:1fr}.wide{grid-column:auto}.detail{grid-template-columns:1fr} }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <div class="eyebrow">TeleEdge · V7.5</div>
+        <h1>Paper Console</h1>
+        <p class="sub">币安 USD-M 全量可交易池信号与 TP/SL 首触结算状态。仅模拟交易，不包含实盘下单权限。</p>
+      </div>
+      <div id="health" class="badge">正在读取状态…</div>
+    </header>
+    <section class="grid">
+      <article class="card"><div class="label">模拟权益</div><div id="equity" class="value">—</div></article>
+      <article class="card"><div class="label">累计收益率</div><div id="return" class="value">—</div></article>
+      <article class="card"><div class="label">持仓 / 已结算</div><div id="positions" class="value">—</div></article>
+      <article class="card"><div class="label">待发邮件</div><div id="outbox" class="value">—</div></article>
+      <article class="card wide">
+        <div class="label">市场状态</div>
+        <div class="detail">
+          <div class="row"><span class="muted">BTC Router</span><p id="router">—</p></div>
+          <div class="row"><span class="muted">市场宽度</span><p id="breadth">—</p></div>
+          <div class="row"><span class="muted">上下文更新时间</span><p id="context">—</p></div>
+          <div class="row"><span class="muted">最近选信号</span><p id="scan">—</p></div>
+        </div>
+      </article>
+      <article class="card wide">
+        <div class="label">运行信息</div>
+        <div class="detail">
+          <div class="row"><span class="muted">模型</span><p id="model">—</p></div>
+          <div class="row"><span class="muted">模式</span><p id="mode">—</p></div>
+          <div class="row"><span class="muted">最近监控</span><p id="monitor">—</p></div>
+          <div class="row"><span class="muted">错误</span><p id="error">无</p></div>
+        </div>
+      </article>
+    </section>
+    <footer>结算规则：TP/SL 谁先触达就结算；同一根 1 分钟 K 线同时触达时按 SL；都未触达则持续持仓，不按时间平仓。页面每 60 秒刷新。</footer>
+  </main>
+  <script>
+    const el = id => document.getElementById(id);
+    const money = value => new Intl.NumberFormat('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value||0))+' USDT';
+    const pct = value => `${Number(value||0)>=0?'+':''}${Number(value||0).toFixed(2)}%`;
+    const time = value => value ? new Date(value).toLocaleString('zh-CN',{hour12:false}) : '尚未运行';
+    async function refresh() {
+      try {
+        const result = await fetch('/api/status',{cache:'no-store'});
+        const payload = await result.json();
+        if (!result.ok || !payload.status) throw new Error(payload.error||'状态不可用');
+        const s = payload.status;
+        el('health').textContent = s.service_status === 'ready' ? '运行正常' : '运行降级';
+        el('health').className = `badge ${s.service_status}`;
+        el('equity').textContent = money(s.equity);
+        el('return').textContent = pct(s.return_pct);
+        el('positions').textContent = `${s.active_positions} / ${s.closed_positions}`;
+        el('outbox').textContent = s.pending_notifications;
+        el('router').textContent = (s.btc_router||'neutral').toUpperCase();
+        el('breadth').textContent = s.breadth_above_50 == null ? '—' : pct(Number(s.breadth_above_50)*100);
+        el('context').textContent = time(s.last_context_at);
+        const scan = s.last_scan_summary||{};
+        el('scan').textContent = s.last_scan_at ? `${time(s.last_scan_at)} · ${scan.candidates||0} 候选 / ${scan.accepted||0} 接受` : '尚未完成';
+        el('model').textContent = s.model_version;
+        el('mode').textContent = String(s.mode||'paper').toUpperCase();
+        el('monitor').textContent = time(s.last_monitor_at);
+        el('error').textContent = s.last_error||'无';
+      } catch (error) {
+        el('health').textContent = '状态不可用';
+        el('health').className = 'badge degraded';
+        el('error').textContent = String(error);
+      }
+    }
+    refresh(); setInterval(refresh,60000);
+  </script>
+</body>
+</html>
