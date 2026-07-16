@@ -1,0 +1,10 @@
+.git/
+.tools/
+.npm-cache/
+node_modules/
+runtime/
+scripts/
+src/
+supabase/
+test/
+.env*

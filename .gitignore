@@ -1,6 +1,9 @@
 runtime/
 .env
+.env.local
 .vercel/
 .npm-cache/
+.tools/
 node_modules/
+supabase/.temp/
 *.log
