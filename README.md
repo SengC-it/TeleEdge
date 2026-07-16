@@ -59,7 +59,8 @@ Set these server-only Vercel environment variables without committing them:
 - `TELEEDGE_EMAIL_TO` (optional; defaults to `GMAIL_USER`)
 
 Messages use `smtp.gmail.com:465` and display the sender as
-`TeleEdge <GMAIL_USER>`.
+`TeleEdge <GMAIL_USER>`. Entry and settlement emails use plain Chinese wording
+and avoid exposing internal strategy terminology.
 
 ## Safety gate
 
