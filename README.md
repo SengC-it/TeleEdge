@@ -10,8 +10,8 @@ USD-M USDT perpetual universe and never submits exchange orders.
 - Durable state and scheduler: existing Supabase project `crypto-alerts`
 - Edge worker: `teleeg-worker`
 - Database isolation: every TeleEdge-owned table starts with `teleeg_`
-- Notifications: durable `teleeg_outbox`; Gmail delivery remains disabled
-  until OAuth secrets are configured in Supabase.
+- Notifications: durable `teleeg_outbox`; Gmail SMTP delivery runs through
+  Vercel with the sender display name `TeleEdge`.
 
 Supabase runs a market-context job every four hours, scans 12 staggered
 full-universe shards, globally ranks the completed cycle, and monitors open
@@ -50,18 +50,16 @@ errors. It produced no entry at that cycle because the BTC router was bearish
 and core-market breadth was about 31.8%; no position was invented to make the
 deployment appear active.
 
-## Gmail activation
+## Gmail SMTP
 
-Set these Supabase Edge Function secrets without committing them:
+Set these server-only Vercel environment variables without committing them:
 
-- `GMAIL_CLIENT_ID`
-- `GMAIL_CLIENT_SECRET`
-- `GMAIL_REFRESH_TOKEN`
 - `GMAIL_USER`
+- `GMAIL_APP_PASSWORD`
 - `TELEEDGE_EMAIL_TO` (optional; defaults to `GMAIL_USER`)
 
-After the secrets are present, enable the `teleeg-mail` cron schedule and send
-one controlled test message before relying on email alerts.
+Messages use `smtp.gmail.com:465` and display the sender as
+`TeleEdge <GMAIL_USER>`.
 
 ## Safety gate
 

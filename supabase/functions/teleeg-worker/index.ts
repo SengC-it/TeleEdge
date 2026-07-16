@@ -16,6 +16,7 @@ const BINANCE_URL = 'https://fapi.binance.com';
 const SIGNAL_MAX_AGE = 30 * 60_000;
 const TOTAL_SHARDS = 12;
 const MODEL_COST = 0.0015;
+const MAIL_ENDPOINT = 'https://teleedge.vercel.app/api/send-mail';
 
 type Json = Record<string, unknown> | unknown[];
 
@@ -442,40 +443,17 @@ async function runMonitor(now: number) {
   }
 }
 
-function base64Url(bytes: Uint8Array) {
-  let binary = '';
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-}
-
-async function gmailAccessToken() {
-  const clientId = Deno.env.get('GMAIL_CLIENT_ID');
-  const clientSecret = Deno.env.get('GMAIL_CLIENT_SECRET');
-  const refreshToken = Deno.env.get('GMAIL_REFRESH_TOKEN');
-  if (!clientId || !clientSecret || !refreshToken) throw new Error('Gmail OAuth secrets are not configured');
-  const body = new URLSearchParams({client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: 'refresh_token'});
-  const result = await fetch('https://oauth2.googleapis.com/token', {method: 'POST', headers: {'content-type': 'application/x-www-form-urlencoded'}, body});
-  const payload = await result.json();
-  if (!result.ok || !payload.access_token) throw new Error(`Gmail token error: ${JSON.stringify(payload).slice(0, 300)}`);
-  return payload.access_token as string;
-}
-
-async function sendGmail(item: any, accessToken: string) {
-  const sender = Deno.env.get('GMAIL_USER');
-  const recipient = Deno.env.get('TELEEDGE_EMAIL_TO') ?? sender;
-  if (!sender || !recipient) throw new Error('GMAIL_USER or TELEEDGE_EMAIL_TO is missing');
-  const encodedSubject = btoa(unescape(encodeURIComponent(item.subject)));
-  const mail = [`From: ${sender}`, `To: ${recipient}`, `Subject: =?UTF-8?B?${encodedSubject}?=`, 'MIME-Version: 1.0', 'Content-Type: text/plain; charset=UTF-8', '', item.message].join('\r\n');
-  const raw = base64Url(new TextEncoder().encode(mail));
-  const result = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+async function sendGmail(item: any, workerToken: string) {
+  const result = await fetch(MAIL_ENDPOINT, {
     method: 'POST',
-    headers: {authorization: `Bearer ${accessToken}`, 'content-type': 'application/json'},
-    body: JSON.stringify({raw}),
+    headers: {'content-type': 'application/json', 'x-teleeg-token': workerToken},
+    body: JSON.stringify({subject: item.subject, message: item.message}),
+    signal: AbortSignal.timeout(30_000),
   });
-  if (!result.ok) throw new Error(`Gmail send ${result.status}: ${(await result.text()).slice(0, 300)}`);
+  if (!result.ok) throw new Error(`TeleEdge SMTP gateway ${result.status}: ${(await result.text()).slice(0, 500)}`);
 }
 
-async function runMail(now: number) {
+async function runMail(now: number, workerToken: string) {
   const cycle = minuteAt(now);
   const job = await startJob('mail', cycle);
   if (job.skip) return {skipped: true, cycle: iso(cycle)};
@@ -486,12 +464,11 @@ async function runMail(now: number) {
       await finishJob(job.id, 'ok', summary);
       return summary;
     }
-    const token = await gmailAccessToken();
     let sent = 0;
     let failed = 0;
     for (const item of items) {
       try {
-        await sendGmail(item, token);
+        await sendGmail(item, workerToken);
         await db(`teleeg_outbox?id=eq.${item.id}`, {method: 'PATCH', prefer: 'return=minimal', body: {status: 'sent', attempts: item.attempts + 1, last_error: null, sent_at: new Date().toISOString()}});
         sent++;
       } catch (error) {
@@ -512,6 +489,7 @@ Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return response({error: 'method-not-allowed'}, 405);
   if (!SUPABASE_URL || !ADMIN_KEY) return response({error: 'Supabase runtime secrets are unavailable'}, 500);
   try {
+    const workerToken = req.headers.get('x-teleeg-token') ?? '';
     if (!await authorized(req)) return response({error: 'unauthorized'}, 401);
     const input = await req.json().catch(() => ({}));
     const action = input.action;
@@ -522,8 +500,11 @@ Deno.serve(async (req: Request) => {
     if (action === 'context') result = await runContext(now, cycle);
     else if (action === 'scan') result = await runScan(now, cycle, Number(input.shard));
     else if (action === 'finalize') result = await runFinalize(now, cycle);
-    else if (action === 'monitor') result = await runMonitor(now);
-    else if (action === 'mail') result = await runMail(now);
+    else if (action === 'monitor') result = {
+      monitor: await runMonitor(now),
+      mail: await runMail(now, workerToken),
+    };
+    else if (action === 'mail') result = await runMail(now, workerToken);
     else return response({error: 'unknown-action'}, 400);
     return response({ok: true, action, result});
   } catch (error) {
