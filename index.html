@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>TeleEdge · Paper Console</title>
+  <title>TeleEdge · 模拟交易看板</title>
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background:#070b13; color:#e8eefc; }
     * { box-sizing:border-box; }
@@ -34,37 +34,37 @@
   <main>
     <header>
       <div>
-        <div class="eyebrow">TeleEdge · V7.5</div>
-        <h1>Paper Console</h1>
-        <p class="sub">币安 USD-M 全量可交易池信号与 TP/SL 首触结算状态。仅模拟交易，不包含实盘下单权限。</p>
+        <div class="eyebrow">TeleEdge · 策略版本 V7.5</div>
+        <h1>模拟交易看板</h1>
+        <p class="sub">系统会定时检查币安合约市场，发现符合条件的机会后发送邮件。本页面只记录模拟交易，不会自动下单。</p>
       </div>
       <div id="health" class="badge">正在读取状态…</div>
     </header>
     <section class="grid">
-      <article class="card"><div class="label">模拟权益</div><div id="equity" class="value">—</div></article>
-      <article class="card"><div class="label">累计收益率</div><div id="return" class="value">—</div></article>
-      <article class="card"><div class="label">持仓 / 已结算</div><div id="positions" class="value">—</div></article>
-      <article class="card"><div class="label">待发邮件</div><div id="outbox" class="value">—</div></article>
+      <article class="card"><div class="label">模拟账户资金</div><div id="equity" class="value">—</div></article>
+      <article class="card"><div class="label">模拟累计收益</div><div id="return" class="value">—</div></article>
+      <article class="card"><div class="label">持有中 / 已结束</div><div id="positions" class="value">—</div></article>
+      <article class="card"><div class="label">等待发送的邮件</div><div id="outbox" class="value">—</div></article>
       <article class="card wide">
-        <div class="label">市场状态</div>
+        <div class="label">当前市场情况</div>
         <div class="detail">
-          <div class="row"><span class="muted">BTC Router</span><p id="router">—</p></div>
-          <div class="row"><span class="muted">市场宽度</span><p id="breadth">—</p></div>
-          <div class="row"><span class="muted">上下文更新时间</span><p id="context">—</p></div>
-          <div class="row"><span class="muted">最近选信号</span><p id="scan">—</p></div>
+          <div class="row"><span class="muted">比特币趋势判断</span><p id="router">—</p></div>
+          <div class="row"><span class="muted">市场整体强弱</span><p id="breadth">—</p></div>
+          <div class="row"><span class="muted">市场判断更新时间</span><p id="context">—</p></div>
+          <div class="row"><span class="muted">最近寻找机会</span><p id="scan">—</p></div>
         </div>
       </article>
       <article class="card wide">
-        <div class="label">运行信息</div>
+        <div class="label">系统运行信息</div>
         <div class="detail">
-          <div class="row"><span class="muted">模型</span><p id="model">—</p></div>
-          <div class="row"><span class="muted">模式</span><p id="mode">—</p></div>
-          <div class="row"><span class="muted">最近监控</span><p id="monitor">—</p></div>
-          <div class="row"><span class="muted">错误</span><p id="error">无</p></div>
+          <div class="row"><span class="muted">当前策略</span><p id="model">—</p></div>
+          <div class="row"><span class="muted">交易方式</span><p id="mode">—</p></div>
+          <div class="row"><span class="muted">最近检查持仓</span><p id="monitor">—</p></div>
+          <div class="row"><span class="muted">系统异常</span><p id="error">无异常</p></div>
         </div>
       </article>
     </section>
-    <footer>结算规则：TP/SL 谁先触达就结算；同一根 1 分钟 K 线同时触达时按 SL；都未触达则持续持仓，不按时间平仓。页面每 60 秒刷新。</footer>
+    <footer>交易结果计算：价格先到目标价格，按盈利结束；先到风险保护价，按亏损结束。如果同一分钟两个价格都碰到，按亏损计算；如果一直没碰到，就继续持有。页面每分钟更新一次。</footer>
   </main>
   <script>
     const el = id => document.getElementById(id);
@@ -77,25 +77,26 @@
         const payload = await result.json();
         if (!result.ok || !payload.status) throw new Error(payload.error||'状态不可用');
         const s = payload.status;
-        el('health').textContent = s.service_status === 'ready' ? '运行正常' : '运行降级';
+        el('health').textContent = s.service_status === 'ready' ? '系统运行正常' : '系统需要检查';
         el('health').className = `badge ${s.service_status}`;
         el('equity').textContent = money(s.equity);
         el('return').textContent = pct(s.return_pct);
-        el('positions').textContent = `${s.active_positions} / ${s.closed_positions}`;
-        el('outbox').textContent = s.pending_notifications;
-        el('router').textContent = (s.btc_router||'neutral').toUpperCase();
-        el('breadth').textContent = s.breadth_above_50 == null ? '—' : pct(Number(s.breadth_above_50)*100);
+        el('positions').textContent = `${s.active_positions} 笔 / ${s.closed_positions} 笔`;
+        el('outbox').textContent = `${s.pending_notifications} 封`;
+        el('router').textContent = ({bull:'偏强',bear:'偏弱',neutral:'方向不明显'})[s.btc_router]||'方向不明显';
+        el('breadth').textContent = s.breadth_above_50 == null ? '—' : `${(Number(s.breadth_above_50)*100).toFixed(1)}% 的主要币种走势较强`;
         el('context').textContent = time(s.last_context_at);
         const scan = s.last_scan_summary||{};
-        el('scan').textContent = s.last_scan_at ? `${time(s.last_scan_at)} · ${scan.candidates||0} 候选 / ${scan.accepted||0} 接受` : '尚未完成';
-        el('model').textContent = s.model_version;
-        el('mode').textContent = String(s.mode||'paper').toUpperCase();
+        el('scan').textContent = s.last_scan_at ? `${time(s.last_scan_at)} · 发现 ${scan.candidates||0} 个机会，采用 ${scan.accepted||0} 个` : '尚未完成';
+        el('model').textContent = `${String(s.model_version||'V7.5').split('-')[0]}（当前使用的策略）`;
+        el('mode').textContent = s.mode === 'paper' ? '模拟交易（不会自动下单）' : String(s.mode||'未知');
         el('monitor').textContent = time(s.last_monitor_at);
-        el('error').textContent = s.last_error||'无';
+        el('error').textContent = s.last_error ? '发现异常，请联系维护人员' : '无异常';
+        el('error').title = s.last_error||'';
       } catch (error) {
-        el('health').textContent = '状态不可用';
+        el('health').textContent = '暂时无法读取数据';
         el('health').className = 'badge degraded';
-        el('error').textContent = String(error);
+        el('error').textContent = '请稍后刷新页面';
       }
     }
     refresh(); setInterval(refresh,60000);
