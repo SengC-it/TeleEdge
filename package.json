@@ -1,0 +1,17 @@
+{
+  "name": "teleedge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/daemon.mjs && node --check src/cli.mjs",
+    "scan": "node src/cli.mjs scan",
+    "monitor": "node src/cli.mjs monitor",
+    "status": "node src/cli.mjs status",
+    "start": "node src/daemon.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
