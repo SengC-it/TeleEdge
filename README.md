@@ -1,4 +1,4 @@
-# TeleEdge
+## TeleEdge
 
 TeleEdge is the paper-only deployment of the frozen
 `V7.5-cap10-risk60-same3` strategy. It scans the complete current Binance
