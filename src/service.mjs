@@ -7,6 +7,7 @@ import {acceptCandidates} from './portfolio.mjs';
 import {fetchMinuteRange, getFundingRates, getTickerPrice, mapLimit} from './binance.mjs';
 import {notify} from './notifier.mjs';
 import {createFunnel, summarizeFunnel} from './funnel.mjs';
+import {acceptV8ShadowCandidates, generateV8ShadowCandidates, runV8ShadowMonitor} from './v8-shadow.mjs';
 
 function eligibleMarkets(exchangeInfo, endTime) {
   return (exchangeInfo.symbols || []).filter(market => market.quoteAsset === 'USDT'
@@ -70,7 +71,7 @@ export async function runScan(now = Date.now()) {
           loadFundingHistory(market.symbol, endTime),
         ]);
         if (h1.at(-1)?.t + H1 < endTime) throw new Error('price history is stale');
-        return {market, candidates: generateLatestCandidates({
+        const candidates = generateLatestCandidates({
           market,
           h1,
           funding,
@@ -78,7 +79,16 @@ export async function runScan(now = Date.now()) {
           btcEnvironment: environment.btcEnvironment,
           endTime,
           telemetry: funnel,
-        })};
+        });
+        const v8Candidates = generateV8ShadowCandidates({
+          market,
+          h1,
+          funding,
+          breadthByTime: environment.breadthByTime,
+          btcEnvironment: environment.btcEnvironment,
+          endTime,
+        });
+        return {market, candidates, v8Candidates};
       } catch (error) {
         funnel.record({stage: 'history_valid', passed: false, rejectionReason: 'market_data_error', family: 'all', side: 'all', regime: 'unknown', symbol: market.symbol, tier: CORE_MARKETS.has(market.symbol) ? 'core' : 'expanded'});
         return {market, error: String(error)};
@@ -86,13 +96,28 @@ export async function runScan(now = Date.now()) {
     });
     const candidates = results.flatMap(result => result.candidates || []);
     const fresh = candidates.filter(candidate => candidate.t <= now && candidate.t >= now - runtimeConfig.signalMaxAgeMs);
-    const fillPrices = runtimeConfig.offline ? new Map() : await resolveFillPrices(fresh, now);
+    const v8Fresh = results.flatMap(result => result.v8Candidates || [])
+      .filter(candidate => candidate.t <= now && candidate.t >= now - runtimeConfig.signalMaxAgeMs);
+    const fillPrices = runtimeConfig.offline ? new Map() : await resolveFillPrices([...fresh, ...v8Fresh], now);
     const decision = acceptCandidates(fresh, state, marketById, {
       decisionTime: now,
       fillPrices,
       strictFill: !runtimeConfig.offline,
       funnel,
     });
+    const v8Decision = acceptV8ShadowCandidates(v8Fresh, state.v8Shadow, marketById, {
+      decisionTime: now,
+      fillPrices,
+    });
+    state.v8Shadow.lastScanSummary = {
+      scanTime: now,
+      candidates: v8Fresh.length,
+      unseenCandidates: v8Decision.unseenCount,
+      rankedCandidates: v8Decision.rankedCount,
+      accepted: v8Decision.accepted.length,
+      rejected: v8Decision.rejected.length,
+      rejectionReasons: Object.fromEntries(v8Decision.rejected.map(item => [item.reason, (v8Decision.rejected.filter(other => other.reason === item.reason).length)])),
+    };
     const errors = [...environment.errors, ...results.filter(result => result.error)];
     const summary = {
       scanTime: now,
@@ -110,6 +135,7 @@ export async function runScan(now = Date.now()) {
       rejected: decision.rejected.length,
       activePositions: state.positions.length,
       exchangeInfoFallback: exchangeInfo._fallbackError || null,
+      v8Shadow: state.v8Shadow.lastScanSummary,
     };
     state.service.lastScanCompletedAt = Date.now();
     state.service.lastScanSummary = summary;
@@ -198,10 +224,12 @@ export async function runMonitor(now = Date.now()) {
   const state = loadState(now);
   const active = state.positions.filter(position => position.status === 'open');
   if (!active.length) {
+    state.v8Shadow.lastMonitorSummary = await runV8ShadowMonitor(state.v8Shadow, now);
     state.service.lastMonitorAt = now;
     if (state.service.status === 'starting') state.service.status = 'ready';
     saveState(state, now);
-    return {checked: 0, closed: 0, errors: 0};
+    saveState(state, now);
+    return {checked: 0, closed: 0, errors: 0, v8Shadow: state.v8Shadow.lastMonitorSummary};
   }
   const results = await mapLimit(active, Math.min(3, active.length), async position => {
     try {
@@ -244,5 +272,7 @@ export async function runMonitor(now = Date.now()) {
       saveState(state);
     }
   }
-  return {checked: active.length, closed: closed.length, errors: errors.length};
+  state.v8Shadow.lastMonitorSummary = await runV8ShadowMonitor(state.v8Shadow, now);
+  saveState(state, now);
+  return {checked: active.length, closed: closed.length, errors: errors.length, v8Shadow: state.v8Shadow.lastMonitorSummary};
 }

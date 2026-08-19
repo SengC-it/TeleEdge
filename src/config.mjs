@@ -59,6 +59,23 @@ export const modelConfig = Object.freeze({
   maxGrossLeverage: 3,
 });
 
+// V8 is a research-only shadow namespace. These are explicit starting values
+// for the backtest harness, not production-approved parameters or risk.
+export const v8ShadowConfig = Object.freeze({
+  version: 'V8-shadow-research-20260819',
+  positionCap: 10,
+  maxPerSide: 8,
+  sameTimePerSide: 3,
+  bear: Object.freeze({
+    lookback: 20,
+    minAdx: 18,
+    minVolume: 20_000_000,
+    minStopPct: 0.02,
+    maxStopPct: 0.12,
+    targetR: 2,
+  }),
+});
+
 export const CORE_MARKETS = new Set([
   'AAVEUSDT', 'ADAUSDT', 'AGLDUSDT', 'ALGOUSDT', 'ALLOUSDT', 'APTUSDT',
   'ARBUSDT', 'ASTERUSDT', 'AVAXUSDT', 'BCHUSDT', 'BEATUSDT', 'BNBUSDT',

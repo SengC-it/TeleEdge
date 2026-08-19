@@ -10,6 +10,7 @@ import {
   rankCandidates,
 } from './strategy.mjs';
 import {createFunnel, summarizeFunnel} from './funnel.mjs';
+import {V8_SHADOW_VERSION, generateV8ShadowCandidates, rankV8ShadowCandidates} from './v8-shadow.mjs';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ADMIN_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -301,7 +302,14 @@ async function runScan(now: number, cycle: number, shard: number) {
         ]);
         const historyValid = daily.length >= 201 && (market.core || bars4h.length >= 201);
         funnel.record({stage: 'history_valid', passed: historyValid, rejectionReason: historyValid ? null : 'insufficient_history', family: 'all', side: 'all', regime: context.btcRouter, symbol: market.marketId, tier: market.core ? 'core' : 'expanded'});
-        return {market, candidates: generateCandidates({market, daily, bars4h, funding, context})};
+        return {
+          market,
+          daily,
+          bars4h,
+          funding,
+          candidates: generateCandidates({market, daily, bars4h, funding, context}),
+          v8Candidates: generateV8ShadowCandidates({market, daily, bars4h, funding, context}),
+        };
       } catch (error) {
         funnel.record({stage: 'history_valid', passed: false, rejectionReason: 'market_data_error', family: 'all', side: 'all', regime: context.btcRouter, symbol: market.marketId, tier: market.core ? 'core' : 'expanded'});
         return {market, error: String(error)};
@@ -344,6 +352,37 @@ async function runScan(now: number, cycle: number, shard: number) {
         body: rows,
       });
     }
+    const v8Candidates = results.flatMap((item: any) => item.v8Candidates ?? [])
+      .filter((candidate: any) => candidate.signalTime <= now && candidate.signalTime >= now - SIGNAL_MAX_AGE);
+    const v8Rows = v8Candidates.map((candidate: any) => ({
+      signal_id: candidate.signalId,
+      cycle_time: iso(cycle),
+      signal_time: iso(candidate.signalTime),
+      market_id: candidate.marketId,
+      symbol: candidate.symbol,
+      side: candidate.side,
+      alpha: candidate.alpha,
+      family: candidate.family,
+      route: candidate.route,
+      edge_segment: candidate.edgeSegment,
+      signal_price: candidate.entry,
+      stop: candidate.stop,
+      target: candidate.target,
+      target_r: candidate.targetR,
+      stop_pct: candidate.stopPct,
+      edge_score: candidate.edgeScore,
+      event_score: candidate.eventScore,
+      day_volume: candidate.dayVolume,
+      features: candidate.features,
+      status: 'pending',
+    }));
+    if (v8Rows.length) {
+      await db('teleeg_v8_shadow_signals?on_conflict=signal_id', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: v8Rows,
+      });
+    }
     const errors = results.filter((item: any) => item.error);
     for (const item of results) {
       const candidateList = item.candidates ?? [];
@@ -358,7 +397,7 @@ async function runScan(now: number, cycle: number, shard: number) {
         }
       }
     }
-    const summary = {cycle: iso(cycle), shard, markets: markets.length, evaluated: results.length - errors.length, errors: errors.length, candidates: rows.length, funnel: summarizeFunnel(funnel), firstError: errors[0]?.error ?? null};
+    const summary = {cycle: iso(cycle), shard, markets: markets.length, evaluated: results.length - errors.length, errors: errors.length, candidates: rows.length, v8ShadowCandidates: v8Rows.length, funnel: summarizeFunnel(funnel), firstError: errors[0]?.error ?? null};
     await finishJob(job.id, errors.length === markets.length && markets.length ? 'error' : 'ok', summary, errors.length === markets.length ? errors[0]?.error : undefined);
     return summary;
   } catch (error) {
@@ -367,7 +406,7 @@ async function runScan(now: number, cycle: number, shard: number) {
   }
 }
 
-async function runFinalize(now: number, cycle: number) {
+async function runFinalize(now: number, cycle: number, v8Shadow: Record<string, unknown> | null = null) {
   const job = await startJob('finalize', cycle);
   if (job.skip) return {skipped: true, cycle: iso(cycle)};
   try {
@@ -424,13 +463,81 @@ async function runFinalize(now: number, cycle: number) {
       }
     }
     const active = await db('teleeg_positions?select=signal_id&status=eq.open');
-    const summary = {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons, funnel: summarizeFunnel(funnel)};
+    const summary = {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons, funnel: summarizeFunnel(funnel), v8Shadow};
     await finishJob(job.id, 'ok', summary);
     return summary;
   } catch (error) {
     await finishJob(job.id, 'error', {cycle: iso(cycle)}, error);
     throw error;
   }
+}
+
+async function runV8ShadowFinalize(now: number, cycle: number) {
+  const rows = await db(`teleeg_v8_shadow_signals?select=*&cycle_time=eq.${encodeURIComponent(iso(cycle))}&status=eq.pending&signal_time=lte.${encodeURIComponent(iso(now))}`);
+  const ranked = rankV8ShadowCandidates(rows, 3);
+  const rankedIds = new Set(ranked.map((candidate: any) => candidate.signal_id));
+  const unranked = rows.filter((candidate: any) => !rankedIds.has(candidate.signal_id));
+  for (const candidate of unranked) {
+    await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+      method: 'PATCH', prefer: 'return=minimal',
+      body: {status: 'rejected', decision_reason: 'not-top-ranked', decided_at: new Date().toISOString()},
+    });
+  }
+  let accepted = 0;
+  const reasons: Record<string, number> = {};
+  for (const candidate of ranked) {
+    try {
+      const open = await db(`teleeg_v8_shadow_positions?select=signal_id&market_id=eq.${encodeURIComponent(candidate.market_id)}&status=eq.open`);
+      if (open.length) throw new Error('symbol-already-open');
+      const ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
+      const fillPrice = Number(ticker?.price);
+      if (!(fillPrice > 0)) throw new Error('fill-price-unavailable');
+      const risk = Math.abs(fillPrice - Number(candidate.stop));
+      await db('teleeg_v8_shadow_positions?on_conflict=signal_id', {
+        method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
+        body: {
+          signal_id: candidate.signal_id,
+          model_version: V8_SHADOW_VERSION,
+          mode: 'paper-shadow',
+          market_id: candidate.market_id,
+          symbol: candidate.symbol,
+          side: candidate.side,
+          alpha: candidate.alpha,
+          family: candidate.family,
+          signal_time: candidate.signal_time,
+          signal_price: candidate.signal_price,
+          decision_time: iso(now),
+          fill_time: iso(now),
+          fill_price: fillPrice,
+          entry: fillPrice,
+          stop: candidate.stop,
+          target: candidate.target,
+          target_r: candidate.target_r,
+          quantity: 1,
+          risk_usdt: risk,
+          funding_pnl_usdt: 0,
+          last_funding_time: iso(now),
+          opened_at: iso(now),
+          last_checked_at: iso(now),
+          features: candidate.features ?? {},
+        },
+      });
+      await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+        method: 'PATCH', prefer: 'return=minimal',
+        body: {status: 'accepted', decision_reason: 'accepted', decided_at: new Date().toISOString()},
+      });
+      accepted++;
+    } catch (error) {
+      const reason = String(error).includes('symbol-already-open') ? 'symbol-already-open' : 'fill-price-unavailable';
+      reasons[reason] = (reasons[reason] ?? 0) + 1;
+      await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+        method: 'PATCH', prefer: 'return=minimal',
+        body: {status: 'rejected', decision_reason: reason, decided_at: new Date().toISOString()},
+      });
+    }
+  }
+  const active = await db('teleeg_v8_shadow_positions?select=signal_id&status=eq.open');
+  return {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons};
 }
 
 async function minuteBars(symbol: string, startTime: number, endTime: number) {
@@ -523,6 +630,70 @@ async function runMonitor(now: number) {
   }
 }
 
+async function runV8ShadowMonitor(now: number) {
+  const positions = await db('teleeg_v8_shadow_positions?select=*&status=eq.open&order=opened_at.asc');
+  const results = await mapLimit(positions, 3, async (position: any) => {
+    try {
+      const [bars, fundingRows] = await Promise.all([
+        minuteBars(position.market_id, Date.parse(position.last_checked_at), now),
+        binance('/fapi/v1/fundingRate', {
+          symbol: position.market_id,
+          startTime: Date.parse(position.last_funding_time) + 1,
+          endTime: now,
+          limit: 1000,
+        }),
+      ]);
+      const touch = firstTouch(position, bars, now);
+      let fundingPnl = Number(position.funding_pnl_usdt || 0);
+      let lastFundingTime = position.last_funding_time;
+      for (const row of fundingRows || []) {
+        const eventTime = Number(row.fundingTime);
+        if (eventTime >= (touch?.time ?? now + 1)) continue;
+        const cashflow = (Number(row.markPrice) || Number(position.entry)) * Number(position.quantity) * Number(row.fundingRate);
+        fundingPnl += position.side === 'long' ? -cashflow : cashflow;
+        lastFundingTime = iso(eventTime);
+      }
+      if (!touch) {
+        await db(`teleeg_v8_shadow_positions?signal_id=eq.${encodeURIComponent(position.signal_id)}&status=eq.open`, {
+          method: 'PATCH', prefer: 'return=minimal',
+          body: {funding_pnl_usdt: fundingPnl, last_funding_time: lastFundingTime, last_checked_at: iso(minuteAt(now)), updated_at: new Date().toISOString()},
+        });
+        return {closed: false};
+      }
+      const direction = position.side === 'long' ? 1 : -1;
+      const gross = direction * (touch.price - Number(position.entry)) * Number(position.quantity);
+      const cost = MODEL_COST * Number(position.entry) * Number(position.quantity);
+      const net = gross + fundingPnl - cost;
+      await db(`teleeg_v8_shadow_positions?signal_id=eq.${encodeURIComponent(position.signal_id)}&status=eq.open`, {
+        method: 'PATCH', prefer: 'return=minimal',
+        body: {
+          status: 'closed', exit_reason: touch.reason, exit_price: touch.price, exit_time: iso(touch.time),
+          ambiguous_same_minute: touch.ambiguous, funding_pnl_usdt: fundingPnl, last_funding_time: lastFundingTime,
+          gross_pnl_usdt: gross, modeled_cost_usdt: cost, net_pnl_usdt: net,
+          net_r: Number(position.risk_usdt) ? net / Number(position.risk_usdt) : null,
+          last_checked_at: iso(touch.time), updated_at: new Date().toISOString(),
+        },
+      });
+      return {closed: true, net};
+    } catch (error) {
+      return {closed: false, error: String(error)};
+    }
+  });
+  const net = results.reduce((sum, item) => sum + Number(item.net || 0), 0);
+  if (net) {
+    const accounts = await db('teleeg_v8_shadow_account?select=equity,realized_pnl&id=eq.1');
+    const account = accounts[0];
+    if (account) {
+      await db('teleeg_v8_shadow_account?id=eq.1', {
+        method: 'PATCH', prefer: 'return=minimal',
+        body: {equity: Number(account.equity) + net, realized_pnl: Number(account.realized_pnl) + net, updated_at: new Date().toISOString()},
+      });
+    }
+  }
+  const errors = results.filter((item: any) => item.error);
+  return {checked: positions.length, closed: results.filter((item: any) => item.closed).length, errors: errors.length, firstError: errors[0]?.error ?? null};
+}
+
 async function sendGmail(item: any, workerToken: string) {
   const headers: Record<string, string> = {
     'content-type': 'application/json',
@@ -584,10 +755,19 @@ Deno.serve(async (req: Request) => {
     let result;
     if (action === 'context') result = await runContext(now, cycle);
     else if (action === 'scan') result = await runScan(now, cycle, Number(input.shard));
-    else if (action === 'finalize') result = await runFinalize(now, cycle);
+    else if (action === 'finalize') {
+      let v8Shadow: Record<string, unknown>;
+      try {
+        v8Shadow = await runV8ShadowFinalize(now, cycle);
+      } catch (error) {
+        v8Shadow = {error: String(error)};
+      }
+      result = await runFinalize(now, cycle, v8Shadow);
+    }
     else if (action === 'monitor') result = {
       monitor: await runMonitor(now),
       mail: await runMail(now, workerToken),
+      v8Shadow: await runV8ShadowMonitor(now).catch(error => ({error: String(error)})),
     };
     else if (action === 'mail') result = await runMail(now, workerToken);
     else return response({error: 'unknown-action'}, 400);

@@ -72,6 +72,7 @@
         <div class="label">系统运行信息</div>
         <div class="detail">
           <div class="row"><span class="muted">当前策略</span><p id="model">—</p></div>
+          <div class="row"><span class="muted">V8 Shadow（不影响 V7.5）</span><p id="shadow">—</p></div>
           <div class="row"><span class="muted">交易方式</span><p id="mode">—</p></div>
           <div class="row"><span class="muted">最近检查持仓</span><p id="monitor">—</p></div>
           <div class="row"><span class="muted">系统异常</span><p id="error">无异常</p></div>
@@ -129,6 +130,8 @@
         const reasons = Object.entries(scan.funnel?.rejectionReasons || {}).sort((a,b) => b[1]-a[1]).slice(0,2).map(([key,value]) => `${key} ${value}`).join('、');
         el('funnel').textContent = bottleneck ? `${bottleneck[0]}：通过 ${bottleneck[1].passed||0} / 淘汰 ${bottleneck[1].rejected||0}${reasons ? `（${reasons}）` : ''}` : '暂无漏斗数据';
         el('model').textContent = `${String(s.model_version||'V7.5').split('-')[0]}（当前使用的策略）`;
+        const shadow = scan.v8Shadow || {};
+        el('shadow').textContent = shadow.accepted == null ? '尚未运行' : `本次发现 ${shadow.candidates||0} 个，记录 ${shadow.accepted||0} 个影子仓位`;
         el('mode').textContent = s.mode === 'paper' ? '模拟交易（不会自动下单）' : String(s.mode||'未知');
         el('monitor').textContent = time(s.last_monitor_at);
         el('error').textContent = s.last_error ? '发现异常，请联系维护人员' : '无异常';

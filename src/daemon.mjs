@@ -30,6 +30,16 @@ function publicState() {
     grossLeverage: state.equityUsdt > 0 ? grossNotional / state.equityUsdt : null,
     positions: state.positions,
     recentClosedPositions: state.closedPositions.slice(-20),
+    v8Shadow: {
+      modelVersion: state.v8Shadow.modelVersion,
+      mode: state.v8Shadow.mode,
+      equityUsdt: state.v8Shadow.equityUsdt,
+      realizedPnlUsdt: state.v8Shadow.realizedPnlUsdt,
+      activePositions: state.v8Shadow.positions.filter(position => position.status === 'open').length,
+      closedPositions: state.v8Shadow.closedPositions.length,
+      lastScanSummary: state.v8Shadow.lastScanSummary,
+      lastMonitorSummary: state.v8Shadow.lastMonitorSummary,
+    },
   };
 }
 

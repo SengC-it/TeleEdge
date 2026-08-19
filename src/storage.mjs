@@ -44,6 +44,20 @@ export function createInitialState(now = Date.now()) {
     closedPositions: [],
     processedSignalIds: [],
     cooldowns: {},
+    v8Shadow: {
+      schemaVersion: 1,
+      modelVersion: 'V8-shadow-research-20260819',
+      mode: 'paper-shadow',
+      startedAt: now,
+      updatedAt: now,
+      equityUsdt: runtimeConfig.equityUsdt,
+      realizedPnlUsdt: 0,
+      positions: [],
+      closedPositions: [],
+      processedSignalIds: [],
+      lastScanSummary: null,
+      lastMonitorSummary: null,
+    },
     service: {
       status: 'starting',
       lastScanStartedAt: null,
@@ -70,6 +84,10 @@ export function loadState(now = Date.now()) {
   }
   state.processedSignalIds ||= [];
   state.cooldowns ||= {};
+  state.v8Shadow ||= createInitialState(now).v8Shadow;
+  state.v8Shadow.positions ||= [];
+  state.v8Shadow.closedPositions ||= [];
+  state.v8Shadow.processedSignalIds ||= [];
   state.service ||= {};
   return state;
 }
@@ -78,5 +96,8 @@ export function saveState(state, now = Date.now()) {
   state.updatedAt = now;
   state.processedSignalIds = state.processedSignalIds.slice(-20_000);
   state.closedPositions = state.closedPositions.slice(-5_000);
+  state.v8Shadow.processedSignalIds = state.v8Shadow.processedSignalIds.slice(-20_000);
+  state.v8Shadow.closedPositions = state.v8Shadow.closedPositions.slice(-5_000);
+  state.v8Shadow.updatedAt = now;
   atomicWriteJson(STATE_FILE, state);
 }
