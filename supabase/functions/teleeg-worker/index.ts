@@ -347,9 +347,16 @@ async function runScan(now: number, cycle: number, shard: number) {
     const errors = results.filter((item: any) => item.error);
     for (const item of results) {
       const candidateList = item.candidates ?? [];
-      const contextBase = {family: candidateList[0]?.family || 'all', side: candidateList[0]?.side || 'all', regime: context.btcRouter, symbol: item.market.marketId, tier: item.market.core ? 'core' : 'expanded'};
-      funnel.record({stage: 'trigger_valid', passed: candidateList.length > 0, rejectionReason: candidateList.length ? null : 'no_candidate', ...contextBase});
-      if (candidateList.length) funnel.record({stage: 'edge_valid', passed: true, ...contextBase});
+      if (!candidateList.length) {
+        funnel.record({stage: 'trigger_valid', passed: false, rejectionReason: 'no_candidate', family: 'all', side: 'all', regime: context.btcRouter, symbol: item.market.marketId, tier: item.market.core ? 'core' : 'expanded'});
+        continue;
+      }
+      for (const candidate of candidateList) {
+        const contextBase = {family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || context.btcRouter, symbol: item.market.marketId, tier: item.market.core ? 'core' : 'expanded'};
+        for (const stage of ['liquidity_valid', 'regime_valid', 'trend_valid', 'funding_valid', 'trigger_valid', 'stop_valid', 'edge_valid']) {
+          funnel.record({stage, passed: true, ...contextBase});
+        }
+      }
     }
     const summary = {cycle: iso(cycle), shard, markets: markets.length, evaluated: results.length - errors.length, errors: errors.length, candidates: rows.length, funnel: summarizeFunnel(funnel), firstError: errors[0]?.error ?? null};
     await finishJob(job.id, errors.length === markets.length && markets.length ? 'error' : 'ok', summary, errors.length === markets.length ? errors[0]?.error : undefined);
