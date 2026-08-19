@@ -11,3 +11,5 @@ The initial alpha labels are:
 The bear thresholds in `src/config.mjs` and the corresponding cloud module are research starting points only. They are not an assertion that the parameters are optimal, and V8 must not replace V7.5 until the train → validation → walk-forward OOS report shows a statistically credible net-of-cost improvement.
 
 Local V8 state lives under `state.v8Shadow`. Cloud state uses `teleeg_v8_shadow_account`, `teleeg_v8_shadow_signals`, and `teleeg_v8_shadow_positions`. The V7.5 `teleeg_account`, `teleeg_candidates`, `teleeg_positions`, and `teleeg_outbox` tables are not reused.
+
+V8 sizing uses the isolated research allocator in `src/risk.mjs` (with a cloud parity module), including portfolio correlation, drawdown, and loss-streak throttles. It is a research control, not a production order-sizing approval.

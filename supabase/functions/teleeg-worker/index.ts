@@ -11,6 +11,7 @@ import {
 } from './strategy.mjs';
 import {createFunnel, summarizeFunnel} from './funnel.mjs';
 import {V8_SHADOW_VERSION, generateV8ShadowCandidates, rankV8ShadowCandidates} from './v8-shadow.mjs';
+import {allocateResearchRisk} from './risk.mjs';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ADMIN_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -485,14 +486,27 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
   }
   let accepted = 0;
   const reasons: Record<string, number> = {};
+  const accounts = await db('teleeg_v8_shadow_account?select=equity,peak_equity,realized_pnl&id=eq.1');
+  const account = accounts[0] ?? {equity: 10000, peak_equity: 10000, realized_pnl: 0};
+  const openPositions = await db('teleeg_v8_shadow_positions?select=market_id,side,risk_usdt,features&status=eq.open');
+  const closedPositions = await db('teleeg_v8_shadow_positions?select=exit_time,net_r&status=eq.closed&order=exit_time.desc&limit=20');
   for (const candidate of ranked) {
     try {
-      const open = await db(`teleeg_v8_shadow_positions?select=signal_id&market_id=eq.${encodeURIComponent(candidate.market_id)}&status=eq.open`);
-      if (open.length) throw new Error('symbol-already-open');
+      if (openPositions.some((position: any) => position.market_id === candidate.market_id)) throw new Error('symbol-already-open');
       const ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
       const fillPrice = Number(ticker?.price);
       if (!(fillPrice > 0)) throw new Error('fill-price-unavailable');
       const risk = Math.abs(fillPrice - Number(candidate.stop));
+      if (!(risk > 0)) throw new Error('invalid-stop-distance');
+      const allocation = allocateResearchRisk({
+        equityUsdt: Number(account.equity),
+        peakEquityUsdt: Number(account.peak_equity ?? account.equity),
+        candidate,
+        openPositions,
+        closedPositions,
+      });
+      if (!allocation.accepted) throw new Error(allocation.reason);
+      const quantity = allocation.riskUsdt / risk;
       await db('teleeg_v8_shadow_positions?on_conflict=signal_id', {
         method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
         body: {
@@ -513,22 +527,25 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
           stop: candidate.stop,
           target: candidate.target,
           target_r: candidate.target_r,
-          quantity: 1,
-          risk_usdt: risk,
+          quantity,
+          risk_usdt: allocation.riskUsdt,
           funding_pnl_usdt: 0,
           last_funding_time: iso(now),
           opened_at: iso(now),
           last_checked_at: iso(now),
-          features: candidate.features ?? {},
+          features: {...(candidate.features ?? {}), riskAllocation: allocation},
         },
       });
       await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
         method: 'PATCH', prefer: 'return=minimal',
         body: {status: 'accepted', decision_reason: 'accepted', decided_at: new Date().toISOString()},
       });
+      openPositions.push({market_id: candidate.market_id, side: candidate.side, risk_usdt: allocation.riskUsdt, features: candidate.features ?? {}});
       accepted++;
     } catch (error) {
-      const reason = String(error).includes('symbol-already-open') ? 'symbol-already-open' : 'fill-price-unavailable';
+      const message = String(error);
+      const knownReasons = ['symbol-already-open', 'fill-price-unavailable', 'invalid-stop-distance', 'portfolio-risk-cap', 'correlated-risk-cap', 'drawdown-stop', 'loss-streak-stop'];
+      const reason = knownReasons.find(item => message.includes(item)) ?? 'fill-price-unavailable';
       reasons[reason] = (reasons[reason] ?? 0) + 1;
       await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
         method: 'PATCH', prefer: 'return=minimal',
@@ -681,12 +698,13 @@ async function runV8ShadowMonitor(now: number) {
   });
   const net = results.reduce((sum, item) => sum + Number(item.net || 0), 0);
   if (net) {
-    const accounts = await db('teleeg_v8_shadow_account?select=equity,realized_pnl&id=eq.1');
+    const accounts = await db('teleeg_v8_shadow_account?select=equity,peak_equity,realized_pnl&id=eq.1');
     const account = accounts[0];
     if (account) {
+      const equity = Number(account.equity) + net;
       await db('teleeg_v8_shadow_account?id=eq.1', {
         method: 'PATCH', prefer: 'return=minimal',
-        body: {equity: Number(account.equity) + net, realized_pnl: Number(account.realized_pnl) + net, updated_at: new Date().toISOString()},
+        body: {equity, peak_equity: Math.max(Number(account.peak_equity ?? account.equity), equity), realized_pnl: Number(account.realized_pnl) + net, updated_at: new Date().toISOString()},
       });
     }
   }

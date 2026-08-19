@@ -3,6 +3,7 @@ import {adx, aggregate, atr, ema} from './indicators.mjs';
 import {btcRegimesAt, fundingStateAt, generateLatestCandidates} from './strategy.mjs';
 import {dedupeCandidates, rankCandidates} from './portfolio.mjs';
 import {fetchMinuteRange, getFundingRates, mapLimit} from './binance.mjs';
+import {allocateResearchRisk} from './risk.mjs';
 
 export function createV8ShadowState(now = Date.now(), equityUsdt = 10_000) {
   return {
@@ -12,6 +13,7 @@ export function createV8ShadowState(now = Date.now(), equityUsdt = 10_000) {
     startedAt: now,
     updatedAt: now,
     equityUsdt,
+    peakEquityUsdt: equityUsdt,
     realizedPnlUsdt: 0,
     positions: [],
     closedPositions: [],
@@ -51,9 +53,9 @@ function mapControlCandidate(candidate, alpha) {
   };
 }
 
-function bearTrendCandidate({market, h1, funding, breadthByTime, btcEnvironment, endTime}) {
+function bearTrendCandidate({market, h1, daily: providedDaily, funding, breadthByTime, btcEnvironment, endTime}) {
   if (!CORE_MARKETS.has(market.symbol)) return null;
-  const daily = aggregate(h1, DAY, endTime);
+  const daily = providedDaily ?? aggregate(h1, DAY, endTime);
   if (daily.length < 221) return null;
   const i = daily.length - 1;
   const e50 = ema(daily, 50);
@@ -124,6 +126,15 @@ export function acceptV8ShadowCandidates(candidates, state, marketById, options 
     else if (active.filter(position => position.side === candidate.side).length >= v8ShadowConfig.maxPerSide) reason = 'side-cap';
     const fillPrice = Number(candidate.fillPrice ?? options.fillPrices?.get(candidate.marketId));
     if (!reason && !(fillPrice > 0)) reason = 'fill-price-unavailable';
+    if (!reason && !(Math.abs(fillPrice - candidate.sl) > 0)) reason = 'invalid-stop-distance';
+    const allocation = !reason ? allocateResearchRisk({
+      equityUsdt: state.equityUsdt,
+      peakEquityUsdt: state.peakEquityUsdt,
+      candidate,
+      openPositions: active,
+      closedPositions: state.closedPositions,
+    }) : null;
+    if (!reason && !allocation.accepted) reason = allocation.reason;
     if (reason) {
       rejected.push({candidate, reason});
       continue;
@@ -149,13 +160,14 @@ export function acceptV8ShadowCandidates(candidates, state, marketById, options 
       stop: candidate.sl,
       target: candidate.target,
       targetR: candidate.targetR,
-      quantity: 1,
-      notionalUsdt: fillPrice,
-      riskUsdt: Math.abs(fillPrice - candidate.sl),
+      quantity: allocation.riskUsdt / Math.abs(fillPrice - candidate.sl),
+      notionalUsdt: fillPrice * (allocation.riskUsdt / Math.abs(fillPrice - candidate.sl)),
+      riskUsdt: allocation.riskUsdt,
       fundingPnlUsdt: 0,
       lastCheckedAt: decisionTime,
       lastFundingTime: decisionTime,
       matchedBreakouts: candidate.matchedBreakouts || [],
+      riskAllocation: allocation,
       features: {...candidate.features, marketAvailable: Boolean(market)},
     };
     active.push(position);
@@ -217,6 +229,7 @@ export async function runV8ShadowMonitor(state, now = Date.now()) {
   state.closedPositions.push(...closed);
   state.realizedPnlUsdt += closed.reduce((sum, position) => sum + position.netPnlUsdt, 0);
   state.equityUsdt += closed.reduce((sum, position) => sum + position.netPnlUsdt, 0);
+  state.peakEquityUsdt = Math.max(state.peakEquityUsdt || state.equityUsdt, state.equityUsdt);
   state.updatedAt = now;
   const errors = results.filter(result => result.error);
   return {checked: active.length, closed: closed.length, errors: errors.length};

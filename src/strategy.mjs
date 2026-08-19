@@ -105,9 +105,9 @@ export function selectShortTarget(candidate) {
   };
 }
 
-function dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime, telemetry}) {
+function dailyLongCandidates({market, h1, daily: providedDaily, funding, breadthByTime, btcEnvironment, endTime, telemetry}) {
   const funnelContext = {family: 'dailyBreakout', side: 'long', regime: 'unknown', symbol: market.symbol, tier: CORE_MARKETS.has(market.symbol) ? 'core' : 'expanded'};
-  const daily = aggregate(h1, DAY, endTime);
+  const daily = providedDaily ?? aggregate(h1, DAY, endTime);
   if (daily.length < 201) {
     reportFunnel(telemetry, funnelContext, 'history_valid', false, 'insufficient_history');
     return [];
@@ -322,11 +322,11 @@ function volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment,
   return selected;
 }
 
-export function generateLatestCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime, telemetry}) {
-  const output = dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime, telemetry});
+export function generateLatestCandidates({market, h1, daily, bars4h, funding, breadthByTime, btcEnvironment, endTime, telemetry}) {
+  const output = dailyLongCandidates({market, h1, daily, funding, breadthByTime, btcEnvironment, endTime, telemetry});
   // The frozen barbell model takes 4h shorts only from the expanded universe.
   if (!CORE_MARKETS.has(market.symbol)) {
-    const bars = aggregate(h1, H4, endTime);
+    const bars = bars4h ?? aggregate(h1, H4, endTime);
     const fundingShort = fundingCrowdingShort({market, bars, funding, breadthByTime, btcEnvironment, telemetry});
     const shockShort = volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment, telemetry});
     if (fundingShort) output.push(fundingShort);

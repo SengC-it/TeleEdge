@@ -5,6 +5,7 @@ create table if not exists public.teleeg_v8_shadow_account (
   mode text not null default 'paper-shadow' check (mode = 'paper-shadow'),
   starting_equity numeric(24, 8) not null default 10000,
   equity numeric(24, 8) not null default 10000,
+  peak_equity numeric(24, 8) not null default 10000,
   realized_pnl numeric(24, 8) not null default 0,
   updated_at timestamptz not null default now()
 );
@@ -80,6 +81,8 @@ create index if not exists teleeg_v8_shadow_positions_status_idx
   on public.teleeg_v8_shadow_positions (status, opened_at);
 
 insert into public.teleeg_v8_shadow_account (id) values (1) on conflict (id) do nothing;
+alter table public.teleeg_v8_shadow_account add column if not exists peak_equity numeric(24, 8) not null default 10000;
+update public.teleeg_v8_shadow_account set peak_equity = greatest(peak_equity, equity) where id = 1;
 alter table public.teleeg_v8_shadow_account enable row level security;
 alter table public.teleeg_v8_shadow_signals enable row level security;
 alter table public.teleeg_v8_shadow_positions enable row level security;

@@ -139,6 +139,7 @@ create table if not exists public.teleeg_v8_shadow_account (
   mode text not null default 'paper-shadow' check (mode = 'paper-shadow'),
   starting_equity numeric(24, 8) not null default 10000,
   equity numeric(24, 8) not null default 10000,
+  peak_equity numeric(24, 8) not null default 10000,
   realized_pnl numeric(24, 8) not null default 0,
   updated_at timestamptz not null default now()
 );

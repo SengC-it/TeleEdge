@@ -51,6 +51,7 @@ export function createInitialState(now = Date.now()) {
       startedAt: now,
       updatedAt: now,
       equityUsdt: runtimeConfig.equityUsdt,
+      peakEquityUsdt: runtimeConfig.equityUsdt,
       realizedPnlUsdt: 0,
       positions: [],
       closedPositions: [],
@@ -87,6 +88,7 @@ export function loadState(now = Date.now()) {
   state.v8Shadow ||= createInitialState(now).v8Shadow;
   state.v8Shadow.positions ||= [];
   state.v8Shadow.closedPositions ||= [];
+  state.v8Shadow.peakEquityUsdt ||= state.v8Shadow.equityUsdt;
   state.v8Shadow.processedSignalIds ||= [];
   state.service ||= {};
   return state;

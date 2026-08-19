@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/daemon.mjs && node --check src/cli.mjs && node --check api/status.mjs && node --check api/send-mail.mjs && node --check api/reviews.mjs && node --check src/funnel.mjs && node --check supabase/functions/teleeg-worker/strategy.mjs && node --check supabase/functions/teleeg-worker/funnel.mjs && node --check supabase/functions/teleeg-reviews/reviews.mjs",
+    "check": "node --check src/daemon.mjs && node --check src/cli.mjs && node --check api/status.mjs && node --check api/send-mail.mjs && node --check api/reviews.mjs && node --check src/funnel.mjs && node --check src/risk.mjs && node --check src/backtest.mjs && node --check scripts/backtest.mjs && node --check supabase/functions/teleeg-worker/strategy.mjs && node --check supabase/functions/teleeg-worker/funnel.mjs && node --check supabase/functions/teleeg-worker/risk.mjs && node --check supabase/functions/teleeg-reviews/reviews.mjs",
     "scan": "node src/cli.mjs scan",
     "monitor": "node src/cli.mjs monitor",
     "status": "node src/cli.mjs status",
+    "backtest": "node scripts/backtest.mjs",
     "start": "node src/daemon.mjs"
   },
   "engines": {
