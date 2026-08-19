@@ -25,6 +25,14 @@
     .row { border-top:1px solid #182438; padding-top:13px; }
     .row p { margin:6px 0 0; color:#d6e0ef; word-break:break-word; }
     .muted { color:#7f95b7; }
+    .review-stats { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 16px; }
+    .review-stats span { border:1px solid #263650; border-radius:999px; padding:7px 11px; color:#c8d5e8; font-size:13px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { border-top:1px solid #182438; padding:10px 6px; text-align:left; vertical-align:top; }
+    th { color:#7f95b7; font-weight:600; }
+    td { color:#d6e0ef; }
+    .mail-failed { color:#ffb37a; }
+    .mail-sent { color:#66f0bd; }
     footer { margin-top:18px; color:#657792; font-size:13px; line-height:1.5; }
     @media (max-width:760px) { header{display:block}.badge{display:inline-block;margin-top:18px}.grid{grid-template-columns:1fr 1fr}.wide{grid-column:span 2} }
     @media (max-width:460px) { .grid{grid-template-columns:1fr}.wide{grid-column:auto}.detail{grid-template-columns:1fr} }
@@ -52,7 +60,13 @@
           <div class="row"><span class="muted">市场整体强弱</span><p id="breadth">—</p></div>
           <div class="row"><span class="muted">市场判断更新时间</span><p id="context">—</p></div>
           <div class="row"><span class="muted">最近寻找机会</span><p id="scan">—</p></div>
+          <div class="row"><span class="muted">最近扫描漏斗</span><p id="funnel">—</p></div>
         </div>
+      </article>
+      <article class="card wide">
+        <div class="label">交易历史（仓位事实源）</div>
+        <div id="review-stats" class="review-stats"><span>读取中…</span></div>
+        <div style="overflow:auto"><table><thead><tr><th>时间</th><th>品种 / 方向</th><th>结果</th><th>净盈亏</th><th>邮件状态</th></tr></thead><tbody id="review-table"><tr><td colspan="5">读取中…</td></tr></tbody></table></div>
       </article>
       <article class="card wide">
         <div class="label">系统运行信息</div>
@@ -71,6 +85,28 @@
     const money = value => new Intl.NumberFormat('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value||0))+' USDT';
     const pct = value => `${Number(value||0)>=0?'+':''}${Number(value||0).toFixed(2)}%`;
     const time = value => value ? new Date(value).toLocaleString('zh-CN',{hour12:false}) : '尚未运行';
+    const esc = value => String(value??'').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const mail = item => {
+      const status = item?.status || 'not-created';
+      const label = ({sent:'已发送',failed:'失败',pending:'待发送',sending:'发送中','not-created':'未创建'})[status] || status;
+      return `<span class="${status === 'failed' ? 'mail-failed' : status === 'sent' ? 'mail-sent' : ''}">${esc(label)}</span>`;
+    };
+    async function refreshReviews() {
+      try {
+        const result = await fetch('/api/reviews',{cache:'no-store'});
+        const payload = await result.json();
+        if (!result.ok || !payload.ok) throw new Error(payload.error||'历史不可用');
+        el('review-stats').innerHTML = `<span>已结束 ${Number(payload.closedSignals||0)} 笔</span><span>盈利 ${Number(payload.wins||0)} 笔</span><span>亏损 ${Number(payload.losses||0)} 笔</span>`;
+        el('review-table').innerHTML = (payload.trades||[]).map(item => {
+          const resultText = item.status === 'closed' ? (item.exit_reason === 'tp' ? 'TP' : item.exit_reason === 'sl' ? 'SL' : item.exit_reason) : '持有中';
+          const pnl = item.net_pnl_usdt == null ? '—' : money(item.net_pnl_usdt);
+          return `<tr><td>${esc(time(item.signal_time||item.fill_time))}</td><td>${esc(item.market_id)}<br>${esc(item.side)}</td><td>${esc(resultText)}</td><td>${esc(pnl)}</td><td>入场 ${mail(item.notificationStatus?.entry)}<br>出场 ${mail(item.notificationStatus?.exit)}</td></tr>`;
+        }).join('') || '<tr><td colspan="5">暂无仓位记录</td></tr>';
+      } catch (error) {
+        el('review-stats').innerHTML = '<span>历史暂时无法读取</span>';
+        el('review-table').innerHTML = '<tr><td colspan="5">请稍后刷新页面</td></tr>';
+      }
+    }
     async function refresh() {
       try {
         const result = await fetch('/api/status',{cache:'no-store'});
@@ -88,6 +124,10 @@
         el('context').textContent = time(s.last_context_at);
         const scan = s.last_scan_summary||{};
         el('scan').textContent = s.last_scan_at ? `${time(s.last_scan_at)} · 发现 ${scan.candidates||0} 个机会，采用 ${scan.accepted||0} 个` : '尚未完成';
+        const stages = scan.funnel?.stages || {};
+        const bottleneck = Object.entries(stages).find(([,value]) => Number(value.rejected||0) > 0);
+        const reasons = Object.entries(scan.funnel?.rejectionReasons || {}).sort((a,b) => b[1]-a[1]).slice(0,2).map(([key,value]) => `${key} ${value}`).join('、');
+        el('funnel').textContent = bottleneck ? `${bottleneck[0]}：通过 ${bottleneck[1].passed||0} / 淘汰 ${bottleneck[1].rejected||0}${reasons ? `（${reasons}）` : ''}` : '暂无漏斗数据';
         el('model').textContent = `${String(s.model_version||'V7.5').split('-')[0]}（当前使用的策略）`;
         el('mode').textContent = s.mode === 'paper' ? '模拟交易（不会自动下单）' : String(s.mode||'未知');
         el('monitor').textContent = time(s.last_monitor_at);
@@ -99,7 +139,7 @@
         el('error').textContent = '请稍后刷新页面';
       }
     }
-    refresh(); setInterval(refresh,60000);
+    refresh(); refreshReviews(); setInterval(refresh,60000); setInterval(refreshReviews,60000);
   </script>
 </body>
 </html>

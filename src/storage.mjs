@@ -60,6 +60,14 @@ export function loadState(now = Date.now()) {
   const state = readJson(STATE_FILE, null) || createInitialState(now);
   state.positions ||= [];
   state.closedPositions ||= [];
+  for (const position of [...state.positions, ...state.closedPositions]) {
+    position.signalPrice ??= position.entry;
+    position.decisionTime ??= position.openedAt ?? position.signalTime;
+    position.fillTime ??= position.openedAt ?? position.signalTime;
+    position.fillPrice ??= position.entry;
+    position.lastFundingTime ??= position.fillTime;
+    position.lastCheckedAt ??= position.fillTime;
+  }
   state.processedSignalIds ||= [];
   state.cooldowns ||= {};
   state.service ||= {};

@@ -26,3 +26,20 @@ test('first chronological touch settles the position', () => {
   assert.equal(touch.reason, 'tp');
   assert.equal(touch.price, 90);
 });
+
+test('incomplete 1m candle is not allowed to settle a position', () => {
+  const position = {side: 'long', stop: 95, target: 110, fillTime: 60_000};
+  assert.equal(firstTouch(position, [
+    {t: 120_000, closeTime: 179_999, h: 111, l: 100},
+  ], 150_000), null);
+});
+
+test('prices before executable fill do not participate in settlement', () => {
+  const position = {side: 'long', stop: 95, target: 110, fillTime: 150_000};
+  const touch = firstTouch(position, [
+    {t: 120_000, closeTime: 179_999, h: 111, l: 100},
+    {t: 180_000, closeTime: 239_999, h: 111, l: 100},
+  ]);
+  assert.equal(touch.reason, 'tp');
+  assert.equal(touch.time, 240_000);
+});

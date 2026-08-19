@@ -44,6 +44,13 @@ export async function getFundingRates(symbol, parameters = {}) {
   return fetchJson('/fapi/v1/fundingRate', {symbol, ...parameters});
 }
 
+export async function getTickerPrice(symbol) {
+  const result = await fetchJson('/fapi/v1/ticker/price', {symbol});
+  const price = Number(result?.price);
+  if (!(price > 0)) throw new Error(`Binance ticker price unavailable for ${symbol}`);
+  return price;
+}
+
 export function klineToBar(row) {
   return {t: +row[0], o: +row[1], h: +row[2], l: +row[3], c: +row[4], q: +row[7], closeTime: +row[6]};
 }
@@ -80,7 +87,9 @@ export async function fetchMinuteRange(symbol, startTime, endTime) {
     if (batch.length < 1500) break;
     if (runtimeConfig.requestDelayMs) await delay(runtimeConfig.requestDelayMs);
   }
-  return rows;
+  // Binance can return the currently forming candle when endTime is inside
+  // that minute. A monitor may only settle on candles whose close is known.
+  return rows.filter(row => row.closeTime == null || row.closeTime < endTime);
 }
 
 export async function mapLimit(items, concurrency, worker) {

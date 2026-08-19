@@ -374,8 +374,13 @@ export function generateCandidates({market, daily, bars4h, funding, context}) {
   }));
 }
 
-export function firstTouch(position, bars) {
+export function firstTouch(position, bars, now = Infinity) {
+  const fillTime = Date.parse(position.fill_time ?? position.fillTime ?? position.signal_time ?? '')
+    || Number(position.fill_time ?? position.fillTime ?? position.signal_time ?? -Infinity);
+  const firstEligibleMinute = Number.isFinite(fillTime) ? Math.ceil(fillTime / 60_000) * 60_000 : -Infinity;
   for (const bar of bars) {
+    if ((bar.closeTime ?? bar.t + 60_000) >= now) continue;
+    if (bar.t < firstEligibleMinute) continue;
     const stopHit = position.side === 'long' ? bar.l <= +position.stop : bar.h >= +position.stop;
     const targetHit = position.side === 'long' ? bar.h >= +position.target : bar.l <= +position.target;
     if (stopHit) return {reason: 'sl', price: +position.stop, time: bar.t + 60_000, ambiguous: targetHit};
@@ -385,8 +390,28 @@ export function firstTouch(position, bars) {
 }
 
 export function rankCandidates(candidates, cap = 3) {
-  const groups = new Map();
+  const unique = new Map();
   for (const candidate of candidates) {
+    const key = `${candidate.market_id || candidate.symbol || candidate.signal_id}|${candidate.side}|${candidate.signal_time}`;
+    const previous = unique.get(key);
+    const matched = new Set([
+      ...(previous?.features?.matchedBreakouts || []),
+      ...(candidate.features?.matchedBreakouts || []),
+      previous?.features?.breakoutLookback,
+      candidate.features?.breakoutLookback,
+    ].filter(value => Number.isFinite(Number(value))).map(Number));
+    if (!previous || +candidate.edge_score > +previous.edge_score
+      || (+candidate.edge_score === +previous.edge_score && +candidate.event_score > +previous.event_score)) {
+      unique.set(key, {
+        ...candidate,
+        features: {...candidate.features, matchedBreakouts: [...matched].sort((a, b) => a - b)},
+      });
+    } else {
+      unique.set(key, {...previous, features: {...previous.features, matchedBreakouts: [...matched].sort((a, b) => a - b)}});
+    }
+  }
+  const groups = new Map();
+  for (const candidate of unique.values()) {
     const key = `${candidate.signal_time}|${candidate.side}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(candidate);

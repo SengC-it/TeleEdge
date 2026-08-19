@@ -1,6 +1,10 @@
 import {CORE_MARKETS, DAY, H4, LONG_SLEEVES, SHORT_SEGMENTS} from './config.mjs';
 import {adx, aggregate, atr, ema, lowerBound, rsi} from './indicators.mjs';
 
+function reportFunnel(telemetry, context, stage, passed, rejectionReason = null, count = 1) {
+  telemetry?.record({stage, passed, rejectionReason, count, ...context});
+}
+
 export function buildBreadth(dailyByMarket) {
   const accumulator = new Map();
   for (const daily of dailyByMarket.values()) {
@@ -101,9 +105,14 @@ export function selectShortTarget(candidate) {
   };
 }
 
-function dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime}) {
+function dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime, telemetry}) {
+  const funnelContext = {family: 'dailyBreakout', side: 'long', regime: 'unknown', symbol: market.symbol, tier: CORE_MARKETS.has(market.symbol) ? 'core' : 'expanded'};
   const daily = aggregate(h1, DAY, endTime);
-  if (daily.length < 201) return [];
+  if (daily.length < 201) {
+    reportFunnel(telemetry, funnelContext, 'history_valid', false, 'insufficient_history');
+    return [];
+  }
+  reportFunnel(telemetry, funnelContext, 'history_valid', true);
   const i = daily.length - 1;
   const t = daily[i].t + DAY;
   const bar = daily[i];
@@ -111,17 +120,36 @@ function dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment
   const e200 = ema(daily, 200);
   const dailyAtr = atr(daily);
   const dailyAdx = adx(daily);
-  if (dailyAtr[i] == null || dailyAdx[i] == null) return [];
+  if (dailyAtr[i] == null || dailyAdx[i] == null) {
+    reportFunnel(telemetry, funnelContext, 'history_valid', false, 'indicator_unavailable');
+    return [];
+  }
   const firstPositive = h1.find(item => item.q > 0)?.t ?? +market.onboardDate;
   const rolling30DayAverageVolume = daily.slice(i - 29, i + 1).reduce((sum, item) => sum + item.q, 0) / 30;
-  if (bar.q < 20_000_000 || t < firstPositive + 180 * DAY || rolling30DayAverageVolume < 20_000_000) return [];
+  const liquidityValid = bar.q >= 20_000_000 && t >= firstPositive + 180 * DAY && rolling30DayAverageVolume >= 20_000_000;
+  reportFunnel(telemetry, funnelContext, 'liquidity_valid', liquidityValid, liquidityValid ? null : 'liquidity_filter');
+  if (!liquidityValid) return [];
   const features = sharedFeatures({t, funding, breadthByTime, btcEnvironment});
-  if (!features || e50[i] <= e200[i] || bar.c <= e50[i] || dailyAdx[i] < 18
-    || features.btcRouter !== 'bull' || features.breadthAbove50 < 0.55 || features.fundingZ >= 1.5) return [];
+  if (!features) {
+    reportFunnel(telemetry, funnelContext, 'funding_valid', false, 'funding_history_unavailable');
+    return [];
+  }
+  const context = {...funnelContext, regime: features.btcRouter};
+  const regimeValid = features.btcRouter === 'bull' && features.breadthAbove50 >= 0.55;
+  reportFunnel(telemetry, context, 'regime_valid', regimeValid, regimeValid ? null : 'regime_filter');
+  if (!regimeValid) return [];
+  const trendValid = e50[i] > e200[i] && bar.c > e50[i] && dailyAdx[i] >= 18;
+  reportFunnel(telemetry, context, 'trend_valid', trendValid, trendValid ? null : 'trend_filter');
+  if (!trendValid) return [];
+  const fundingValid = features.fundingZ < 1.5;
+  reportFunnel(telemetry, context, 'funding_valid', fundingValid, fundingValid ? null : 'funding_filter');
+  if (!fundingValid) return [];
   const recent = daily.slice(i - 4, i + 1);
   const sl = Math.min(...recent.map(item => item.l)) - 0.5 * dailyAtr[i];
   const stopPct = Math.abs(bar.c - sl) / bar.c;
-  if (stopPct < 0.02 || stopPct > 0.12) return [];
+  const stopValid = stopPct >= 0.02 && stopPct <= 0.12;
+  reportFunnel(telemetry, context, 'stop_valid', stopValid, stopValid ? null : 'stop_distance_filter');
+  if (!stopValid) return [];
   const core = CORE_MARKETS.has(market.symbol);
   const sleeve = LONG_SLEEVES[core ? 'core' : 'expanded'];
   const candidates = [];
@@ -151,28 +179,56 @@ function dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment
       edgeSegment: `long-dailyBreakout-2R-${core ? 'core' : 'expanded'}`,
     });
   }
+  const triggerValid = candidates.length > 0;
+  reportFunnel(telemetry, context, 'trigger_valid', triggerValid, triggerValid ? null : 'no_breakout');
+  if (triggerValid) reportFunnel(telemetry, context, 'edge_valid', true);
   return candidates;
 }
 
-function fundingCrowdingShort({market, bars, funding, breadthByTime, btcEnvironment}) {
-  if (bars.length < 201) return null;
+function fundingCrowdingShort({market, bars, funding, breadthByTime, btcEnvironment, telemetry}) {
+  const funnelContext = {family: 'fundingCrowdingReversal', side: 'short', regime: 'unknown', symbol: market.symbol, tier: 'expanded'};
+  if (bars.length < 201) {
+    reportFunnel(telemetry, funnelContext, 'history_valid', false, 'insufficient_history');
+    return null;
+  }
+  reportFunnel(telemetry, funnelContext, 'history_valid', true);
   const i = bars.length - 1;
   const intervalAtr = atr(bars);
   const intervalAdx = adx(bars);
   const intervalRsi = rsi(bars);
-  if (intervalAtr[i] == null || intervalAdx[i] == null || intervalRsi[i] == null || intervalRsi[i - 1] == null) return null;
+  if (intervalAtr[i] == null || intervalAdx[i] == null || intervalRsi[i] == null || intervalRsi[i - 1] == null) {
+    reportFunnel(telemetry, funnelContext, 'history_valid', false, 'indicator_unavailable');
+    return null;
+  }
   const t = bars[i].t + H4;
   const rolling24hVolume = bars.slice(i - 5, i + 1).reduce((sum, item) => sum + item.q, 0);
-  if (rolling24hVolume < 20_000_000 || intervalAdx[i] > 30) return null;
+  const liquidityValid = rolling24hVolume >= 20_000_000;
+  reportFunnel(telemetry, funnelContext, 'liquidity_valid', liquidityValid, liquidityValid ? null : 'liquidity_filter');
+  if (!liquidityValid) return null;
+  const trendValid = intervalAdx[i] <= 30;
+  reportFunnel(telemetry, funnelContext, 'trend_valid', trendValid, trendValid ? null : 'trend_filter');
+  if (!trendValid) return null;
   const features = sharedFeatures({t, funding, breadthByTime, btcEnvironment});
-  if (!features || features.currentFundingRate <= 0 || features.fundingZ < 2) return null;
+  if (!features) {
+    reportFunnel(telemetry, funnelContext, 'funding_valid', false, 'funding_history_unavailable');
+    return null;
+  }
+  const context = {...funnelContext, regime: features.btcRouter};
+  reportFunnel(telemetry, context, 'regime_valid', true);
+  const fundingValid = features.currentFundingRate > 0 && features.fundingZ >= 2;
+  reportFunnel(telemetry, context, 'funding_valid', fundingValid, fundingValid ? null : 'funding_filter');
+  if (!fundingValid) return null;
   const bar = bars[i];
-  if (intervalRsi[i - 1] < 65 || intervalRsi[i] >= intervalRsi[i - 1] || bar.c >= bar.o) return null;
+  const triggerValid = intervalRsi[i - 1] >= 65 && intervalRsi[i] < intervalRsi[i - 1] && bar.c < bar.o;
+  reportFunnel(telemetry, context, 'trigger_valid', triggerValid, triggerValid ? null : 'reversal_trigger_filter');
+  if (!triggerValid) return null;
   const anchor = Math.max(...bars.slice(i - 4, i + 1).map(item => item.h));
   const sl = anchor + 0.5 * intervalAtr[i];
   const stopPct = Math.abs(bar.c - sl) / bar.c;
-  if (stopPct < 0.02 || stopPct > 0.08) return null;
-  return selectShortTarget({
+  const stopValid = stopPct >= 0.02 && stopPct <= 0.08;
+  reportFunnel(telemetry, context, 'stop_valid', stopValid, stopValid ? null : 'stop_distance_filter');
+  if (!stopValid) return null;
+  const selected = selectShortTarget({
     id: `${market.symbol}|v54_funding_crowding_reversal|short|${t}`,
     marketId: market.symbol,
     symbol: market.baseAsset,
@@ -190,32 +246,58 @@ function fundingCrowdingShort({market, bars, funding, breadthByTime, btcEnvironm
     eventScore: Math.abs(features.fundingZ),
     ...features,
   });
+  reportFunnel(telemetry, context, 'edge_valid', Boolean(selected), selected ? null : 'no_edge_segment');
+  return selected;
 }
 
-function volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment}) {
-  if (bars.length < 201) return null;
+function volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment, telemetry}) {
+  const funnelContext = {family: 'volumeShockReversal', side: 'short', regime: 'unknown', symbol: market.symbol, tier: 'expanded'};
+  if (bars.length < 201) {
+    reportFunnel(telemetry, funnelContext, 'history_valid', false, 'insufficient_history');
+    return null;
+  }
+  reportFunnel(telemetry, funnelContext, 'history_valid', true);
   const i = bars.length - 1;
   const intervalAtr = atr(bars);
-  if (intervalAtr[i] == null) return null;
+  if (intervalAtr[i] == null) {
+    reportFunnel(telemetry, funnelContext, 'history_valid', false, 'indicator_unavailable');
+    return null;
+  }
   const priorRange = bars.slice(i - 20, i);
   const bar = bars[i];
   const averageVolume = priorRange.reduce((sum, item) => sum + item.q, 0) / priorRange.length;
   const volumeRatio = averageVolume > 0 ? bar.q / averageVolume : 0;
   const trueRange = Math.max(bar.h - bar.l, Math.abs(bar.h - bars[i - 1].c), Math.abs(bar.l - bars[i - 1].c));
   const rangeRatio = trueRange / intervalAtr[i];
-  if (volumeRatio < 3 || rangeRatio < 2 || bar.h <= bar.l) return null;
+  const triggerValid = volumeRatio >= 3 && rangeRatio >= 2 && bar.h > bar.l;
+  reportFunnel(telemetry, funnelContext, 'trigger_valid', triggerValid, triggerValid ? null : 'shock_size_filter');
+  if (!triggerValid) return null;
   const rolling24hVolume = bars.slice(i - 5, i + 1).reduce((sum, item) => sum + item.q, 0);
-  if (rolling24hVolume < 20_000_000) return null;
+  const liquidityValid = rolling24hVolume >= 20_000_000;
+  reportFunnel(telemetry, funnelContext, 'liquidity_valid', liquidityValid, liquidityValid ? null : 'liquidity_filter');
+  if (!liquidityValid) return null;
   const t = bar.t + H4;
   const features = sharedFeatures({t, funding, breadthByTime, btcEnvironment});
-  if (!features || features.fundingZ < 0) return null;
+  if (!features) {
+    reportFunnel(telemetry, funnelContext, 'funding_valid', false, 'funding_history_unavailable');
+    return null;
+  }
+  const context = {...funnelContext, regime: features.btcRouter};
+  reportFunnel(telemetry, context, 'regime_valid', true);
+  const fundingValid = features.fundingZ >= 0;
+  reportFunnel(telemetry, context, 'funding_valid', fundingValid, fundingValid ? null : 'funding_filter');
+  if (!fundingValid) return null;
   const priorHigh = Math.max(...priorRange.map(item => item.h));
   const wickShare = (bar.h - Math.max(bar.o, bar.c)) / (bar.h - bar.l);
-  if (bar.h <= priorHigh || bar.c >= priorHigh || bar.c >= bar.o || wickShare < 0.5) return null;
+  const reversalValid = bar.h > priorHigh && bar.c < priorHigh && bar.c < bar.o && wickShare >= 0.5;
+  reportFunnel(telemetry, context, 'trend_valid', reversalValid, reversalValid ? null : 'reversal_shape_filter');
+  if (!reversalValid) return null;
   const sl = bar.h + 0.25 * intervalAtr[i];
   const stopPct = Math.abs(bar.c - sl) / bar.c;
-  if (stopPct < 0.02 || stopPct > 0.10) return null;
-  return selectShortTarget({
+  const stopValid = stopPct >= 0.02 && stopPct <= 0.10;
+  reportFunnel(telemetry, context, 'stop_valid', stopValid, stopValid ? null : 'stop_distance_filter');
+  if (!stopValid) return null;
+  const selected = selectShortTarget({
     id: `${market.symbol}|v59_volume_shock_reversal|short|${t}`,
     marketId: market.symbol,
     symbol: market.baseAsset,
@@ -236,15 +318,17 @@ function volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment}
     wickShare,
     ...features,
   });
+  reportFunnel(telemetry, context, 'edge_valid', Boolean(selected), selected ? null : 'no_edge_segment');
+  return selected;
 }
 
-export function generateLatestCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime}) {
-  const output = dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime});
+export function generateLatestCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime, telemetry}) {
+  const output = dailyLongCandidates({market, h1, funding, breadthByTime, btcEnvironment, endTime, telemetry});
   // The frozen barbell model takes 4h shorts only from the expanded universe.
   if (!CORE_MARKETS.has(market.symbol)) {
     const bars = aggregate(h1, H4, endTime);
-    const fundingShort = fundingCrowdingShort({market, bars, funding, breadthByTime, btcEnvironment});
-    const shockShort = volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment});
+    const fundingShort = fundingCrowdingShort({market, bars, funding, breadthByTime, btcEnvironment, telemetry});
+    const shockShort = volumeShockShort({market, bars, funding, breadthByTime, btcEnvironment, telemetry});
     if (fundingShort) output.push(fundingShort);
     if (shockShort) output.push(shockShort);
   }

@@ -9,6 +9,7 @@ import {
   klineToBar,
   rankCandidates,
 } from './strategy.mjs';
+import {createFunnel, summarizeFunnel} from './funnel.mjs';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ADMIN_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -16,7 +17,8 @@ const BINANCE_URL = 'https://fapi.binance.com';
 const SIGNAL_MAX_AGE = 30 * 60_000;
 const TOTAL_SHARDS = 12;
 const MODEL_COST = 0.0015;
-const MAIL_ENDPOINT = 'https://teleedge.vercel.app/api/send-mail';
+const MAIL_ENDPOINT = Deno.env.get('TELEEDGE_MAIL_ENDPOINT') ?? 'https://teleedge.vercel.app/api/send-mail';
+const VERCEL_AUTOMATION_BYPASS_SECRET = Deno.env.get('VERCEL_AUTOMATION_BYPASS_SECRET') ?? '';
 
 type Json = Record<string, unknown> | unknown[];
 
@@ -170,6 +172,29 @@ async function finishJob(id: number, status: 'ok' | 'error' | 'skipped', summary
   await rpc('teleeg_refresh_public_status');
 }
 
+function mergeFunnel(target: any, source: any) {
+  if (!source) return;
+  for (const [stage, values] of Object.entries(source.stages ?? {})) {
+    if (!target.stages[stage]) target.stages[stage] = {reached: 0, passed: 0, rejected: 0};
+    for (const key of ['reached', 'passed', 'rejected']) target.stages[stage][key] += Number((values as any)[key] || 0);
+  }
+  for (const [dimensionKey, sourceDimension] of Object.entries(source.byDimension ?? {})) {
+    const dimension: any = target.byDimension[dimensionKey] ||= {
+      ...(sourceDimension as any), stages: {}, rejectionReasons: {},
+    };
+    for (const [stage, values] of Object.entries((sourceDimension as any).stages ?? {})) {
+      dimension.stages[stage] ||= {reached: 0, passed: 0, rejected: 0};
+      for (const key of ['reached', 'passed', 'rejected']) dimension.stages[stage][key] += Number((values as any)[key] || 0);
+    }
+    for (const [reason, count] of Object.entries((sourceDimension as any).rejectionReasons ?? {})) {
+      dimension.rejectionReasons[reason] = (dimension.rejectionReasons[reason] || 0) + Number(count || 0);
+    }
+  }
+  for (const [reason, count] of Object.entries(source.rejectionReasons ?? {})) {
+    target.rejectionReasons[reason] = (target.rejectionReasons[reason] || 0) + Number(count || 0);
+  }
+}
+
 async function getCompletedKlines(symbol: string, interval: string, limit: number, now: number) {
   const rows = await binance('/fapi/v1/klines', {symbol, interval, limit});
   return completedBars(rows, now);
@@ -265,6 +290,8 @@ async function runScan(now: number, cycle: number, shard: number) {
       breadthMomentum5d: +stored.breadth_momentum_5d,
     };
     const markets = eligibleMarkets(exchangeInfo, cycle).filter((_: unknown, index: number) => index % TOTAL_SHARDS === shard);
+    const funnel = createFunnel();
+    for (const market of markets) funnel.record({stage: 'universe', passed: true, family: 'all', side: 'all', regime: 'unknown', symbol: market.marketId, tier: market.core ? 'core' : 'expanded'});
     const results = await mapLimit(markets, 5, async (market: any) => {
       try {
         const [daily, bars4h, funding] = await Promise.all([
@@ -272,8 +299,11 @@ async function runScan(now: number, cycle: number, shard: number) {
           market.core ? Promise.resolve([]) : getCompletedKlines(market.marketId, '4h', 230, now),
           getFunding(market.marketId, now),
         ]);
+        const historyValid = daily.length >= 201 && (market.core || bars4h.length >= 201);
+        funnel.record({stage: 'history_valid', passed: historyValid, rejectionReason: historyValid ? null : 'insufficient_history', family: 'all', side: 'all', regime: context.btcRouter, symbol: market.marketId, tier: market.core ? 'core' : 'expanded'});
         return {market, candidates: generateCandidates({market, daily, bars4h, funding, context})};
       } catch (error) {
+        funnel.record({stage: 'history_valid', passed: false, rejectionReason: 'market_data_error', family: 'all', side: 'all', regime: context.btcRouter, symbol: market.marketId, tier: market.core ? 'core' : 'expanded'});
         return {market, error: String(error)};
       }
     });
@@ -291,6 +321,7 @@ async function runScan(now: number, cycle: number, shard: number) {
       route: candidate.route,
       edge_segment: candidate.edgeSegment,
       entry: candidate.entry,
+      signal_price: candidate.entry,
       stop: candidate.stop,
       target: candidate.target,
       target_r: candidate.targetR,
@@ -301,7 +332,10 @@ async function runScan(now: number, cycle: number, shard: number) {
       tick_size: candidate.marketId ? markets.find((market: any) => market.marketId === candidate.marketId)?.tickSize : 0,
       step_size: candidate.marketId ? markets.find((market: any) => market.marketId === candidate.marketId)?.stepSize : 0,
       min_qty: candidate.marketId ? markets.find((market: any) => market.marketId === candidate.marketId)?.minQty : 0,
-      features: candidate.features,
+      features: {
+        ...candidate.features,
+        core: markets.find((market: any) => market.marketId === candidate.marketId)?.core ?? false,
+      },
     }));
     if (rows.length) {
       await db('teleeg_candidates?on_conflict=signal_id', {
@@ -311,7 +345,13 @@ async function runScan(now: number, cycle: number, shard: number) {
       });
     }
     const errors = results.filter((item: any) => item.error);
-    const summary = {cycle: iso(cycle), shard, markets: markets.length, evaluated: results.length - errors.length, errors: errors.length, candidates: rows.length, firstError: errors[0]?.error ?? null};
+    for (const item of results) {
+      const candidateList = item.candidates ?? [];
+      const contextBase = {family: candidateList[0]?.family || 'all', side: candidateList[0]?.side || 'all', regime: context.btcRouter, symbol: item.market.marketId, tier: item.market.core ? 'core' : 'expanded'};
+      funnel.record({stage: 'trigger_valid', passed: candidateList.length > 0, rejectionReason: candidateList.length ? null : 'no_candidate', ...contextBase});
+      if (candidateList.length) funnel.record({stage: 'edge_valid', passed: true, ...contextBase});
+    }
+    const summary = {cycle: iso(cycle), shard, markets: markets.length, evaluated: results.length - errors.length, errors: errors.length, candidates: rows.length, funnel: summarizeFunnel(funnel), firstError: errors[0]?.error ?? null};
     await finishJob(job.id, errors.length === markets.length && markets.length ? 'error' : 'ok', summary, errors.length === markets.length ? errors[0]?.error : undefined);
     return summary;
   } catch (error) {
@@ -326,9 +366,13 @@ async function runFinalize(now: number, cycle: number) {
   try {
     const rows = await db(`teleeg_candidates?select=*&cycle_time=eq.${encodeURIComponent(iso(cycle))}&status=eq.pending&expires_at=gte.${encodeURIComponent(iso(now))}`);
     const ranked = rankCandidates(rows, 3);
+    const scanJobs = await db(`teleeg_job_runs?select=summary&action=eq.scan&cycle_time=eq.${encodeURIComponent(iso(cycle))}&status=eq.ok`);
+    const funnel = createFunnel();
+    for (const job of scanJobs ?? []) mergeFunnel(funnel, job.summary?.funnel);
     const rankedIds = new Set(ranked.map((candidate: any) => candidate.signal_id));
     const unranked = rows.filter((candidate: any) => !rankedIds.has(candidate.signal_id));
     for (const candidate of unranked) {
+      funnel.record({stage: 'ranked', passed: false, rejectionReason: 'not_top_ranked', family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
       await db(`teleeg_candidates?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
         method: 'PATCH',
         prefer: 'return=minimal',
@@ -338,13 +382,42 @@ async function runFinalize(now: number, cycle: number) {
     let accepted = 0;
     const reasons: Record<string, number> = {};
     for (const candidate of ranked) {
-      const result = await rpc('teleeg_accept_candidate', {p_signal_id: candidate.signal_id});
-      const decision = result ?? {accepted: false, reason: 'unknown'};
-      if (decision.accepted) accepted++;
-      else reasons[decision.reason] = (reasons[decision.reason] ?? 0) + 1;
+      funnel.record({stage: 'ranked', passed: true, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
+      try {
+        const ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
+        const fillPrice = Number(ticker?.price);
+        if (!(fillPrice > 0)) throw new Error('fill-price-unavailable');
+        await db(`teleeg_candidates?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: {
+            decision_time: iso(now),
+            fill_time: iso(now),
+            fill_price: fillPrice,
+          },
+        });
+        const result = await rpc('teleeg_accept_candidate', {p_signal_id: candidate.signal_id});
+        const decision = result ?? {accepted: false, reason: 'unknown'};
+        if (decision.accepted) {
+          accepted++;
+          funnel.record({stage: 'accepted', passed: true, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
+        } else {
+          reasons[decision.reason] = (reasons[decision.reason] ?? 0) + 1;
+          funnel.record({stage: 'accepted', passed: false, rejectionReason: decision.reason, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
+        }
+      } catch (error) {
+        const reason = 'fill-price-unavailable';
+        reasons[reason] = (reasons[reason] ?? 0) + 1;
+        funnel.record({stage: 'accepted', passed: false, rejectionReason: reason, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
+        await db(`teleeg_candidates?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+          method: 'PATCH',
+          prefer: 'return=minimal',
+          body: {status: 'rejected', decision_reason: reason, decided_at: new Date().toISOString()},
+        });
+      }
     }
     const active = await db('teleeg_positions?select=signal_id&status=eq.open');
-    const summary = {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons};
+    const summary = {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons, funnel: summarizeFunnel(funnel)};
     await finishJob(job.id, 'ok', summary);
     return summary;
   } catch (error) {
@@ -365,7 +438,7 @@ async function minuteBars(symbol: string, startTime: number, endTime: number) {
     cursor = next;
     if (rows.length < 1500) break;
   }
-  return output;
+  return output.filter(bar => bar.closeTime < endTime);
 }
 
 async function fundingSince(position: any, endTime: number) {
@@ -379,7 +452,7 @@ async function monitorPosition(position: any, now: number) {
     minuteBars(position.market_id, Date.parse(position.last_checked_at), now),
     fundingSince(position, now),
   ]);
-  const touch = firstTouch(position, bars);
+  const touch = firstTouch(position, bars, now);
   let fundingPnl = +position.funding_pnl_usdt;
   let lastFundingTime = position.last_funding_time;
   for (const event of funding.filter((event: any) => event.t < (touch?.time ?? now + 1))) {
@@ -444,9 +517,14 @@ async function runMonitor(now: number) {
 }
 
 async function sendGmail(item: any, workerToken: string) {
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'x-teleeg-token': workerToken,
+  };
+  if (VERCEL_AUTOMATION_BYPASS_SECRET) headers['x-vercel-protection-bypass'] = VERCEL_AUTOMATION_BYPASS_SECRET;
   const result = await fetch(MAIL_ENDPOINT, {
     method: 'POST',
-    headers: {'content-type': 'application/json', 'x-teleeg-token': workerToken},
+    headers,
     body: JSON.stringify({subject: item.subject, message: item.message}),
     signal: AbortSignal.timeout(30_000),
   });

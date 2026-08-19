@@ -57,6 +57,7 @@ create table if not exists public.teleeg_candidates (
   route text not null,
   edge_segment text not null,
   entry numeric not null,
+  signal_price numeric,
   stop numeric not null,
   target numeric not null,
   target_r numeric not null,
@@ -68,6 +69,9 @@ create table if not exists public.teleeg_candidates (
   step_size numeric not null,
   min_qty numeric not null,
   features jsonb not null default '{}'::jsonb,
+  decision_time timestamptz,
+  fill_time timestamptz,
+  fill_price numeric,
   status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected')),
   decision_reason text,
   created_at timestamptz not null default now(),
@@ -93,6 +97,10 @@ create table if not exists public.teleeg_positions (
   edge_segment text not null,
   edge_score numeric not null,
   signal_time timestamptz not null,
+  signal_price numeric,
+  decision_time timestamptz,
+  fill_time timestamptz,
+  fill_price numeric,
   opened_at timestamptz not null default now(),
   entry numeric not null,
   stop numeric not null,
@@ -279,6 +287,10 @@ declare
   v_quantity numeric;
   v_risk numeric;
   v_notional numeric;
+  v_signal_price numeric;
+  v_fill_price numeric;
+  v_decision_time timestamptz;
+  v_fill_time timestamptz;
 begin
   perform pg_advisory_xact_lock(hashtext('teleeg-portfolio'));
   select * into v_candidate from public.teleeg_candidates
@@ -288,8 +300,14 @@ begin
     return jsonb_build_object('accepted', v_candidate.status = 'accepted', 'reason', coalesce(v_candidate.decision_reason, v_candidate.status));
   end if;
   select * into v_account from public.teleeg_account where id = 1 for update;
+  v_signal_price := coalesce(v_candidate.signal_price, v_candidate.entry);
+  v_fill_price := v_candidate.fill_price;
+  v_decision_time := coalesce(v_candidate.decision_time, now());
+  v_fill_time := coalesce(v_candidate.fill_time, v_decision_time);
 
   if v_candidate.expires_at < now() then v_reason := 'signal-expired';
+  elsif v_fill_price is null or v_fill_price <= 0 then v_reason := 'fill-price-unavailable';
+  elsif v_fill_time < v_candidate.signal_time then v_reason := 'invalid-fill-time';
   elsif exists (select 1 from public.teleeg_positions where market_id = v_candidate.market_id and status = 'open') then v_reason := 'symbol-already-open';
   elsif exists (
     select 1 from public.teleeg_cooldowns
@@ -305,7 +323,7 @@ begin
 
   if v_reason is null then
     v_quantity := floor(
-      (v_account.equity * v_account.risk_fraction / abs(v_candidate.entry - v_candidate.stop))
+      (v_account.equity * v_account.risk_fraction / abs(v_fill_price - v_candidate.stop))
       / v_candidate.step_size
     ) * v_candidate.step_size;
     if v_quantity <= 0 or v_quantity < v_candidate.min_qty then
@@ -319,21 +337,22 @@ begin
     return jsonb_build_object('accepted', false, 'reason', v_reason);
   end if;
 
-  v_risk := v_quantity * abs(v_candidate.entry - v_candidate.stop);
-  v_notional := v_quantity * v_candidate.entry;
+  v_risk := v_quantity * abs(v_fill_price - v_candidate.stop);
+  v_notional := v_quantity * v_fill_price;
   insert into public.teleeg_positions (
     signal_id, model_version, mode, market_id, symbol, side, family, route,
-    edge_segment, edge_score, signal_time, entry, stop, target, target_r,
+    edge_segment, edge_score, signal_time, signal_price, decision_time,
+    fill_time, fill_price, opened_at, entry, stop, target, target_r,
     stop_pct, quantity, notional_usdt, risk_usdt, last_funding_time,
     last_checked_at, features
   ) values (
     v_candidate.signal_id, v_account.model_version, v_account.mode,
     v_candidate.market_id, v_candidate.symbol, v_candidate.side,
     v_candidate.family, v_candidate.route, v_candidate.edge_segment,
-    v_candidate.edge_score, v_candidate.signal_time, v_candidate.entry,
-    v_candidate.stop, v_candidate.target, v_candidate.target_r,
+    v_candidate.edge_score, v_candidate.signal_time, v_signal_price, v_decision_time,
+    v_fill_time, v_fill_price, v_decision_time, v_fill_price, v_candidate.stop, v_candidate.target, v_candidate.target_r,
     v_candidate.stop_pct, v_quantity, v_notional, v_risk,
-    v_candidate.signal_time, v_candidate.signal_time, v_candidate.features
+    v_fill_time, v_fill_time, v_candidate.features
   );
   update public.teleeg_candidates set status = 'accepted', decision_reason = 'accepted', decided_at = now()
     where signal_id = p_signal_id;
@@ -344,13 +363,14 @@ begin
     'entry', v_candidate.signal_id,
     '[TeleEdge入场提醒] ' || v_candidate.market_id || ' '
       || case when v_candidate.side = 'long' then '看涨' else '看跌' end,
-    format(E'TeleEdge 模拟交易提醒\n\n交易品种：%s\n方向：%s\n参考入场价：%s\n风险保护价：%s\n目标价格：%s\n参考数量：%s\n本次最多计划亏损：%s USDT\n信号时间：%s\n\n请注意：\n- 这是模拟交易提醒，系统不会自动下单。\n- 价格先到目标价格，按盈利结束。\n- 价格先到风险保护价，按亏损结束。\n- 如果同一分钟内两个价格都碰到，按风险保护价计算。\n- 如果两个价格都没碰到，会继续持有，不会因为时间到了而结束。',
+     format(E'TeleEdge 模拟交易提醒\n\n交易品种：%s\n方向：%s\n信号参考价：%s\n模拟成交价：%s\n风险保护价：%s\n目标价格：%s\n参考数量：%s\n本次最多计划亏损：%s USDT\n信号时间：%s\n模拟成交时间：%s\n\n请注意：\n- 这是模拟交易提醒，系统不会自动下单。\n- 价格先到目标价格，按盈利结束。\n- 价格先到风险保护价，按亏损结束。\n- 如果同一分钟内两个价格都碰到，按风险保护价计算。\n- 如果两个价格都没碰到，会继续持有，不会因为时间到了而结束。',
       v_candidate.market_id,
       case when v_candidate.side = 'long' then '看涨（做多）' else '看跌（做空）' end,
-      v_candidate.entry, v_candidate.stop, v_candidate.target,
-      v_quantity, round(v_risk, 2), v_candidate.signal_time),
+       v_signal_price, v_fill_price, v_candidate.stop, v_candidate.target,
+       v_quantity, round(v_risk, 2), v_candidate.signal_time, v_fill_time),
     jsonb_build_object('signal_id', v_candidate.signal_id, 'side', v_candidate.side,
-      'market_id', v_candidate.market_id, 'entry', v_candidate.entry,
+       'market_id', v_candidate.market_id, 'signal_price', v_signal_price,
+       'fill_price', v_fill_price,
       'stop', v_candidate.stop, 'target', v_candidate.target,
       'quantity', v_quantity, 'risk_usdt', v_risk)
   ) on conflict (event_key) do nothing;

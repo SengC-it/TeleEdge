@@ -1,33 +1,69 @@
 import {modelConfig} from './config.mjs';
 import {marketRules, roundDown, roundToTick} from './market-data.mjs';
 
-export function rankCandidates(input) {
+function compareCandidates(a, b) {
+  return b.edgeScore - a.edgeScore || b.eventScore - a.eventScore || b.dayVolume - a.dayVolume
+    || String(a.id).localeCompare(String(b.id));
+}
+
+function candidateKey(candidate) {
+  return `${candidate.marketId || candidate.symbol}|${candidate.side}|${candidate.t}`;
+}
+
+export function dedupeCandidates(input) {
   const groups = new Map();
   for (const candidate of input) {
+    const key = candidateKey(candidate);
+    const previous = groups.get(key);
+    if (!previous) {
+      groups.set(key, {...candidate});
+      continue;
+    }
+    const matched = new Set([
+      ...(previous.matchedBreakouts || []),
+      ...(candidate.matchedBreakouts || []),
+      previous.breakoutLookback,
+      candidate.breakoutLookback,
+      previous.features?.breakoutLookback,
+      candidate.features?.breakoutLookback,
+    ].filter(value => Number.isFinite(Number(value))).map(Number));
+    const winner = compareCandidates(candidate, previous) < 0 ? candidate : previous;
+    groups.set(key, {
+      ...winner,
+      matchedBreakouts: [...matched].sort((a, b) => a - b),
+      features: {...winner.features, matchedBreakouts: [...matched].sort((a, b) => a - b)},
+    });
+  }
+  return [...groups.values()];
+}
+
+export function rankCandidates(input) {
+  const groups = new Map();
+  for (const candidate of dedupeCandidates(input)) {
     const key = `${candidate.t}|${candidate.side}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(candidate);
   }
   return [...groups.values()].flatMap(group => {
-    const bestTargetBySignal = new Map();
-    for (const candidate of group) {
-      const previous = bestTargetBySignal.get(candidate.id);
-      if (!previous || candidate.edgeScore > previous.edgeScore) bestTargetBySignal.set(candidate.id, candidate);
-    }
-    return [...bestTargetBySignal.values()].sort((a, b) => b.edgeScore - a.edgeScore
-      || b.eventScore - a.eventScore || b.dayVolume - a.dayVolume).slice(0, modelConfig.sameTimePerSide);
-  }).sort((a, b) => a.t - b.t || b.edgeScore - a.edgeScore || b.eventScore - a.eventScore);
+    return group.sort(compareCandidates).slice(0, modelConfig.sameTimePerSide);
+  }).sort((a, b) => a.t - b.t || compareCandidates(a, b));
 }
 
-function positionFromCandidate(candidate, state, market) {
+function positionFromCandidate(candidate, state, market, options) {
   const rules = marketRules(market);
   const entry = roundToTick(candidate.entry, rules.tickSize);
   const stop = roundToTick(candidate.sl, rules.tickSize);
   const target = roundToTick(candidate.target, rules.tickSize);
+  const decisionTime = options.decisionTime;
+  const fillTime = candidate.fillTime ?? decisionTime;
+  const configuredFillPrice = candidate.fillPrice ?? options.fillPrices?.get(candidate.marketId);
+  if (options.strictFill && !(Number(configuredFillPrice) > 0)) return null;
+  const fillPrice = roundToTick(Number(configuredFillPrice ?? entry), rules.tickSize);
+  if (!(fillPrice > 0) || !(fillTime >= candidate.t)) return null;
   const plannedRiskUsdt = state.equityUsdt * modelConfig.riskFraction;
-  const quantity = roundDown(plannedRiskUsdt / Math.abs(entry - stop), rules.stepSize);
+  const quantity = roundDown(plannedRiskUsdt / Math.abs(fillPrice - stop), rules.stepSize);
   if (!(quantity > 0) || quantity < rules.minQty) return null;
-  const riskUsdt = quantity * Math.abs(entry - stop);
+  const riskUsdt = quantity * Math.abs(fillPrice - stop);
   return {
     id: candidate.id,
     modelVersion: modelConfig.version,
@@ -41,18 +77,23 @@ function positionFromCandidate(candidate, state, market) {
     edgeSegment: candidate.edgeSegment,
     edgeScore: candidate.edgeScore,
     signalTime: candidate.t,
-    openedAt: Date.now(),
-    entry,
+    signalPrice: entry,
+    decisionTime,
+    fillTime,
+    fillPrice,
+    openedAt: decisionTime,
+    entry: fillPrice,
     stop,
     target,
     targetR: candidate.targetR,
-    stopPct: Math.abs(entry - stop) / entry,
+    stopPct: Math.abs(fillPrice - stop) / fillPrice,
     quantity,
-    notionalUsdt: entry * quantity,
+    notionalUsdt: fillPrice * quantity,
     riskUsdt,
     fundingPnlUsdt: 0,
-    lastFundingTime: candidate.t,
-    lastCheckedAt: candidate.t,
+    lastFundingTime: fillTime,
+    lastCheckedAt: fillTime,
+    matchedBreakouts: candidate.matchedBreakouts || [],
     features: {
       fundingZ: candidate.fundingZ,
       breadthAbove50: candidate.breadthAbove50,
@@ -68,14 +109,31 @@ function positionFromCandidate(candidate, state, market) {
   };
 }
 
-export function acceptCandidates(candidates, state, marketById) {
+export function acceptCandidates(candidates, state, marketById, options = {}) {
+  const normalizedOptions = {
+    decisionTime: options.decisionTime ?? Date.now(),
+    fillPrices: options.fillPrices,
+    strictFill: Boolean(options.strictFill),
+    funnel: options.funnel,
+  };
   const known = new Set(state.processedSignalIds);
   const unseen = candidates.filter(candidate => !known.has(candidate.id));
   const ranked = rankCandidates(unseen);
   const accepted = [];
   const rejected = [];
   const active = state.positions.filter(position => position.status === 'open');
+  const report = (candidate, stage, passed, rejectionReason = null) => normalizedOptions.funnel?.record({
+    stage,
+    passed,
+    rejectionReason,
+    family: candidate.family,
+    side: candidate.side,
+    regime: candidate.btcRouter,
+    symbol: candidate.marketId || candidate.symbol,
+    tier: candidate.core ? 'core' : 'expanded',
+  });
   for (const candidate of ranked) {
+    report(candidate, 'ranked', true);
     let reason = null;
     if (active.some(position => position.marketId === candidate.marketId)) reason = 'symbol-already-open';
     else if (candidate.t < (state.cooldowns[candidate.marketId] ?? -Infinity) + modelConfig.cooldownMs) reason = 'symbol-cooldown';
@@ -83,16 +141,21 @@ export function acceptCandidates(candidates, state, marketById) {
     else if (active.filter(position => position.side === candidate.side).length >= modelConfig.maxPerSide) reason = 'side-cap';
     if (reason) {
       rejected.push({candidate, reason});
+      report(candidate, 'accepted', false, reason);
       continue;
     }
     const market = marketById.get(candidate.marketId);
-    const position = market ? positionFromCandidate(candidate, state, market) : null;
+    const position = market ? positionFromCandidate(candidate, state, market, normalizedOptions) : null;
     if (!position) {
-      rejected.push({candidate, reason: 'quantity-below-market-minimum'});
+      const reason = normalizedOptions.strictFill && !(Number(candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId)) > 0)
+        ? 'fill-price-unavailable' : 'quantity-below-market-minimum';
+      rejected.push({candidate, reason});
+      report(candidate, 'accepted', false, reason);
       continue;
     }
     active.push(position);
     accepted.push(position);
+    report(candidate, 'accepted', true);
   }
   // A signal is a point-in-time decision. Rejected and non-top-ranked signals
   // must never be reconsidered later after capacity changes.
