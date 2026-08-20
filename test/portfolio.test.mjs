@@ -63,3 +63,43 @@ test('paper position records signal and executable fill clocks separately', () =
   assert.equal(position.fillTime, 2_000_000);
   assert.equal(position.lastCheckedAt, position.fillTime);
 });
+
+test('long slippage recomputes target and effective target R from the fill', () => {
+  const state = {equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [], cooldowns: {}};
+  const item = {...candidate('SLIP-LONG', 1, 'SLIPLUSDT'), fillPrice: 102};
+  const result = acceptCandidates([item], state, new Map([['SLIPLUSDT', market('SLIPLUSDT')]]), {
+    decisionTime: 2_000_000,
+    strictFill: true,
+  });
+  assert.equal(result.accepted.length, 1);
+  const position = result.accepted[0];
+  assert.equal(position.target, 116);
+  assert.equal(position.stopPct, 7 / 102);
+  assert.equal(position.effectiveTargetR, 2);
+});
+
+test('short slippage recomputes the target on the short side', () => {
+  const state = {equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [], cooldowns: {}};
+  const item = {
+    ...candidate('SLIP-SHORT', 1, 'SLIPSHORTUSDT'),
+    side: 'short', family: 'fundingCrowdingReversal', sl: 105, target: 92.5, targetR: 1.5, fillPrice: 98,
+  };
+  const result = acceptCandidates([item], state, new Map([['SLIPSHORTUSDT', market('SLIPSHORTUSDT')]]), {
+    decisionTime: 2_000_000,
+    strictFill: true,
+  });
+  assert.equal(result.accepted.length, 1);
+  assert.equal(result.accepted[0].target, 87.5);
+  assert.equal(result.accepted[0].effectiveTargetR, 1.5);
+});
+
+test('fill that violates the family stop-risk bounds is rejected', () => {
+  const state = {equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [], cooldowns: {}};
+  const item = {...candidate('SLIP-REJECT', 1, 'SLIPREJECTUSDT'), fillPrice: 96};
+  const result = acceptCandidates([item], state, new Map([['SLIPREJECTUSDT', market('SLIPREJECTUSDT')]]), {
+    decisionTime: 2_000_000,
+    strictFill: true,
+  });
+  assert.equal(result.accepted.length, 0);
+  assert.equal(result.rejected[0].reason, 'fill-stop-risk-out-of-bounds');
+});

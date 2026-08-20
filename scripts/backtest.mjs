@@ -5,6 +5,8 @@ import {APP_DIR, CORE_MARKETS, DAY, H1, modelConfig, v8ShadowConfig, WORKSPACE_D
 import {aggregate} from '../src/indicators.mjs';
 import {buildBreadth, buildBtcEnvironment, generateLatestCandidates} from '../src/strategy.mjs';
 import {generateV8ShadowCandidates} from '../src/v8-shadow.mjs';
+import {recalculateFilledRisk} from '../src/fill-risk.mjs';
+import {marketRules} from '../src/market-data.mjs';
 import {rankCandidates} from '../src/portfolio.mjs';
 import {allocateResearchRisk} from '../src/risk.mjs';
 import {accrueFunding, calculateMetrics, cohortMetrics, priceAtOrBefore, settleOnCompletedBars} from '../src/backtest.mjs';
@@ -36,8 +38,11 @@ function loadRows(directory, symbol, funding = false) {
   const files = fs.readdirSync(directory)
     .filter(name => name.match(new RegExp(`^${symbol}-\\d+\\.json\\.gz$`)))
     .sort((a, b) => Number(a.match(/-(\d+)\./)[1]) - Number(b.match(/-(\d+)\./)[1]));
+  const sourceFiles = files.length
+    ? files
+    : (fs.existsSync(path.join(directory, `${symbol}.json.gz`)) ? [`${symbol}.json.gz`] : []);
   const byTime = new Map();
-  for (const file of files) {
+  for (const file of sourceFiles) {
     for (const row of readGzipJson(path.join(directory, file))) {
       const t = Number(row.t ?? row.fundingTime);
       if (!Number.isFinite(t)) continue;
@@ -81,8 +86,10 @@ function nextBar(rows, timestamp) {
   return rows[low] ?? null;
 }
 
-function exchangeMarkets() {
-  const file = path.join(WORKSPACE_DIR, 'v60_full_universe_cache', 'exchangeInfo.json');
+function exchangeMarkets(dataRoot, externalCache) {
+  const file = externalCache
+    ? path.join(dataRoot, 'v60_full_universe_cache', 'exchangeInfo.json')
+    : path.join(dataRoot, 'exchangeInfo.json');
   if (!fs.existsSync(file)) return new Map();
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
   return new Map((parsed.symbols || []).map(item => [item.symbol, item]));
@@ -168,20 +175,23 @@ function createPosition(model, candidate, data, scanTime) {
   const fillBar = nextBar(data.h1, candidate.t);
   if (!fillBar || fillBar.t >= SNAPSHOT_END) return {reason: 'fill-price-unavailable'};
   const fillPrice = Number(fillBar.o);
-  const stop = Number(candidate.sl);
-  const target = Number(candidate.target);
-  const riskPerUnit = Math.abs(fillPrice - stop);
-  const validDirection = candidate.side === 'long'
-    ? stop < fillPrice && target > fillPrice
-    : stop > fillPrice && target < fillPrice;
-  if (!(fillPrice > 0) || !(riskPerUnit > 0) || !validDirection) return {reason: 'invalid-fill-or-stop'};
+  const filledRisk = recalculateFilledRisk({
+    side: candidate.side,
+    family: candidate.family,
+    fillPrice,
+    stop: candidate.sl,
+    targetR: candidate.targetR,
+    tickSize: marketRules(data.market).tickSize,
+  });
+  if (!filledRisk.accepted) return {reason: filledRisk.reason};
+  const riskPerUnit = Math.abs(filledRisk.fillPrice - filledRisk.stop);
 
   let allocation;
   if (model.v8) {
     allocation = allocateResearchRisk({
       equityUsdt: model.equity,
       peakEquityUsdt: model.peakEquity,
-      candidate,
+      candidate: {...candidate, stopPct: filledRisk.stopPct},
       openPositions: model.open,
       closedPositions: model.trades,
     });
@@ -207,14 +217,15 @@ function createPosition(model, candidate, data, scanTime) {
       signalPrice: candidate.signalPrice ?? candidate.entry,
       decisionTime: scanTime,
       fillTime: fillBar.t,
-      fillPrice,
-      entry: fillPrice,
-      stop,
-      target,
-      targetR: candidate.targetR,
-      stopPct: Math.abs(fillPrice - stop) / fillPrice,
+      fillPrice: filledRisk.fillPrice,
+      entry: filledRisk.fillPrice,
+      stop: filledRisk.stop,
+      target: filledRisk.target,
+      targetR: filledRisk.targetR,
+      effectiveTargetR: filledRisk.effectiveTargetR,
+      stopPct: filledRisk.stopPct,
       quantity,
-      notionalUsdt: fillPrice * quantity,
+      notionalUsdt: filledRisk.fillPrice * quantity,
       riskUsdt: allocation.riskUsdt,
       fundingPnlUsdt: 0,
       lastFundingTime: fillBar.t,
@@ -324,8 +335,8 @@ function markdownReport(report) {
     return `| ${fold} | ${model.model} | ${item.trades} | ${markdownMetric(item.netExpectancyR)} | ${markdownMetric(item.profitFactor)} | ${markdownMetric(item.maxDrawdownPct == null ? null : item.maxDrawdownPct * 100, 1)}% |`;
   })).join('\n');
   const comparison = report.comparison;
-  return `# TeleEdge OOS backtest\n\n` +
-    `本报告由 \`npm run backtest\` 生成，数据冻结在 ${report.data.snapshotEnd}。它只用于研究，不构成盈利结论，也不改变 V7.5 paper 控制。\n\n` +
+  return `# TeleEdge ${report.data.scopeLabel}\n\n` +
+    `本报告由 \`${report.data.command}\` 生成，数据快照时间为 ${report.data.snapshotEnd}。状态：**${report.data.status}**；仅用于研究，不构成盈利结论，也不改变 V7.5 paper 控制。\n\n` +
     `## OOS cohort（按 signal time）\n\n` +
     `| 模型 | Trades | Signals/月 | Win rate | Net expectancy (R) | Profit factor | Max drawdown | Funding PnL | Modeled costs |\n|---|---:|---:|---:|---:|---:|---:|---:|---:|\n${rows}\n\n` +
     `V8 − V7.5 OOS expectancy: **${markdownMetric(comparison.netExpectancyRDelta)} R**；profit factor delta: **${markdownMetric(comparison.profitFactorDelta)}**；max drawdown delta: **${markdownMetric(comparison.maxDrawdownPctDelta * 100, 1)} pp**。\n\n` +
@@ -334,17 +345,22 @@ function markdownReport(report) {
     `- 信号只读取 scan time 之前的完整 1h 数据；成交使用 signal 后第一根 1h 的开盘价，禁止使用 signal close 作为成交价。\n` +
     `- SL/TP 在完整 1h bar 上结算，若同一 bar 同时触发，SL 优先；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。\n` +
     `- V7.5 使用冻结 0.6% 风险；V8 使用独立 research allocator（edge/liquidity/volatility/portfolio correlation/drawdown/loss streak）。\n` +
-    `- 这是固定五币种、日频扫描的研究样本；当前 exchangeInfo 快照无法证明没有历史退市 survivorship bias，结果不应外推到全市场。\n` +
+    `- 当前样本为 ${report.data.symbols.length} 个币种、${report.data.sampleSize.priceRows} 根 1h 价格记录和 ${report.data.sampleSize.fundingRows} 条资金费记录；这不是完整 V7.5 Control OOS。\n` +
+    `- 生产策略 Alpha 覆盖要求：daily breakout long、funding crowding short、volume shock short、V8 bear trend short；本报告的固定样本没有完成 expanded/non-core universe 和 point-in-time universe 验证。\n` +
+    `- 当前 exchangeInfo 快照无法证明没有历史退市 survivorship bias，结果不应外推到全市场。\n` +
     `- ${report.conclusion}\n\n` +
     `## Splits\n\n` +
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, stepDays = 1, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest')} = {}) {
-  const dataRoot = process.env.BACKTEST_DATA_ROOT || WORKSPACE_DIR;
-  const priceDir = path.join(dataRoot, 'v38_price_cache');
-  const fundingDir = path.join(dataRoot, 'v38_funding_cache');
-  const exchange = exchangeMarkets();
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, stepDays = 1, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'smoke', allowExternalCache = false, dataRoot: requestedDataRoot = null} = {}) {
+  const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
+  const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
+  const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
+  const fundingDir = legacyLayout ? path.join(dataRoot, 'v38_funding_cache') : path.join(dataRoot, 'funding');
+  const exchange = exchangeMarkets(dataRoot, legacyLayout);
+  const manifestFile = legacyLayout ? path.join(APP_DIR, 'data', 'backtest-manifest.json') : path.join(dataRoot, 'manifest.json');
+  const manifest = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')) : null;
   const dataBySymbol = new Map();
   const missing = [];
   for (const symbol of symbols) {
@@ -356,7 +372,7 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
     dataBySymbol.set(symbol, {market: marketFor(symbol, exchange), h1, funding, daily, bars4h});
   }
   const available = [...dataBySymbol].filter(([, data]) => data.h1.length && data.funding.length);
-  if (!available.length) throw new Error(`No v38 backtest data under ${dataRoot}`);
+  if (!available.length) throw new Error(`No backtest data under ${dataRoot}. Run npm run backtest:fetch or explicitly use npm run backtest:smoke for the legacy external cache.`);
   const dailyByMarket = new Map(available.map(([symbol, data]) => [symbol, data.daily]));
   const breadthByTime = buildBreadth(dailyByMarket);
   const btcEnvironment = buildBtcEnvironment(dailyByMarket.get('BTCUSDT') || []);
@@ -394,12 +410,28 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const report = {
     generatedAt: new Date().toISOString(),
     data: {
-      source: 'workspace/v38_price_cache + workspace/v38_funding_cache',
+      source: legacyLayout ? 'external workspace cache (smoke only)' : 'repository data/backtest artifacts',
+      mode,
+      scopeLabel: 'smoke backtest (M4 INCOMPLETE)',
+      status: 'M4-INCOMPLETE',
+      formalEligible: false,
+      command: legacyLayout ? 'npm run backtest:smoke' : 'npm run backtest',
+      dataRoot: path.relative(APP_DIR, dataRoot).replaceAll('\\', '/') || '.',
+      manifest: path.relative(APP_DIR, manifestFile).replaceAll('\\', '/'),
       snapshotEnd: new Date(end).toISOString(),
-      exchangeInfo: 'workspace/v60_full_universe_cache/exchangeInfo.json',
+      snapshotTimestamp: manifest?.snapshotTimestamp || new Date(end).toISOString(),
+      exchangeInfo: legacyLayout ? 'external workspace/v60_full_universe_cache/exchangeInfo.json' : 'data/backtest/exchangeInfo.json',
       symbols,
       missing,
-      fixedUniverse: true,
+      fixedUniverse: symbols.length === DEFAULT_SYMBOLS.length && symbols.every(symbol => DEFAULT_SYMBOLS.includes(symbol)),
+      pointInTimeUniverse: Boolean(manifest?.universe?.pointInTime),
+      historicalDelistingsResolved: Boolean(manifest?.universe?.historicalDelistingsResolved),
+      sampleSize: {
+        priceRows: available.reduce((sum, [, data]) => sum + data.h1.length, 0),
+        fundingRows: available.reduce((sum, [, data]) => sum + data.funding.length, 0),
+        symbolsWithBothFeeds: available.length,
+      },
+      alphaCoverage: ['daily_breakout_long', 'funding_crowding_short', 'volume_shock_short', 'v8_bear_trend_short'],
       survivorshipWarning: 'Current snapshot exchangeInfo does not contain historical delistings; this is not a full-universe survivorship-free result.',
     },
     methodology: {
@@ -413,12 +445,13 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       funding: 'historical funding rows; markPrice fallback to prior completed 1h close',
       costRate: modelConfig.stressRoundTripCost,
       lookaheadGuards: ['completed h1 slice', 'next-bar open fill', 'completed-bar-only settlement', 'no OOS parameter tuning'],
+      alphaCoverage: ['daily_breakout_long', 'funding_crowding_short', 'volume_shock_short', 'v8_bear_trend_short'],
     },
     models,
     comparison,
-    conclusion: insufficient
+    conclusion: `M4 INCOMPLETE：${insufficient
       ? 'OOS 样本量不足（任一模型少于 30 笔），因此不报告统计显著的盈利或 V8 优越性结论。'
-      : '样本达到最低门槛，但仍需 bootstrap/多市场历史快照和独立复核后，才可讨论稳健性；本报告不授权生产升级。',
+      : '即使固定样本达到最低门槛，仍缺少 expanded/non-core Alpha 的完整 point-in-time universe 和历史退市处理；不报告完整 V7.5 OOS 或 V8 优越性结论。'}`,
   };
   fs.mkdirSync(path.dirname(outputBase), {recursive: true});
   fs.writeFileSync(`${outputBase}.json`, `${JSON.stringify(report, null, 2)}\n`);
@@ -434,7 +467,10 @@ if (process.argv[1]?.replaceAll('\\', '/').endsWith('/scripts/backtest.mjs')) {
   const end = Math.min(requestedEnd, SNAPSHOT_END);
   const stepDays = Number(cliValue('--step-days', process.env.BACKTEST_STEP_DAYS || 1));
   const output = cliValue('--output', path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'));
-  const report = await runBacktest({symbols, start, end, stepDays, outputBase: output});
+  const mode = cliValue('--mode', process.env.BACKTEST_MODE || 'smoke');
+  const allowExternalCache = process.argv.includes('--allow-external-cache');
+  const dataRoot = cliValue('--data-root', process.env.BACKTEST_DATA_ROOT || null);
+  const report = await runBacktest({symbols, start, end, stepDays, outputBase: output, mode, allowExternalCache, dataRoot});
   for (const model of report.models) {
     const oos = model.splits.oos;
     console.log(`${model.model}: trades=${oos.trades} expectancyR=${oos.netExpectancyR ?? 'n/a'} PF=${oos.profitFactor ?? 'n/a'} MDD=${oos.maxDrawdownPct ?? 'n/a'}`);

@@ -1,4 +1,5 @@
 import {modelConfig} from './config.mjs';
+import {recalculateFilledRisk} from './fill-risk.mjs';
 import {marketRules, roundDown, roundToTick} from './market-data.mjs';
 
 function compareCandidates(a, b) {
@@ -53,17 +54,25 @@ function positionFromCandidate(candidate, state, market, options) {
   const rules = marketRules(market);
   const entry = roundToTick(candidate.entry, rules.tickSize);
   const stop = roundToTick(candidate.sl, rules.tickSize);
-  const target = roundToTick(candidate.target, rules.tickSize);
   const decisionTime = options.decisionTime;
   const fillTime = candidate.fillTime ?? decisionTime;
   const configuredFillPrice = candidate.fillPrice ?? options.fillPrices?.get(candidate.marketId);
   if (options.strictFill && !(Number(configuredFillPrice) > 0)) return null;
   const fillPrice = roundToTick(Number(configuredFillPrice ?? entry), rules.tickSize);
   if (!(fillPrice > 0) || !(fillTime >= candidate.t)) return null;
+  const filledRisk = recalculateFilledRisk({
+    side: candidate.side,
+    family: candidate.family,
+    fillPrice,
+    stop,
+    targetR: candidate.targetR,
+    tickSize: rules.tickSize,
+  });
+  if (!filledRisk.accepted) return null;
   const plannedRiskUsdt = state.equityUsdt * modelConfig.riskFraction;
-  const quantity = roundDown(plannedRiskUsdt / Math.abs(fillPrice - stop), rules.stepSize);
+  const quantity = roundDown(plannedRiskUsdt / Math.abs(filledRisk.fillPrice - filledRisk.stop), rules.stepSize);
   if (!(quantity > 0) || quantity < rules.minQty) return null;
-  const riskUsdt = quantity * Math.abs(fillPrice - stop);
+  const riskUsdt = quantity * Math.abs(filledRisk.fillPrice - filledRisk.stop);
   return {
     id: candidate.id,
     modelVersion: modelConfig.version,
@@ -80,15 +89,16 @@ function positionFromCandidate(candidate, state, market, options) {
     signalPrice: entry,
     decisionTime,
     fillTime,
-    fillPrice,
+    fillPrice: filledRisk.fillPrice,
     openedAt: decisionTime,
-    entry: fillPrice,
-    stop,
-    target,
-    targetR: candidate.targetR,
-    stopPct: Math.abs(fillPrice - stop) / fillPrice,
+    entry: filledRisk.fillPrice,
+    stop: filledRisk.stop,
+    target: filledRisk.target,
+    targetR: filledRisk.targetR,
+    effectiveTargetR: filledRisk.effectiveTargetR,
+    stopPct: filledRisk.stopPct,
     quantity,
-    notionalUsdt: fillPrice * quantity,
+    notionalUsdt: filledRisk.fillPrice * quantity,
     riskUsdt,
     fundingPnlUsdt: 0,
     lastFundingTime: fillTime,
@@ -145,9 +155,29 @@ export function acceptCandidates(candidates, state, marketById, options = {}) {
       continue;
     }
     const market = marketById.get(candidate.marketId);
-    const position = market ? positionFromCandidate(candidate, state, market, normalizedOptions) : null;
+    let position = null;
+    if (market) {
+      const rules = marketRules(market);
+      const entry = roundToTick(candidate.entry, rules.tickSize);
+      const configuredFillPrice = candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId);
+      const fillPrice = roundToTick(Number(configuredFillPrice ?? entry), rules.tickSize);
+      if (normalizedOptions.strictFill && !(Number(configuredFillPrice) > 0)) {
+        reason = 'fill-price-unavailable';
+      } else {
+        const filledRisk = recalculateFilledRisk({
+          side: candidate.side,
+          family: candidate.family,
+          fillPrice,
+          stop: roundToTick(candidate.sl, rules.tickSize),
+          targetR: candidate.targetR,
+          tickSize: rules.tickSize,
+        });
+        if (!filledRisk.accepted) reason = filledRisk.reason;
+        else position = positionFromCandidate(candidate, state, market, normalizedOptions);
+      }
+    }
     if (!position) {
-      const reason = normalizedOptions.strictFill && !(Number(candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId)) > 0)
+      reason ||= normalizedOptions.strictFill && !(Number(candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId)) > 0)
         ? 'fill-price-unavailable' : 'quantity-below-market-minimum';
       rejected.push({candidate, reason});
       report(candidate, 'accepted', false, reason);

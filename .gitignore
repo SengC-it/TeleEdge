@@ -7,3 +7,5 @@ runtime/
 node_modules/
 supabase/.temp/
 *.log
+data/backtest/price/
+data/backtest/funding/

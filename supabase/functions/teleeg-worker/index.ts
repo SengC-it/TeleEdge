@@ -8,6 +8,7 @@ import {
   generateCandidates,
   klineToBar,
   rankCandidates,
+  recalculateFilledRisk,
 } from './strategy.mjs';
 import {createFunnel, summarizeFunnel} from './funnel.mjs';
 import {V8_SHADOW_VERSION, generateV8ShadowCandidates, rankV8ShadowCandidates} from './v8-shadow.mjs';
@@ -301,14 +302,15 @@ async function runScan(now: number, cycle: number, shard: number) {
           market.core ? Promise.resolve([]) : getCompletedKlines(market.marketId, '4h', 230, now),
           getFunding(market.marketId, now),
         ]);
-        const historyValid = daily.length >= 201 && (market.core || bars4h.length >= 201);
-        funnel.record({stage: 'history_valid', passed: historyValid, rejectionReason: historyValid ? null : 'insufficient_history', family: 'all', side: 'all', regime: context.btcRouter, symbol: market.marketId, tier: market.core ? 'core' : 'expanded'});
         return {
           market,
           daily,
           bars4h,
           funding,
-          candidates: generateCandidates({market, daily, bars4h, funding, context}),
+          // The control strategy owns the funnel events. Do not reconstruct
+          // them from the output candidates: that loses the first rejected
+          // condition and makes every surviving candidate look fully passed.
+          candidates: generateCandidates({market, daily, bars4h, funding, context, telemetry: funnel}),
           v8Candidates: generateV8ShadowCandidates({market, daily, bars4h, funding, context}),
         };
       } catch (error) {
@@ -385,19 +387,6 @@ async function runScan(now: number, cycle: number, shard: number) {
       });
     }
     const errors = results.filter((item: any) => item.error);
-    for (const item of results) {
-      const candidateList = item.candidates ?? [];
-      if (!candidateList.length) {
-        funnel.record({stage: 'trigger_valid', passed: false, rejectionReason: 'no_candidate', family: 'all', side: 'all', regime: context.btcRouter, symbol: item.market.marketId, tier: item.market.core ? 'core' : 'expanded'});
-        continue;
-      }
-      for (const candidate of candidateList) {
-        const contextBase = {family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || context.btcRouter, symbol: item.market.marketId, tier: item.market.core ? 'core' : 'expanded'};
-        for (const stage of ['liquidity_valid', 'regime_valid', 'trend_valid', 'funding_valid', 'trigger_valid', 'stop_valid', 'edge_valid']) {
-          funnel.record({stage, passed: true, ...contextBase});
-        }
-      }
-    }
     const summary = {cycle: iso(cycle), shard, markets: markets.length, evaluated: results.length - errors.length, errors: errors.length, candidates: rows.length, v8ShadowCandidates: v8Rows.length, funnel: summarizeFunnel(funnel), firstError: errors[0]?.error ?? null};
     await finishJob(job.id, errors.length === markets.length && markets.length ? 'error' : 'ok', summary, errors.length === markets.length ? errors[0]?.error : undefined);
     return summary;
@@ -496,17 +485,24 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
       const ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
       const fillPrice = Number(ticker?.price);
       if (!(fillPrice > 0)) throw new Error('fill-price-unavailable');
-      const risk = Math.abs(fillPrice - Number(candidate.stop));
-      if (!(risk > 0)) throw new Error('invalid-stop-distance');
+      const market = (await db(`teleeg_markets?select=tick_size&market_id=eq.${encodeURIComponent(candidate.market_id)}`))?.[0];
+      const filledRisk = recalculateFilledRisk({
+        side: candidate.side,
+        family: candidate.family,
+        fillPrice,
+        stop: candidate.stop,
+        targetR: candidate.target_r,
+        tickSize: Number(market?.tick_size || 0),
+      });
+      if (!filledRisk.accepted) throw new Error(filledRisk.reason);
       const allocation = allocateResearchRisk({
         equityUsdt: Number(account.equity),
         peakEquityUsdt: Number(account.peak_equity ?? account.equity),
-        candidate,
+        candidate: {...candidate, stop_pct: filledRisk.stopPct},
         openPositions,
         closedPositions,
       });
       if (!allocation.accepted) throw new Error(allocation.reason);
-      const quantity = allocation.riskUsdt / risk;
       await db('teleeg_v8_shadow_positions?on_conflict=signal_id', {
         method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
         body: {
@@ -522,12 +518,14 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
           signal_price: candidate.signal_price,
           decision_time: iso(now),
           fill_time: iso(now),
-          fill_price: fillPrice,
-          entry: fillPrice,
-          stop: candidate.stop,
-          target: candidate.target,
-          target_r: candidate.target_r,
-          quantity,
+          fill_price: filledRisk.fillPrice,
+          entry: filledRisk.fillPrice,
+          stop: filledRisk.stop,
+          target: filledRisk.target,
+          target_r: filledRisk.targetR,
+          effective_target_r: filledRisk.effectiveTargetR,
+          stop_pct: filledRisk.stopPct,
+          quantity: allocation.riskUsdt / Math.abs(filledRisk.fillPrice - filledRisk.stop),
           risk_usdt: allocation.riskUsdt,
           funding_pnl_usdt: 0,
           last_funding_time: iso(now),
@@ -544,7 +542,7 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
       accepted++;
     } catch (error) {
       const message = String(error);
-      const knownReasons = ['symbol-already-open', 'fill-price-unavailable', 'invalid-stop-distance', 'portfolio-risk-cap', 'correlated-risk-cap', 'drawdown-stop', 'loss-streak-stop'];
+      const knownReasons = ['symbol-already-open', 'fill-price-unavailable', 'invalid-stop-distance', 'fill-stop-risk-out-of-bounds', 'fill-target-risk-too-low', 'portfolio-risk-cap', 'correlated-risk-cap', 'drawdown-stop', 'loss-streak-stop'];
       const reason = knownReasons.find(item => message.includes(item)) ?? 'fill-price-unavailable';
       reasons[reason] = (reasons[reason] ?? 0) + 1;
       await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {

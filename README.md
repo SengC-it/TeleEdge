@@ -12,6 +12,9 @@ USD-M USDT perpetual universe and never submits exchange orders.
 - Database isolation: every TeleEdge-owned table starts with `teleeg_`
 - Notifications: durable `teleeg_outbox`; Gmail SMTP delivery runs through
   Vercel with the sender display name `TeleEdge`.
+- Review history: Vercel `/api/reviews` uses the server-only
+  `TELEEDGE_REVIEWS_TOKEN` header to call the `teleeg-reviews` Edge Function;
+  the function validates that token before using the service role key.
 
 Supabase runs a market-context job every four hours, scans 12 staggered
 full-universe shards, globally ranks the completed cycle, and monitors open
@@ -35,6 +38,8 @@ RLS-protected status row; it has no database administrator key.
 - `supabase/schema/teleeg.sql`: isolated cloud tables, RLS, portfolio RPCs.
 - `supabase/schema/teleeg_cron.sql`: Vault authentication and schedules.
 - `supabase/functions/teleeg-worker/`: cloud strategy and worker.
+- `supabase/functions/teleeg-reviews/`: authenticated server-to-server review
+  history endpoint.
 - `index.html`, `api/status.mjs`: Vercel status dashboard.
 - `src/`: original local paper daemon retained for diagnostics.
 
@@ -57,6 +62,16 @@ Set these server-only Vercel environment variables without committing them:
 - `GMAIL_USER`
 - `GMAIL_APP_PASSWORD`
 - `TELEEDGE_EMAIL_TO` (optional; defaults to `GMAIL_USER`)
+
+Reviews also require the same randomly generated value in both server-only
+locations:
+
+- Vercel environment: `TELEEDGE_REVIEWS_TOKEN`
+- Supabase Edge Function secret: `TELEEDGE_REVIEWS_TOKEN`
+
+Do not use a `NEXT_PUBLIC_` variable, put the token in a fixture, or commit the
+value. `supabase/config.toml` sets `verify_jwt = false` only for this function;
+the custom token check runs before any service-role query.
 
 Messages use `smtp.gmail.com:465` and display the sender as
 `TeleEdge <GMAIL_USER>`. Entry and settlement emails use plain Chinese wording

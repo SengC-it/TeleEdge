@@ -1,0 +1,5 @@
+# The reviews function uses its own server-to-server token. Supabase's JWT
+# gateway verification must be disabled only because the function performs
+# the custom token check before any service-role query.
+[functions.teleeg-reviews]
+verify_jwt = false

@@ -1,7 +1,8 @@
-import {buildReviewsPayload} from './reviews.mjs';
+import {authorizeReviewsRequest, buildReviewsPayload} from './reviews.mjs';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ADMIN_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const REVIEWS_TOKEN = Deno.env.get('TELEEDGE_REVIEWS_TOKEN') ?? '';
 
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -30,6 +31,9 @@ async function db(path: string) {
 Deno.serve(async (request: Request) => {
   if (request.method === 'OPTIONS') return reply({}, 204);
   if (request.method !== 'GET') return reply({ok: false, error: 'method-not-allowed'}, 405);
+  if (!await authorizeReviewsRequest(request, REVIEWS_TOKEN)) {
+    return reply({ok: false, error: 'unauthorized'}, 401);
+  }
   if (!SUPABASE_URL || !ADMIN_KEY) return reply({ok: false, error: 'reviews runtime secrets unavailable'}, 500);
   try {
     // teleeg_positions is the only source of trade history. Outbox rows only

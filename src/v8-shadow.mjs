@@ -1,4 +1,6 @@
 import {CORE_MARKETS, DAY, modelConfig, v8ShadowConfig} from './config.mjs';
+import {recalculateFilledRisk} from './fill-risk.mjs';
+import {marketRules} from './market-data.mjs';
 import {adx, aggregate, atr, ema} from './indicators.mjs';
 import {btcRegimesAt, fundingStateAt, generateLatestCandidates} from './strategy.mjs';
 import {dedupeCandidates, rankCandidates} from './portfolio.mjs';
@@ -126,11 +128,20 @@ export function acceptV8ShadowCandidates(candidates, state, marketById, options 
     else if (active.filter(position => position.side === candidate.side).length >= v8ShadowConfig.maxPerSide) reason = 'side-cap';
     const fillPrice = Number(candidate.fillPrice ?? options.fillPrices?.get(candidate.marketId));
     if (!reason && !(fillPrice > 0)) reason = 'fill-price-unavailable';
-    if (!reason && !(Math.abs(fillPrice - candidate.sl) > 0)) reason = 'invalid-stop-distance';
+    const market = marketById.get(candidate.marketId);
+    const filledRisk = !reason ? recalculateFilledRisk({
+      side: candidate.side,
+      family: candidate.family,
+      fillPrice,
+      stop: candidate.sl,
+      targetR: candidate.targetR,
+      tickSize: market ? marketRules(market).tickSize : 0,
+    }) : null;
+    if (!reason && !filledRisk?.accepted) reason = filledRisk?.reason || 'invalid-stop-distance';
     const allocation = !reason ? allocateResearchRisk({
       equityUsdt: state.equityUsdt,
       peakEquityUsdt: state.peakEquityUsdt,
-      candidate,
+      candidate: {...candidate, stopPct: filledRisk.stopPct},
       openPositions: active,
       closedPositions: state.closedPositions,
     }) : null;
@@ -139,7 +150,6 @@ export function acceptV8ShadowCandidates(candidates, state, marketById, options 
       rejected.push({candidate, reason});
       continue;
     }
-    const market = marketById.get(candidate.marketId);
     const position = {
       id: candidate.id,
       modelVersion: v8ShadowConfig.version,
@@ -155,13 +165,14 @@ export function acceptV8ShadowCandidates(candidates, state, marketById, options 
       signalPrice: candidate.signalPrice ?? candidate.entry,
       decisionTime,
       fillTime: decisionTime,
-      fillPrice,
-      entry: fillPrice,
-      stop: candidate.sl,
-      target: candidate.target,
-      targetR: candidate.targetR,
-      quantity: allocation.riskUsdt / Math.abs(fillPrice - candidate.sl),
-      notionalUsdt: fillPrice * (allocation.riskUsdt / Math.abs(fillPrice - candidate.sl)),
+      fillPrice: filledRisk.fillPrice,
+      entry: filledRisk.fillPrice,
+      stop: filledRisk.stop,
+      target: filledRisk.target,
+      targetR: filledRisk.targetR,
+      effectiveTargetR: filledRisk.effectiveTargetR,
+      quantity: allocation.riskUsdt / Math.abs(filledRisk.fillPrice - filledRisk.stop),
+      notionalUsdt: filledRisk.fillPrice * (allocation.riskUsdt / Math.abs(filledRisk.fillPrice - filledRisk.stop)),
       riskUsdt: allocation.riskUsdt,
       fundingPnlUsdt: 0,
       lastCheckedAt: decisionTime,

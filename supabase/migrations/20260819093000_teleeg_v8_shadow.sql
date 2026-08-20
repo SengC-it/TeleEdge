@@ -54,6 +54,7 @@ create table if not exists public.teleeg_v8_shadow_positions (
   stop numeric not null,
   target numeric not null,
   target_r numeric not null,
+  effective_target_r numeric not null,
   quantity numeric not null default 1,
   risk_usdt numeric not null,
   funding_pnl_usdt numeric not null default 0,

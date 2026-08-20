@@ -1,6 +1,6 @@
-# TeleEdge OOS backtest
+# TeleEdge smoke backtest (M4 INCOMPLETE)
 
-本报告由 `npm run backtest` 生成，数据冻结在 2026-07-15T00:00:00.000Z。它只用于研究，不构成盈利结论，也不改变 V7.5 paper 控制。
+本报告由 `npm run backtest:smoke` 生成，数据快照时间为 2026-07-15T00:00:00.000Z。状态：**M4-INCOMPLETE**；仅用于研究，不构成盈利结论，也不改变 V7.5 paper 控制。
 
 ## OOS cohort（按 signal time）
 
@@ -25,8 +25,10 @@ V8 − V7.5 OOS expectancy: **0.310 R**；profit factor delta: **0.639**；max d
 - 信号只读取 scan time 之前的完整 1h 数据；成交使用 signal 后第一根 1h 的开盘价，禁止使用 signal close 作为成交价。
 - SL/TP 在完整 1h bar 上结算，若同一 bar 同时触发，SL 优先；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。
 - V7.5 使用冻结 0.6% 风险；V8 使用独立 research allocator（edge/liquidity/volatility/portfolio correlation/drawdown/loss streak）。
-- 这是固定五币种、日频扫描的研究样本；当前 exchangeInfo 快照无法证明没有历史退市 survivorship bias，结果不应外推到全市场。
-- OOS 样本量不足（任一模型少于 30 笔），因此不报告统计显著的盈利或 V8 优越性结论。
+- 当前样本为 5 个币种、282780 根 1h 价格记录和 35415 条资金费记录；这不是完整 V7.5 Control OOS。
+- 生产策略 Alpha 覆盖要求：daily breakout long、funding crowding short、volume shock short、V8 bear trend short；本报告的固定样本没有完成 expanded/non-core universe 和 point-in-time universe 验证。
+- 当前 exchangeInfo 快照无法证明没有历史退市 survivorship bias，结果不应外推到全市场。
+- M4 INCOMPLETE：OOS 样本量不足（任一模型少于 30 笔），因此不报告统计显著的盈利或 V8 优越性结论。
 
 ## Splits
 

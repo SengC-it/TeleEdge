@@ -1,20 +1,25 @@
-# TeleEdge reproducible backtest
+# TeleEdge backtest data and scope
 
-Run from the repository root:
+`reports/teleedge-oos-backtest.*` is currently a **smoke/backtest sanity check** and is explicitly marked `M4-INCOMPLETE`. It is not a complete V7.5 Control OOS report: the five-symbol fixed sample does not establish the expanded/non-core funding-crowding and volume-shock universe, nor does it remove historical delisting/survivorship bias.
+
+The clean-clone workflow has no dependency on `../v38_price_cache`, `../v38_funding_cache`, or `../v60_full_universe_cache`:
 
 ```powershell
+npm run backtest:fetch -- --symbols BTCUSDT,ETHUSDT,SOLUSDT,BNBUSDT,XRPUSDT
+npm run backtest:verify-data
 npm run backtest
 ```
 
-The harness reads the frozen `v38_price_cache` and `v38_funding_cache` files, caps the sample at `v60_full_universe_cache/snapshotEnd.json`, and writes:
+`backtest:fetch` downloads point-in-time bounded 1h klines, funding events, and an exchange-info snapshot into the ignored `data/backtest/price` and `data/backtest/funding` artifact directories. It writes `data/backtest/manifest.json` with the snapshot timestamp, source endpoints, row counts, and SHA256 for every artifact. `backtest:verify-data -- --strict` is the release gate for a future complete artifact.
 
-- `reports/teleedge-oos-backtest.json`
-- `reports/teleedge-oos-backtest.md`
+For the already available local research cache, use the explicitly named smoke command:
 
-The default sample uses BTC/ETH/SOL/BNB/XRP, daily UTC scans, 2021-01-01 through 2026-07-15, and three cohorts: 2021–2023 train, 2024 validation, and 2025–2026-H1 OOS. It also emits expanding-window 2025 and 2026-H1 walk-forward rows.
+```powershell
+npm run backtest:smoke
+```
 
-Lookahead controls are part of the implementation: only completed hourly bars enter a scan, fills use the first post-signal hourly open, settlement is completed-bar-only with SL priority, and funding events are cut at fill/exit time. The cache has no historical mark price for every funding event, so the backtest records and reports fallback to the latest completed hourly close.
+That command is intentionally the only path that reads the legacy workspace caches. It writes the report as `smoke backtest (M4 INCOMPLETE)` and records the external-cache provenance.
 
-V7.5 is the frozen 0.6%-risk control. V8 uses a separate research allocator. The allocator is not a production approval: it is explicitly exposed so edge, liquidity, volatility, correlated-risk, drawdown, and loss-streak rules can be tested without changing the V7.5 control.
+Both control and shadow harnesses include the production Alpha families in code: daily breakout long, funding crowding short, volume shock short, and V8 bear trend short. A formal V7.5 vs V8 result remains blocked until the manifest contains a point-in-time universe with historical delistings resolved and the expanded/non-core artifacts are present. Until then, no report may call itself complete V7.5 Control OOS or claim V8 superiority.
 
-The fixed universe is deliberately labeled as survivorship-limited because the available exchange-info snapshot cannot reconstruct historical delistings. A small sample or positive expectancy is not a release criterion; use the report’s confidence intervals and limitations before any further research.
+Lookahead controls are part of the implementation: only completed hourly bars enter a scan, fills use the first post-signal hourly open, executable targets are recomputed from the fill and original stop, settlement is completed-bar-only with SL priority, and funding events are cut at fill/exit time.

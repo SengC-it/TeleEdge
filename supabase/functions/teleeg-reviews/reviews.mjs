@@ -14,6 +14,24 @@ function notificationFor(outbox, signalId, eventType) {
   };
 }
 
+// The reviews endpoint is intentionally authenticated with an independent
+// server-to-server secret. Hashing both values before comparing keeps the
+// comparison independent of the secret length and avoids a plain-text token
+// comparison in the request path.
+export async function authorizeReviewsRequest(request, expectedToken) {
+  const supplied = request.headers.get('x-teleeg-reviews-token') ?? '';
+  if (!expectedToken || !supplied || supplied.length !== expectedToken.length) return false;
+  const [expectedHash, suppliedHash] = await Promise.all([
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(expectedToken)),
+    crypto.subtle.digest('SHA-256', new TextEncoder().encode(supplied)),
+  ]);
+  let mismatch = 0;
+  for (let index = 0; index < expectedHash.byteLength; index++) {
+    mismatch |= new Uint8Array(expectedHash)[index] ^ new Uint8Array(suppliedHash)[index];
+  }
+  return mismatch === 0;
+}
+
 export function buildReviewsPayload(positions, outbox = []) {
   const trades = [...(positions || [])]
     .map(position => ({
