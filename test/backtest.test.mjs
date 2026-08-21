@@ -24,6 +24,18 @@ test('backtest funding uses side direction and mark-price fallback', () => {
   assert.equal(result.fallbackMarkPriceRows, 1);
 });
 
+test('backtest funding ignores funding interval as mark price and uses priceAt fallback', () => {
+  const result = accrueFunding(
+    {side: 'long', entry: 100, fillTime: 0, quantity: 2, fundingPnlUsdt: 0},
+    [{t: 1609488000000, rate: 0.0001, fundingIntervalHours: 8, markPrice: null}],
+    () => 50_000,
+    1609488000000 + 1,
+  );
+  assert.equal(result.position.fundingPnlUsdt, -10);
+  assert.equal(result.fallbackMarkPriceRows, 1);
+  assert.notEqual(result.position.fundingPnlUsdt, -0.0016);
+});
+
 test('backtest metrics expose net expectancy CI, costs, funding and breakdowns', () => {
   const trades = [
     {signalTime: 1, fillTime: 1, exitTime: 2, side: 'long', family: 'a', alpha: 'control', btcRouter: 'bull', netR: 2, netPnlUsdt: 20, grossPnlUsdt: 22, fundingPnlUsdt: -1, modeledCostUsdt: 1, notionalUsdt: 100, riskUsdt: 10, exitReason: 'tp'},
