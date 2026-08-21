@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T01:50:27.309Z",
+  "generatedAt": "2026-08-21T02:38:53.272Z",
   "data": {
     "source": "external workspace cache (smoke only)",
     "mode": "smoke",
@@ -73,7 +73,7 @@
     "fill": "explicit smoke-only 1h proxy at or after decision time, open price",
     "executionInterval": "1h",
     "executionProxy": true,
-    "settlement": "completed 1h bars; SL priority on same bar",
+    "settlement": "explicit smoke-only completed 1h proxy bars; SL priority on the same bar",
     "funding": "historical funding rows; markPrice fallback to prior completed 1h close",
     "costRate": 0.0015,
     "lookaheadGuards": [
@@ -1612,11 +1612,11 @@
         "losses": 34,
         "avgWinR": 1.9368525885194927,
         "avgLossR": -1.0540024341551881,
-        "expectancyR": 0.18359274764123168,
-        "netExpectancyR": 0.18359274764123168,
+        "expectancyR": 0.18359274764123165,
+        "netExpectancyR": 0.18359274764123165,
         "expectancyR95CI": [
-          -0.1994663094754658,
-          0.5666518047579292
+          -0.19946630947546581,
+          0.5666518047579291
         ],
         "grossExpectancyR": 0.2597246841129371,
         "profitFactor": 1.2971412761301526,
@@ -1690,7 +1690,7 @@
           10158.241303273075,
           10118.81401025267,
           10091.281295378185,
-          10196.484015224923,
+          10157.549963474803,
           10262.752683321542,
           10330.952457280573,
           10425.619517107674
@@ -1750,8 +1750,8 @@
             "expectancyR": 0.7861869124248143,
             "netExpectancyR": 0.7861869124248143,
             "expectancyR95CI": [
-              -0.1741733887927831,
-              1.7465472136424118
+              -0.174173388792783,
+              1.7465472136424116
             ],
             "grossExpectancyR": 0.9464558645621625,
             "profitFactor": 2.9382342635699703,
@@ -1762,7 +1762,7 @@
             "netPnlUsdt": 344.6137346537672,
             "grossPnlUsdt": 349.6749162858845,
             "fundingPnlUsdt": 1.1198763147927857,
-            "feesAndCostsUsdt": 6.181057946910036,
+            "feesAndCostsUsdt": 6.181057946910037,
             "turnoverUsdt": 8241.410595880046,
             "averageHoldingHours": 216.3,
             "forcedExits": 0,
@@ -1826,8 +1826,8 @@
             "expectancyR": 0.7861869124248143,
             "netExpectancyR": 0.7861869124248143,
             "expectancyR95CI": [
-              -0.1741733887927831,
-              1.7465472136424118
+              -0.174173388792783,
+              1.7465472136424116
             ],
             "grossExpectancyR": 0.9464558645621625,
             "profitFactor": 2.9382342635699703,
@@ -1838,7 +1838,7 @@
             "netPnlUsdt": 344.6137346537672,
             "grossPnlUsdt": 349.6749162858845,
             "fundingPnlUsdt": 1.1198763147927857,
-            "feesAndCostsUsdt": 6.181057946910036,
+            "feesAndCostsUsdt": 6.181057946910037,
             "turnoverUsdt": 8241.410595880046,
             "averageHoldingHours": 216.3,
             "forcedExits": 0,
@@ -1902,8 +1902,8 @@
             "expectancyR": 0.7861869124248143,
             "netExpectancyR": 0.7861869124248143,
             "expectancyR95CI": [
-              -0.1741733887927831,
-              1.7465472136424118
+              -0.174173388792783,
+              1.7465472136424116
             ],
             "grossExpectancyR": 0.9464558645621625,
             "profitFactor": 2.9382342635699703,
@@ -1914,7 +1914,7 @@
             "netPnlUsdt": 344.6137346537672,
             "grossPnlUsdt": 349.6749162858845,
             "fundingPnlUsdt": 1.1198763147927857,
-            "feesAndCostsUsdt": 6.181057946910036,
+            "feesAndCostsUsdt": 6.181057946910037,
             "turnoverUsdt": 8241.410595880046,
             "averageHoldingHours": 216.3,
             "forcedExits": 0,
@@ -1978,8 +1978,8 @@
             "expectancyR": 0.7861869124248143,
             "netExpectancyR": 0.7861869124248143,
             "expectancyR95CI": [
-              -0.1741733887927831,
-              1.7465472136424118
+              -0.174173388792783,
+              1.7465472136424116
             ],
             "grossExpectancyR": 0.9464558645621625,
             "profitFactor": 2.9382342635699703,
@@ -1990,7 +1990,7 @@
             "netPnlUsdt": 344.6137346537672,
             "grossPnlUsdt": 349.6749162858845,
             "fundingPnlUsdt": 1.1198763147927857,
-            "feesAndCostsUsdt": 6.181057946910036,
+            "feesAndCostsUsdt": 6.181057946910037,
             "turnoverUsdt": 8241.410595880046,
             "averageHoldingHours": 216.3,
             "forcedExits": 0,
@@ -2970,11 +2970,11 @@
           "losses": 9,
           "avgWinR": 1.965348337379647,
           "avgLossR": -1.0529089741639888,
-          "expectancyR": 0.5356475055958193,
-          "netExpectancyR": 0.5356475055958193,
+          "expectancyR": 0.5356475055958194,
+          "netExpectancyR": 0.5356475055958194,
           "expectancyR95CI": [
-            -0.16081713017739085,
-            1.2321121413690295
+            -0.16081713017739074,
+            1.2321121413690297
           ],
           "grossExpectancyR": 0.5546747256411846,
           "profitFactor": 2.073987807540677,
@@ -2984,7 +2984,7 @@
           "endingEquity": 10394.303888852848,
           "netPnlUsdt": 394.30388885284594,
           "grossPnlUsdt": 423.1129174145391,
-          "fundingPnlUsdt": -15.053450518613385,
+          "fundingPnlUsdt": -15.053450518613383,
           "feesAndCostsUsdt": 13.755578043079865,
           "turnoverUsdt": 18340.770724106485,
           "averageHoldingHours": 454.7894736842105,
@@ -3009,7 +3009,7 @@
             10126.925675018249,
             10087.498381997844,
             10059.965667123359,
-            10165.168386970097,
+            10126.234335219977,
             10231.437055066715,
             10299.636829025747,
             10394.303888852848
@@ -3696,7 +3696,7 @@
             "monthlyObservations": 3,
             "equityPath": [
               10000,
-              10105.202719846739,
+              10066.268668096618,
               10171.471387943357,
               10239.671161902388,
               10334.33822172949
@@ -3917,7 +3917,7 @@
     }
   ],
   "comparison": {
-    "netExpectancyRDelta": 0.3874607049782284,
+    "netExpectancyRDelta": 0.3874607049782285,
     "profitFactorDelta": 0.8394205210139196,
     "maxDrawdownPctDelta": -0.009332345396709567,
     "netPnlUsdtDelta": 267.53383756365

@@ -10,6 +10,7 @@ import {marketRules} from '../src/market-data.mjs';
 import {rankCandidates} from '../src/portfolio.mjs';
 import {allocateResearchRisk} from '../src/risk.mjs';
 import {accrueFunding, calculateMetrics, cohortMetrics, priceAtOrBefore, settleOnCompletedBars} from '../src/backtest.mjs';
+import {hasCompleteSeries} from './backtest-data.mjs';
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
 const SNAPSHOT_END = Date.parse('2026-07-15T00:00:00.000Z');
@@ -123,6 +124,10 @@ export function makeScanTimes(start, end, intervalHours = 4) {
   return output;
 }
 
+export function buildCoreBreadth(dailyByMarket) {
+  return buildBreadth(new Map([...dailyByMarket].filter(([symbol]) => CORE_MARKETS.has(symbol))));
+}
+
 function signalEvent(candidate, model) {
   return {
     model,
@@ -163,7 +168,7 @@ export function observedAlphaCoverage(model) {
   ].filter(alpha => typeof alpha === 'string' && alpha.length > 0))].sort();
 }
 
-function settleOpen(model, dataBySymbol, now, costRate) {
+function settleOpen(model, dataBySymbol, now, costRate, {useMinute = false} = {}) {
   const kept = [];
   for (const position of model.open) {
     const data = dataBySymbol.get(position.marketId);
@@ -171,10 +176,13 @@ function settleOpen(model, dataBySymbol, now, costRate) {
       kept.push(position);
       continue;
     }
-    const result = settleOnCompletedBars(position, data.h1, data.funding, {
+    const bars = useMinute ? data.m1 : data.h1;
+    const interval = useMinute ? 60_000 : H1;
+    const result = settleOnCompletedBars(position, bars, data.funding, {
       now,
       costRate,
-      priceAt: timestamp => priceAtOrBefore(data.h1, timestamp, position.entry),
+      barIntervalMs: interval,
+      priceAt: timestamp => priceAtOrBefore(bars, timestamp, position.entry),
     });
     if (!result.closed) {
       kept.push(result.position);
@@ -187,18 +195,20 @@ function settleOpen(model, dataBySymbol, now, costRate) {
   model.open = kept;
 }
 
-export function resolveExecution(data, candidate, executionProxy = false, endTime = SNAPSHOT_END) {
+export function resolveExecution(data, candidate, executionProxy = false, endTime = SNAPSHOT_END, minuteExecutionAvailable = true) {
   const decisionTime = candidate.t + DECISION_LATENCY_MS;
-  const minuteBar = nextBar(data.m1, decisionTime);
-  if (minuteBar && minuteBar.t < endTime) {
-    return {
-      accepted: true,
-      decisionTime,
-      fillTime: minuteBar.t,
-      fillPrice: Number(minuteBar.o),
-      interval: '1m',
-      executionProxy: false,
-    };
+  if (minuteExecutionAvailable) {
+    const minuteBar = nextBar(data.m1, decisionTime);
+    if (minuteBar && minuteBar.t < endTime) {
+      return {
+        accepted: true,
+        decisionTime,
+        fillTime: minuteBar.t,
+        fillPrice: Number(minuteBar.o),
+        interval: '1m',
+        executionProxy: false,
+      };
+    }
   }
   if (!executionProxy) return {accepted: false, reason: 'execution-data-unavailable', decisionTime};
   const proxyBar = nextBar(data.h1, decisionTime);
@@ -213,8 +223,8 @@ export function resolveExecution(data, candidate, executionProxy = false, endTim
   };
 }
 
-function createPosition(model, candidate, data, {executionProxy = false, endTime = SNAPSHOT_END} = {}) {
-  const execution = resolveExecution(data, candidate, executionProxy, endTime);
+function createPosition(model, candidate, data, {executionProxy = false, endTime = SNAPSHOT_END, minuteExecutionAvailable = true} = {}) {
+  const execution = resolveExecution(data, candidate, executionProxy, endTime, minuteExecutionAvailable);
   if (!execution.accepted || !(execution.fillPrice > 0)) return {reason: execution.reason || 'fill-price-unavailable'};
   const fillPrice = execution.fillPrice;
   const filledRisk = recalculateFilledRisk({
@@ -285,7 +295,7 @@ function createPosition(model, candidate, data, {executionProxy = false, endTime
   };
 }
 
-function processCandidates(model, candidates, dataBySymbol, {executionProxy = false, endTime = SNAPSHOT_END} = {}) {
+export function processCandidates(model, candidates, dataBySymbol, {executionProxy = false, endTime = SNAPSHOT_END, minuteExecutionAvailable = true} = {}) {
   const unseen = candidates.filter(candidate => !model.knownSignalIds.has(candidate.id));
   model.signalEvents.push(...unseen.map(candidate => signalEvent(candidate, model.name)));
   const ranked = rankCandidates(unseen);
@@ -297,7 +307,7 @@ function processCandidates(model, candidates, dataBySymbol, {executionProxy = fa
     else if (model.open.length >= cap) reason = 'portfolio-cap';
     else if (model.open.filter(position => position.side === candidate.side).length >= maxPerSide) reason = 'side-cap';
     const data = dataBySymbol.get(candidate.marketId);
-    const created = !reason && data ? createPosition(model, candidate, data, {executionProxy, endTime}) : null;
+    const created = !reason && data ? createPosition(model, candidate, data, {executionProxy, endTime, minuteExecutionAvailable}) : null;
     if (!reason && !created?.position) reason = created?.reason || 'market-data-unavailable';
     if (reason) {
       recordReject(model, reason);
@@ -310,12 +320,13 @@ function processCandidates(model, candidates, dataBySymbol, {executionProxy = fa
   for (const candidate of unseen) model.knownSignalIds.add(candidate.id);
 }
 
-function closeAtEnd(model, dataBySymbol, endTime, costRate) {
+function closeAtEnd(model, dataBySymbol, endTime, costRate, {useMinute = false} = {}) {
   for (const position of model.open) {
     const data = dataBySymbol.get(position.marketId);
     if (!data) continue;
-    const accrued = accrueFunding(position, data.funding, timestamp => priceAtOrBefore(data.h1, timestamp, position.entry), endTime + 1);
-    const exitPrice = priceAtOrBefore(data.h1, endTime - 1, position.entry);
+    const bars = useMinute ? data.m1 : data.h1;
+    const accrued = accrueFunding(position, data.funding, timestamp => priceAtOrBefore(bars, timestamp, position.entry), endTime + 1);
+    const exitPrice = priceAtOrBefore(bars, endTime - 1, position.entry);
     const direction = position.side === 'long' ? 1 : -1;
     const grossPnlUsdt = direction * (exitPrice - position.entry) * position.quantity;
     const modeledCostUsdt = costRate * position.entry * position.quantity;
@@ -393,7 +404,7 @@ function markdownReport(report) {
     `## 设计与限制\n\n` +
     `- Scan cadence: ${report.methodology.scanCadence}；signal 后固定 20 分钟进入 decision，再取 decision_time 之后的可执行价格，禁止使用 signal close。\n` +
     `- Execution interval: ${report.data.executionInterval}；executionProxy=${report.data.executionProxy}。正式数据缺少 1m 时不静默回退，只有显式 smoke proxy 才使用 1h。\n` +
-    `- SL/TP 在完整 1h bar 上结算，若同一 bar 同时触发，SL 优先；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。\n` +
+    `- ${report.methodology.settlement}；资金费使用历史事件，缺少 mark price 时回退到事件前最近 ${report.data.executionInterval === '1m' ? '1m' : '1h'} close。\n` +
     `- V7.5 使用冻结 0.6% 风险；V8 使用独立 research allocator（edge/liquidity/volatility/portfolio correlation/drawdown/loss streak）。\n` +
     `- 当前样本为 ${report.data.symbols.length} 个币种、${report.data.sampleSize.priceRows} 根 1h 价格记录和 ${report.data.sampleSize.fundingRows} 条资金费记录；这不是完整 V7.5 Control OOS。\n` +
     `- requiredAlphaCoverage: ${report.data.requiredAlphaCoverage.join(', ')}。observedAlphaCoverage（由实际 signals/trades 动态计算）：${report.data.observedAlphaCoverage.length ? report.data.observedAlphaCoverage.join(', ') : 'none'}。\n` +
@@ -426,44 +437,49 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   }
   const available = [...dataBySymbol].filter(([, data]) => data.h1.length && data.funding.length);
   if (!available.length) throw new Error(`No backtest data under ${dataRoot}. Run npm run backtest:fetch or explicitly use npm run backtest:smoke for the legacy external cache.`);
-  const dailyByMarket = new Map(available.map(([symbol, data]) => [symbol, data.daily]));
-  const breadthByTime = buildBreadth(dailyByMarket);
+  const dailyByMarket = new Map([...dataBySymbol].filter(([, data]) => data.h1.length).map(([symbol, data]) => [symbol, data.daily]));
+  const breadthByTime = buildCoreBreadth(dailyByMarket);
   const btcEnvironment = buildBtcEnvironment(dailyByMarket.get('BTCUSDT') || []);
   const scanTimes = makeScanTimes(start, end, scanIntervalHours);
   const control = createModel('V7.5 Control');
   const shadow = createModel('V8 Shadow', true);
+  const symbolsWithOneMinute = available.filter(([, data]) => data.m1.length > 0).length;
+  const oneMinuteRows = available.reduce((sum, [, data]) => sum + data.m1.length, 0);
+  const hasCompleteOneMinuteExecution = available.length > 0
+    && available.every(([, data]) => hasCompleteSeries(data.m1, '1m', start, end));
   for (const scanTime of scanTimes) {
     const settleTime = scanTime + 1;
-    settleOpen(control, dataBySymbol, settleTime, modelConfig.stressRoundTripCost);
-    settleOpen(shadow, dataBySymbol, settleTime, modelConfig.stressRoundTripCost);
+    settleOpen(control, dataBySymbol, settleTime, modelConfig.stressRoundTripCost, {useMinute: hasCompleteOneMinuteExecution});
+    settleOpen(shadow, dataBySymbol, settleTime, modelConfig.stressRoundTripCost, {useMinute: hasCompleteOneMinuteExecution});
+    const controlCandidates = [];
+    const shadowCandidates = [];
     for (const [symbol, data] of available) {
       const h1 = completedSlice(data.h1, scanTime, H1);
       const funding = beforeSlice(data.funding, scanTime);
       const daily = completedSlice(data.daily, scanTime, DAY);
       const bars4h = completedSlice(data.bars4h, scanTime, 4 * H1);
       const args = {market: data.market, h1, daily, bars4h, funding, breadthByTime, btcEnvironment, endTime: scanTime};
-      const controlCandidates = generateLatestCandidates(args).filter(candidate => candidate.t === scanTime);
-      const shadowCandidates = generateV8ShadowCandidates(args).filter(candidate => candidate.t === scanTime);
-      processCandidates(control, controlCandidates, dataBySymbol, {executionProxy, endTime: end});
-      processCandidates(shadow, shadowCandidates, dataBySymbol, {executionProxy, endTime: end});
+      controlCandidates.push(...generateLatestCandidates(args).filter(candidate => candidate.t === scanTime));
+      shadowCandidates.push(...generateV8ShadowCandidates(args).filter(candidate => candidate.t === scanTime));
     }
+    processCandidates(control, controlCandidates, dataBySymbol, {executionProxy, endTime: end, minuteExecutionAvailable: hasCompleteOneMinuteExecution});
+    processCandidates(shadow, shadowCandidates, dataBySymbol, {executionProxy, endTime: end, minuteExecutionAvailable: hasCompleteOneMinuteExecution});
   }
-  closeAtEnd(control, dataBySymbol, end, modelConfig.stressRoundTripCost);
-  closeAtEnd(shadow, dataBySymbol, end, modelConfig.stressRoundTripCost);
+  closeAtEnd(control, dataBySymbol, end, modelConfig.stressRoundTripCost, {useMinute: hasCompleteOneMinuteExecution});
+  closeAtEnd(shadow, dataBySymbol, end, modelConfig.stressRoundTripCost, {useMinute: hasCompleteOneMinuteExecution});
   const models = [modelReport(control, start, end), modelReport(shadow, start, end)];
   const controlOos = models[0].splits.oos;
   const shadowOos = models[1].splits.oos;
   const observedAlphaCoverage = [...new Set(models.flatMap(model => model.observedAlphaCoverage))].sort();
-  const symbolsWithOneMinute = available.filter(([, data]) => data.m1.length > 0).length;
-  const oneMinuteRows = available.reduce((sum, [, data]) => sum + data.m1.length, 0);
-  const hasCompleteOneMinuteExecution = available.length > 0 && symbolsWithOneMinute === available.length;
   const executionInterval = hasCompleteOneMinuteExecution ? '1m' : executionProxy ? '1h' : 'unavailable';
   const m4Reasons = [
     'point_in_time_universe_required',
     'historical_delisting_survivorship_handling_required',
     'expanded_non_core_universe_required',
     'sufficient_oos_sample_required',
-    ...(hasCompleteOneMinuteExecution ? [] : ['one_minute_execution_data_missing']),
+    ...(hasCompleteOneMinuteExecution ? [] : [symbolsWithOneMinute === available.length
+      ? 'one_minute_execution_data_incomplete'
+      : 'one_minute_execution_data_missing']),
     ...(executionProxy ? ['execution_proxy_used'] : []),
     ...(Math.round(Number(scanIntervalHours)) === 4 ? [] : ['production_scan_cadence_is_4h']),
   ];
@@ -518,7 +534,11 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       fill: hasCompleteOneMinuteExecution ? 'first 1m bar at or after decision time, open price' : executionProxy ? 'explicit smoke-only 1h proxy at or after decision time, open price' : 'unavailable without 1m execution data',
       executionInterval,
       executionProxy,
-      settlement: 'completed 1h bars; SL priority on same bar',
+      settlement: hasCompleteOneMinuteExecution
+        ? 'completed 1m bars; first touch by minute; SL priority when TP and SL occur in the same minute'
+        : executionProxy
+          ? 'explicit smoke-only completed 1h proxy bars; SL priority on the same bar'
+          : 'unavailable without complete 1m execution data',
       funding: 'historical funding rows; markPrice fallback to prior completed 1h close',
       costRate: modelConfig.stressRoundTripCost,
       lookaheadGuards: ['completed h1 slice', 'next-bar open fill', 'completed-bar-only settlement', 'no OOS parameter tuning'],

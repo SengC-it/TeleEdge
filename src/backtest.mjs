@@ -24,12 +24,13 @@ function yearKey(value) {
   return String(new Date(numericTime(value)).getUTCFullYear());
 }
 
-export function firstCompletedTouch(position, bars, now = Infinity) {
+export function firstCompletedTouch(position, bars, now = Infinity, barIntervalMs = H1) {
   const fillTime = numericTime(position.fillTime ?? position.fill_time);
-  const firstEligibleBar = Number.isFinite(fillTime) ? Math.ceil(fillTime / H1) * H1 : -Infinity;
+  const interval = Number(barIntervalMs) > 0 ? Number(barIntervalMs) : H1;
+  const firstEligibleBar = Number.isFinite(fillTime) ? Math.ceil(fillTime / interval) * interval : -Infinity;
   for (const bar of bars || []) {
     const openTime = numericTime(bar.t);
-    const closeTime = numericTime(bar.closeTime ?? bar.close_time ?? openTime + H1);
+    const closeTime = numericTime(bar.closeTime ?? bar.close_time ?? openTime + interval);
     if (!(closeTime < now) || openTime < firstEligibleBar) continue;
     const stopHit = position.side === 'long' ? Number(bar.l) <= Number(position.stop) : Number(bar.h) >= Number(position.stop);
     const targetHit = position.side === 'long' ? Number(bar.h) >= Number(position.target) : Number(bar.l) <= Number(position.target);
@@ -78,8 +79,9 @@ export function settleOnCompletedBars(position, bars, fundingRows, {
   now = Infinity,
   costRate = 0.0015,
   priceAt = () => null,
+  barIntervalMs = H1,
 } = {}) {
-  const touch = firstCompletedTouch(position, bars, now);
+  const touch = firstCompletedTouch(position, bars, now, barIntervalMs);
   const cutoff = touch?.time ?? now;
   const accrued = accrueFunding(position, fundingRows, priceAt, cutoff);
   const next = accrued.position;

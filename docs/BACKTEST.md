@@ -14,6 +14,8 @@ npm run backtest
 
 The formal harness defaults to `BACKTEST_SCAN_INTERVAL_HOURS=4`. A strategy signal is generated at a completed candle, then `decision_time = signal_time + 20 minutes`; `fill_time` must be at or after that decision time. With 1m artifacts, the fill is the first eligible 1m open. A formal run never silently substitutes an hourly open when 1m data is absent.
 
+Each scan cycle collects every available market before performing one V7.5 global breakout dedupe/rank and one V8 global dedupe/rank; the production edge/event/day-volume ordering and three-per-side cap therefore apply across the whole cycle. Breadth remains CORE-only even when expanded markets are available as trade candidates. The downloader advances Binance pagination by the requested candle interval, and artifact verification checks both SHA256 and timestamp continuity.
+
 For the already available local research cache, use the explicitly named smoke command:
 
 ```powershell
@@ -26,4 +28,4 @@ The report contains separate `requiredAlphaCoverage` and dynamically observed `o
 
 Both control and shadow harnesses include the production Alpha families in code: daily breakout long, funding crowding short, volume shock short, and V8 bear trend short. A formal V7.5 vs V8 result remains blocked until the manifest contains a point-in-time universe with historical delistings resolved, the expanded/non-core artifacts, 4h cadence, 20-minute decision/fill latency with 1m execution, fees/funding/cost, sufficient OOS sample, and observed/validated required Alpha coverage. Until then, no report may call itself complete V7.5 Control OOS or claim V8 superiority.
 
-Lookahead controls are part of the implementation: only completed hourly/4h bars enter a scan, fills use the first eligible 1m open after the 20-minute decision (or the explicitly labeled smoke 1h proxy), executable targets are recomputed from the fill and original stop, settlement is completed-bar-only with SL priority, and funding events are cut at fill/exit time.
+Lookahead controls are part of the implementation: only completed hourly/4h bars enter a scan, fills use the first eligible 1m open after the 20-minute decision (or the explicitly labeled smoke 1h proxy), executable targets are recomputed from the fill and original stop, formal settlement uses the first touch across completed 1m candles after fill (SL wins only when TP and SL occur in the same minute), and funding events are cut at fill/exit time.

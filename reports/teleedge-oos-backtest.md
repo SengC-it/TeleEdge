@@ -24,7 +24,7 @@ V8 − V7.5 OOS expectancy: **0.387 R**；profit factor delta: **0.839**；max d
 
 - Scan cadence: 4h UTC windows；signal 后固定 20 分钟进入 decision，再取 decision_time 之后的可执行价格，禁止使用 signal close。
 - Execution interval: 1h；executionProxy=true。正式数据缺少 1m 时不静默回退，只有显式 smoke proxy 才使用 1h。
-- SL/TP 在完整 1h bar 上结算，若同一 bar 同时触发，SL 优先；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。
+- explicit smoke-only completed 1h proxy bars; SL priority on the same bar；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。
 - V7.5 使用冻结 0.6% 风险；V8 使用独立 research allocator（edge/liquidity/volatility/portfolio correlation/drawdown/loss streak）。
 - 当前样本为 5 个币种、282780 根 1h 价格记录和 35415 条资金费记录；这不是完整 V7.5 Control OOS。
 - requiredAlphaCoverage: daily_breakout_long, funding_crowding_short, volume_shock_short, v8_bear_trend_short。observedAlphaCoverage（由实际 signals/trades 动态计算）：daily_breakout_long, v8_bear_trend_short, v8_daily_breakout_long。

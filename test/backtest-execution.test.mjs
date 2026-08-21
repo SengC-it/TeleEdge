@@ -35,6 +35,18 @@ test('backtest models 20-minute decision latency and requires 1m data for formal
   assert.equal(proxy.executionProxy, true);
   assert.ok(proxy.fillTime >= proxy.decisionTime);
 
+  const incompleteMinute = resolveExecution({
+    m1: [{t: signalTime + 20 * 60_000, o: 101}],
+    h1: [{t: signalTime + H1, o: 102}],
+  }, {t: signalTime}, false, signalTime + 2 * H1, false);
+  assert.equal(incompleteMinute.accepted, false, 'partial 1m data must not qualify as formal execution data');
+  const incompleteProxy = resolveExecution({
+    m1: [{t: signalTime + 20 * 60_000, o: 101}],
+    h1: [{t: signalTime + H1, o: 102}],
+  }, {t: signalTime}, true, signalTime + 2 * H1, false);
+  assert.equal(incompleteProxy.interval, '1h');
+  assert.equal(incompleteProxy.executionProxy, true);
+
   const bounded = resolveExecution({m1: [{t: signalTime + 20 * 60_000, o: 101}], h1: []}, {t: signalTime}, false, signalTime + 10 * 60_000);
   assert.equal(bounded.accepted, false, 'fills after the sample end must not enter the report');
 });
