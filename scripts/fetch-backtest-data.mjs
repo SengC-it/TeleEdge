@@ -9,6 +9,7 @@ import {intervalToMs} from './backtest-data.mjs';
 const APP_DIR = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const DATA_DIR = path.join(APP_DIR, 'data', 'backtest');
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
+const FUNDING_INTERVAL_FALLBACK_HOURS = 8;
 
 function cliValue(name, fallback = null) {
   const index = process.argv.indexOf(name);
@@ -73,6 +74,32 @@ function marketWindow(symbol, exchangeInfo, start, end) {
   };
 }
 
+function fundingIntervalMetadata(rows) {
+  const timestamps = (rows || [])
+    .map(row => Number(row.t ?? row.fundingTime))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const deltas = timestamps.slice(1)
+    .map((timestamp, index) => timestamp - timestamps[index])
+    .filter(delta => delta > 0);
+  if (!deltas.length) {
+    return {
+      fundingIntervalHours: FUNDING_INTERVAL_FALLBACK_HOURS,
+      fundingIntervalSource: 'documented-fallback',
+      fundingIntervalFallbackHours: FUNDING_INTERVAL_FALLBACK_HOURS,
+    };
+  }
+  const ordered = [...deltas].sort((a, b) => a - b);
+  const middle = Math.floor(ordered.length / 2);
+  const medianMs = ordered.length % 2
+    ? ordered[middle]
+    : (ordered[middle - 1] + ordered[middle]) / 2;
+  return {
+    fundingIntervalHours: +(medianMs / 3_600_000).toFixed(6),
+    fundingIntervalSource: 'observed',
+  };
+}
+
 export function writeArtifact(directory, symbol, rows, interval = null) {
   fs.mkdirSync(directory, {recursive: true});
   const file = path.join(directory, `${symbol}.json.gz`);
@@ -116,7 +143,7 @@ export async function fetchBacktestData({
       }),
     ]);
     artifacts.push({...writeArtifact(path.join(DATA_DIR, 'price'), symbol, price, '1h'), kind: 'price', symbol, interval: '1h', activeStart: window.activeStartIso, activeEnd: window.activeEndIso});
-    artifacts.push({...writeArtifact(path.join(DATA_DIR, 'funding'), symbol, funding, 'event'), kind: 'funding', symbol, interval: 'event', activeStart: window.activeStartIso, activeEnd: window.activeEndIso});
+    artifacts.push({...writeArtifact(path.join(DATA_DIR, 'funding'), symbol, funding, 'event'), kind: 'funding', symbol, interval: 'event', activeStart: window.activeStartIso, activeEnd: window.activeEndIso, ...fundingIntervalMetadata(funding)});
     let minute = [];
     if (includeOneMinute) {
       minute = await fetchPaged('/fapi/v1/klines', {symbol, interval: '1m', startTime: start, endTime: end}, {
@@ -153,7 +180,7 @@ export async function fetchBacktestData({
     },
     sources: {
       price: {provider: 'Binance USD-M Futures REST API', endpoint: 'https://fapi.binance.com/fapi/v1/klines', interval: '1h', activeStart: new Date(start).toISOString(), activeEnd: new Date(end).toISOString()},
-      funding: {provider: 'Binance USD-M Futures REST API', endpoint: 'https://fapi.binance.com/fapi/v1/fundingRate', interval: 'event', activeStart: new Date(start).toISOString(), activeEnd: new Date(end).toISOString()},
+      funding: {provider: 'Binance USD-M Futures REST API', endpoint: 'https://fapi.binance.com/fapi/v1/fundingRate', interval: 'event', fundingIntervalFallbackHours: FUNDING_INTERVAL_FALLBACK_HOURS, fundingIntervalSource: 'documented-fallback', note: 'Artifact-level observed fundingIntervalHours takes precedence; fallback is used only when an artifact has fewer than two events.', activeStart: new Date(start).toISOString(), activeEnd: new Date(end).toISOString()},
       universe: {provider: 'Binance USD-M Futures REST API', endpoint: 'https://fapi.binance.com/fapi/v1/exchangeInfo'},
     },
     artifacts,

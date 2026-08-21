@@ -67,6 +67,98 @@ const dataFor = symbol => ({
   funding: [],
 });
 
+const gateStart = Date.parse('2026-02-01T10:00:00Z');
+const gateEnd = gateStart + 24 * H1;
+
+function writeGateRows(root, relative, rows) {
+  const file = path.join(root, relative);
+  fs.mkdirSync(path.dirname(file), {recursive: true});
+  fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(rows)));
+  return {
+    path: relative,
+    rows: rows.length,
+    sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
+  };
+}
+
+function hourlyGateRows(start = gateStart, end = gateEnd) {
+  return Array.from({length: Math.round((end - start) / H1) + 2}, (_, index) => ({
+    t: start - H1 + index * H1,
+    o: 100,
+    h: 101,
+    l: 99,
+    c: 100,
+    q: 1,
+  }));
+}
+
+function fundingGateRows(start = gateStart) {
+  return [6, 14, 22].map(hours => ({t: start + hours * H1, rate: 0.0001, markPrice: 100}));
+}
+
+function gateMarket(symbol, start = gateStart, end = gateEnd) {
+  return {symbol, activeStart: new Date(start).toISOString(), activeEnd: new Date(end).toISOString()};
+}
+
+function gateManifest({
+  symbols = ['BTCUSDT'],
+  markets = symbols.map(symbol => gateMarket(symbol)),
+  expandedNonCoreCovered = true,
+  oneMinuteAvailable = false,
+  status = 'M4-INCOMPLETE',
+  artifacts = [],
+} = {}) {
+  return {
+    schemaVersion: 2,
+    status,
+    snapshotTimestamp: new Date(gateEnd).toISOString(),
+    hashAlgorithm: 'SHA-256',
+    universe: {
+      symbols,
+      markets,
+      pointInTime: true,
+      historicalDelistingsResolved: true,
+      expandedNonCoreCovered,
+    },
+    execution: {preferredInterval: '1m', oneMinuteAvailable},
+    sources: {funding: {fundingIntervalFallbackHours: 8, fundingIntervalSource: 'documented-fallback'}},
+    artifacts,
+  };
+}
+
+function writeGateMarketArtifacts(root, symbol, {start = gateStart, end = gateEnd, includeMinute = false, funding = fundingGateRows(start)} = {}) {
+  const window = {activeStart: new Date(start).toISOString(), activeEnd: new Date(end).toISOString()};
+  const price = writeGateRows(root, `price/${symbol}.json.gz`, hourlyGateRows(start, end));
+  const fundingArtifact = writeGateRows(root, `funding/${symbol}.json.gz`, funding);
+  const artifacts = [
+    {...price, symbol, kind: 'price', interval: '1h', ...window},
+    {...fundingArtifact, symbol, kind: 'funding', interval: 'event', fundingIntervalHours: 8, fundingIntervalSource: 'observed', ...window},
+  ];
+  if (includeMinute) {
+    const minute = writeGateRows(root, `minute/${symbol}.json.gz`, Array.from({length: Math.round((end - start) / 60_000) + 2}, (_, index) => ({
+      t: start - 60_000 + index * 60_000,
+      o: 100,
+      h: 101,
+      l: 99,
+      c: 100,
+      q: 1,
+    })));
+    artifacts.push({...minute, symbol, kind: 'minute', interval: '1m', ...window});
+  }
+  return artifacts;
+}
+
+function fullGateManifest(root, {includeMinute = false, symbols = ['BTCUSDT', 'NONCOREUSDT'], expandedNonCoreCovered = true} = {}) {
+  const artifacts = symbols.flatMap(symbol => writeGateMarketArtifacts(root, symbol, {includeMinute}));
+  return gateManifest({
+    symbols,
+    markets: symbols.map(symbol => gateMarket(symbol)),
+    expandedNonCoreCovered,
+    oneMinuteAvailable: includeMinute,
+    artifacts,
+  });
+}
+
 test('backtest ranks all same-cycle markets globally and is input-order independent', () => {
   const rows = ['AAAUSDT', 'BBBUSDT', 'CCCUSDT', 'DDDUSDT', 'EEEUSDT'];
   const candidates = rows.map((symbol, index) => candidate(symbol, index + 1));
@@ -251,6 +343,102 @@ test('strict artifact gate rejects empty or short required market artifacts', ()
     assert.equal(result.coverage[0].firstIssues[0].reason, 'empty-artifact');
     assert.ok(result.missing.some(item => item.key === 'NEWUSDT|price'));
     assert.ok(result.missing.some(item => item.key === 'NEWUSDT|funding'));
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('funding event coverage accepts a delayed first event after active start', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-funding-window-'));
+  try {
+    const manifest = fullGateManifest(root);
+    for (const artifact of manifest.artifacts.filter(item => item.kind === 'funding')) {
+      delete artifact.fundingIntervalHours;
+      delete artifact.fundingIntervalSource;
+    }
+    const result = verifyBacktestManifest(manifest, root);
+    assert.equal(result.coverage.length, 0);
+    assert.equal(result.continuity.length, 0);
+    assert.equal(result.contract.length, 0);
+    assert.equal(result.complete, false);
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('funding event artifacts reject duplicate or non-increasing timestamps', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-funding-order-'));
+  try {
+    const duplicateFunding = fundingGateRows().map(row => ({...row}));
+    duplicateFunding[1].t = duplicateFunding[0].t;
+    const artifacts = [
+      ...writeGateMarketArtifacts(root, 'BTCUSDT', {funding: duplicateFunding}),
+      ...writeGateMarketArtifacts(root, 'NONCOREUSDT'),
+    ];
+    const result = verifyBacktestManifest(gateManifest({
+      symbols: ['BTCUSDT', 'NONCOREUSDT'],
+      artifacts,
+    }), root);
+    assert.ok(result.continuity.some(item => item.path.includes('funding/BTCUSDT')
+      && item.firstIssues.some(issue => issue.reason === 'duplicate-timestamp')));
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('strict data contract rejects an empty universe', () => {
+  const result = verifyBacktestManifest(gateManifest({symbols: [], markets: [], artifacts: []}), os.tmpdir());
+  assert.ok(result.contract.some(item => item.reason === 'universe-symbols-empty'));
+});
+
+test('strict data contract rejects duplicate lifecycle symbols', () => {
+  const result = verifyBacktestManifest(gateManifest({
+    symbols: ['BTCUSDT'],
+    markets: [gateMarket('BTCUSDT'), gateMarket('BTCUSDT')],
+    artifacts: [],
+  }), os.tmpdir());
+  assert.ok(result.contract.some(item => item.reason === 'duplicate-market-lifecycle-symbol'));
+});
+
+test('strict data contract rejects a universe symbol without lifecycle record', () => {
+  const result = verifyBacktestManifest(gateManifest({symbols: ['BTCUSDT'], markets: [], artifacts: []}), os.tmpdir());
+  assert.ok(result.contract.some(item => item.reason === 'universe-symbol-missing-lifecycle'));
+});
+
+test('strict data contract rejects a lifecycle symbol without required artifacts', () => {
+  const result = verifyBacktestManifest(gateManifest({
+    symbols: ['BTCUSDT'],
+    markets: [gateMarket('BTCUSDT')],
+    artifacts: [],
+  }), os.tmpdir());
+  assert.ok(result.missing.some(item => item.key === 'BTCUSDT|price'));
+  assert.ok(result.missing.some(item => item.key === 'BTCUSDT|funding'));
+});
+
+test('expandedNonCoreCovered metadata cannot certify an all-core universe', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-expanded-contract-'));
+  try {
+    const artifacts = writeGateMarketArtifacts(root, 'BTCUSDT');
+    const result = verifyBacktestManifest(gateManifest({
+      symbols: ['BTCUSDT'],
+      markets: [gateMarket('BTCUSDT')],
+      expandedNonCoreCovered: true,
+      artifacts,
+    }), root);
+    assert.ok(result.contract.some(item => item.reason === 'expanded-non-core-market-missing'));
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('complete core plus expanded artifacts pass the strict data contract', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-expanded-valid-'));
+  try {
+    const result = verifyBacktestManifest(fullGateManifest(root), root);
+    assert.deepEqual(result.contract, []);
+    assert.deepEqual(result.universe.expandedSymbols, ['NONCOREUSDT']);
+    assert.deepEqual(result.universe.expandedSymbolsWithCompleteArtifacts, ['NONCOREUSDT']);
+    assert.equal(result.complete, false, 'formal M4 remains incomplete until the explicit release gates are met');
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

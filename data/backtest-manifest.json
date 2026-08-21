@@ -35,7 +35,9 @@
     "funding": {
       "provider": "Binance USD-M Futures REST API",
       "urlTemplate": "https://fapi.binance.com/fapi/v1/fundingRate",
-      "note": "Funding is fetched point-in-time by startTime/endTime and hashed in the artifact manifest."
+      "fundingIntervalFallbackHours": 8,
+      "fundingIntervalSource": "documented-fallback",
+      "note": "Funding is an event stream. Artifact-level observed fundingIntervalHours takes precedence; otherwise the verifier uses this explicit 8-hour fallback and never requires an event at activeStart."
     },
     "universe": {
       "provider": "Binance USD-M Futures REST API",
