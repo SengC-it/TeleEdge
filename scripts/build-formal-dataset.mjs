@@ -397,8 +397,20 @@ async function writeJsonAtomic(file, value) {
   const temporary = `${file}.${process.pid}.${Date.now()}.${crypto.randomUUID()}.tmp`;
   try {
     await writeText(temporary, `${JSON.stringify(value, null, 2)}\n`);
-    await fs.promises.rm(file, {force: true});
-    await fs.promises.rename(temporary, file);
+    let lastError;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      try {
+        await fs.promises.rm(file, {force: true});
+        await fs.promises.rename(temporary, file);
+        lastError = null;
+        break;
+      } catch (error) {
+        lastError = error;
+        if (!['EBUSY', 'EPERM', 'EACCES'].includes(error.code) || attempt === 7) throw error;
+        await sleep(25 * (attempt + 1));
+      }
+    }
+    if (lastError) throw lastError;
   } finally {
     await fs.promises.rm(temporary, {force: true});
   }
