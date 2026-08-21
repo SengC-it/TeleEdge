@@ -296,7 +296,19 @@ async function fetchText(url, options = {}) {
 }
 
 async function fetchJson(url, options = {}) {
-  return JSON.parse(await fetchText(url, options));
+  const retries = Math.max(0, Number(options.retries ?? DEFAULT_RETRIES) || 0);
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const body = await fetchText(url, options);
+      return JSON.parse(body);
+    } catch (error) {
+      lastError = error;
+      if (attempt === retries) break;
+      await sleep(2 ** attempt * 1000);
+    }
+  }
+  throw lastError || new Error(`JSON request failed: ${url}`);
 }
 
 async function listS3Keys(prefix, {gate, retries, maxKeys = 1000} = {}) {
@@ -824,16 +836,28 @@ export async function buildFormalDataset(options = {}) {
   const root = path.resolve(args.root || DEFAULT_ROOT);
   await fs.promises.mkdir(root, {recursive: true});
   const gate = new RequestGate(args.rateLimitMs ?? DEFAULT_RATE_LIMIT_MS);
+  const cachedExchangeInfoFile = path.join(root, 'source', 'current-exchangeInfo.json');
+  let exchangeInfoFromCache = false;
+  const exchangeInfoPromise = fetchJson('https://fapi.binance.com/fapi/v1/exchangeInfo', {gate, retries: args.retries}).catch(error => {
+    if (!fs.existsSync(cachedExchangeInfoFile)) throw error;
+    const cached = JSON.parse(fs.readFileSync(cachedExchangeInfoFile, 'utf8'));
+    if (!Array.isArray(cached.symbols)) throw error;
+    exchangeInfoFromCache = true;
+    console.warn(`exchangeInfo fetch failed; reusing cached source evidence: ${cachedExchangeInfoFile}`);
+    return cached;
+  });
   const [symbolPrefixes, fundingPrefixes, exchangeInfo] = await Promise.all([
     listS3Prefixes(`${SOURCE_PREFIXES.price}/`, {gate, retries: args.retries}),
     listS3Prefixes(`${SOURCE_PREFIXES.funding}/`, {gate, retries: args.retries}),
-    fetchJson('https://fapi.binance.com/fapi/v1/exchangeInfo', {gate, retries: args.retries}),
+    exchangeInfoPromise,
   ]);
   const discoveredSymbols = new Set([
     ...symbolPrefixes.map(symbolFromPrefix),
     ...fundingPrefixes.map(symbolFromPrefix),
   ].filter(isUsdtPerpetualArchiveSymbol));
-  const exchangeInfoEvidence = await writeJson(path.join(root, 'source', 'current-exchangeInfo.json'), exchangeInfo);
+  const exchangeInfoEvidence = exchangeInfoFromCache
+    ? {path: cachedExchangeInfoFile, sha256: sha256File(cachedExchangeInfoFile)}
+    : await writeJson(cachedExchangeInfoFile, exchangeInfo);
   const currentSymbols = currentPerpetualSymbols(exchangeInfo);
   const candidateSymbols = [...discoveredSymbols]
     .filter(symbol => !currentSymbols.has(symbol) || timeValue(currentSymbols.get(symbol).onboardDate) < args.end)
@@ -894,7 +918,10 @@ export async function buildFormalDataset(options = {}) {
       actualFundingArchives: Object.values(actualArchiveKeysBySymbol).reduce((sum, item) => sum + item.funding.length, 0),
     },
   };
-  const sourceIndex = await writeJson(path.join(root, 'source', 'archive-index.json'), sourceIndexPayload);
+  const archiveIndexEvidence = path.join(root, 'source', 'archive-index.json');
+  const sourceIndex = cachedArchiveIndex
+    ? {path: archiveIndexEvidence, sha256: sha256File(archiveIndexEvidence)}
+    : await writeJsonAtomic(archiveIndexEvidence, sourceIndexPayload);
   const archivesBySymbol = Object.fromEntries(symbols.map(symbol => [symbol, bySymbol.get(symbol)]));
   const artifacts = [];
   const summaries = new Map();
@@ -1002,21 +1029,21 @@ export async function buildFormalDataset(options = {}) {
     artifacts,
   };
   const manifestFile = path.join(root, 'manifest.json');
-  await writeJson(manifestFile, manifest);
+  await writeJsonAtomic(manifestFile, manifest);
   let verifier = verifyBacktestManifest(manifest, APP_DIR);
   if (lifecycleGate) {
     manifest.status = 'COMPLETE';
-    await writeJson(manifestFile, manifest);
+    await writeJsonAtomic(manifestFile, manifest);
     verifier = verifyBacktestManifest(manifest, APP_DIR);
     if (!verifier.complete) {
       manifest.status = 'M4-INCOMPLETE';
-      await writeJson(manifestFile, manifest);
+      await writeJsonAtomic(manifestFile, manifest);
       verifier = verifyBacktestManifest(manifest, APP_DIR);
     }
   }
   const quality = qualityReport(manifest, verifier, {currentSymbols, sourceIndex, root});
-  await writeJson(path.join(root, 'quality-report.json'), quality);
-  await writeJson(path.join(root, 'snapshot-end.json'), {snapshotEnd: manifest.snapshotTimestamp, start: manifest.universe.backtestStart});
+  await writeJsonAtomic(path.join(root, 'quality-report.json'), quality);
+  await writeJsonAtomic(path.join(root, 'snapshot-end.json'), {snapshotEnd: manifest.snapshotTimestamp, start: manifest.universe.backtestStart});
   console.log(JSON.stringify({
     manifest: path.relative(APP_DIR, manifestFile).replaceAll('\\', '/'),
     quality: path.relative(APP_DIR, path.join(root, 'quality-report.json')).replaceAll('\\', '/'),
