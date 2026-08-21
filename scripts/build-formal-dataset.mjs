@@ -467,7 +467,7 @@ function parseArgs(argv = process.argv.slice(2)) {
   if (!(result.end > result.start)) throw new Error('snapshot-end must be after start');
   if (new Date(result.start).getUTCDate() !== 1 || new Date(result.start).getUTCHours() !== 0) throw new Error('Formal dataset start must be a UTC month boundary');
   if (new Date(result.end).getUTCDate() !== 1 || new Date(result.end).getUTCHours() !== 0) throw new Error('Formal dataset snapshot-end must be a UTC month boundary');
-  if (!Number.isInteger(result.concurrency) || result.concurrency < 1 || result.concurrency > 8) throw new Error('--concurrency must be an integer from 1 to 8');
+  if (!Number.isInteger(result.concurrency) || result.concurrency < 1 || result.concurrency > 32) throw new Error('--concurrency must be an integer from 1 to 32');
   if (!Number.isFinite(result.maxSymbols) || result.maxSymbols < 1) result.maxSymbols = null;
   return result;
 }
