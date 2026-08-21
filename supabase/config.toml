@@ -3,3 +3,8 @@
 # the custom token check before any service-role query.
 [functions.teleeg-reviews]
 verify_jwt = false
+
+# pg_cron sends the worker's x-teleeg-token rather than a Supabase JWT. The
+# worker performs its own SHA-256 token check before dispatching any action.
+[functions.teleeg-worker]
+verify_jwt = false

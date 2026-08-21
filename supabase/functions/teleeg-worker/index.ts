@@ -10,7 +10,9 @@ import {
   rankCandidates,
   recalculateFilledRisk,
 } from './strategy.mjs';
-import {createFunnel, summarizeFunnel} from './funnel.mjs';
+import {compactFunnelSummary, createFunnel, summarizeFunnel} from './funnel.mjs';
+import {classifyFinalizeFailure} from './finalize.mjs';
+import {authorizeWorkerToken} from './auth.mjs';
 import {V8_SHADOW_VERSION, generateV8ShadowCandidates, rankV8ShadowCandidates} from './v8-shadow.mjs';
 import {allocateResearchRisk} from './risk.mjs';
 
@@ -57,17 +59,12 @@ async function rpc(name: string, body: Record<string, unknown> = {}) {
   return db(`rpc/${name}`, {method: 'POST', body});
 }
 
-async function sha256(value: string) {
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
-}
-
 async function authorized(req: Request) {
   const supplied = req.headers.get('x-teleeg-token') ?? '';
   if (!supplied) return false;
   const rows = await db('teleeg_account?select=cron_token_hash&id=eq.1');
   const expected = rows?.[0]?.cron_token_hash;
-  return typeof expected === 'string' && expected.length === 64 && await sha256(supplied) === expected;
+  return await authorizeWorkerToken(supplied, expected);
 }
 
 async function binance(path: string, parameters: Record<string, string | number> = {}, attempts = 3) {
@@ -396,6 +393,35 @@ async function runScan(now: number, cycle: number, shard: number) {
   }
 }
 
+function finalizeContext(candidate: any) {
+  return {
+    family: candidate.family,
+    side: candidate.side,
+    regime: candidate.features?.btcRouter || 'unknown',
+    symbol: candidate.market_id,
+    tier: candidate.features?.core ? 'core' : 'expanded',
+  };
+}
+
+async function rejectFinalizeCandidate(candidate: any, reason: string, reasons: Record<string, number>, funnel: any) {
+  const context = finalizeContext(candidate);
+  reasons[reason] = (reasons[reason] ?? 0) + 1;
+  funnel.record({stage: 'accepted', passed: false, rejectionReason: reason, ...context});
+  try {
+    await db(`teleeg_candidates?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+      method: 'PATCH',
+      prefer: 'return=minimal',
+      body: {status: 'rejected', decision_reason: reason, decided_at: new Date().toISOString()},
+    });
+  } catch (error) {
+    if (reason !== 'database-error') {
+      reasons['database-error'] = (reasons['database-error'] ?? 0) + 1;
+      funnel.record({stage: 'accepted', passed: false, rejectionReason: 'database-error', ...context});
+    }
+    console.error('TeleEdge finalize candidate rejection could not be persisted', {signalId: candidate.signal_id, reason, error: String(error)});
+  }
+}
+
 async function runFinalize(now: number, cycle: number, v8Shadow: Record<string, unknown> | null = null) {
   const job = await startJob('finalize', cycle);
   if (job.skip) return {skipped: true, cycle: iso(cycle)};
@@ -418,11 +444,21 @@ async function runFinalize(now: number, cycle: number, v8Shadow: Record<string, 
     let accepted = 0;
     const reasons: Record<string, number> = {};
     for (const candidate of ranked) {
-      funnel.record({stage: 'ranked', passed: true, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
+      const context = finalizeContext(candidate);
+      funnel.record({stage: 'ranked', passed: true, ...context});
+      let ticker: any;
       try {
-        const ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
-        const fillPrice = Number(ticker?.price);
-        if (!(fillPrice > 0)) throw new Error('fill-price-unavailable');
+        ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
+      } catch (error) {
+        await rejectFinalizeCandidate(candidate, classifyFinalizeFailure(error, 'market-data'), reasons, funnel);
+        continue;
+      }
+      const fillPrice = Number(ticker?.price);
+      if (!(fillPrice > 0)) {
+        await rejectFinalizeCandidate(candidate, 'fill-price-unavailable', reasons, funnel);
+        continue;
+      }
+      try {
         await db(`teleeg_candidates?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
           method: 'PATCH',
           prefer: 'return=minimal',
@@ -432,28 +468,29 @@ async function runFinalize(now: number, cycle: number, v8Shadow: Record<string, 
             fill_price: fillPrice,
           },
         });
-        const result = await rpc('teleeg_accept_candidate', {p_signal_id: candidate.signal_id});
-        const decision = result ?? {accepted: false, reason: 'unknown'};
-        if (decision.accepted) {
-          accepted++;
-          funnel.record({stage: 'accepted', passed: true, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
-        } else {
-          reasons[decision.reason] = (reasons[decision.reason] ?? 0) + 1;
-          funnel.record({stage: 'accepted', passed: false, rejectionReason: decision.reason, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
-        }
       } catch (error) {
-        const reason = 'fill-price-unavailable';
-        reasons[reason] = (reasons[reason] ?? 0) + 1;
-        funnel.record({stage: 'accepted', passed: false, rejectionReason: reason, family: candidate.family, side: candidate.side, regime: candidate.features?.btcRouter || 'unknown', symbol: candidate.market_id, tier: candidate.features?.core ? 'core' : 'expanded'});
-        await db(`teleeg_candidates?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
-          method: 'PATCH',
-          prefer: 'return=minimal',
-          body: {status: 'rejected', decision_reason: reason, decided_at: new Date().toISOString()},
-        });
+        await rejectFinalizeCandidate(candidate, classifyFinalizeFailure(error, 'candidate-patch'), reasons, funnel);
+        continue;
+      }
+      let decision: any;
+      try {
+        const result = await rpc('teleeg_accept_candidate', {p_signal_id: candidate.signal_id});
+        if (!result || typeof result !== 'object') throw new Error('invalid acceptance RPC result');
+        decision = result;
+      } catch (error) {
+        await rejectFinalizeCandidate(candidate, classifyFinalizeFailure(error, 'acceptance-rpc'), reasons, funnel);
+        continue;
+      }
+      if (decision.accepted) {
+        accepted++;
+        funnel.record({stage: 'accepted', passed: true, ...context});
+      } else {
+        await rejectFinalizeCandidate(candidate, decision.reason || 'acceptance-rpc-error', reasons, funnel);
       }
     }
     const active = await db('teleeg_positions?select=signal_id&status=eq.open');
     const summary = {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons, funnel: summarizeFunnel(funnel), v8Shadow};
+    (summary as any).publicStatus = compactFunnelSummary(summary);
     await finishJob(job.id, 'ok', summary);
     return summary;
   } catch (error) {
@@ -480,11 +517,14 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
   const openPositions = await db('teleeg_v8_shadow_positions?select=market_id,side,risk_usdt,features&status=eq.open');
   const closedPositions = await db('teleeg_v8_shadow_positions?select=exit_time,net_r&status=eq.closed&order=exit_time.desc&limit=20');
   for (const candidate of ranked) {
+    let phase = 'strategy';
     try {
       if (openPositions.some((position: any) => position.market_id === candidate.market_id)) throw new Error('symbol-already-open');
+      phase = 'market-data';
       const ticker = await binance('/fapi/v1/ticker/price', {symbol: candidate.market_id});
       const fillPrice = Number(ticker?.price);
       if (!(fillPrice > 0)) throw new Error('fill-price-unavailable');
+      phase = 'strategy';
       const market = (await db(`teleeg_markets?select=tick_size&market_id=eq.${encodeURIComponent(candidate.market_id)}`))?.[0];
       const filledRisk = recalculateFilledRisk({
         side: candidate.side,
@@ -503,6 +543,7 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
         closedPositions,
       });
       if (!allocation.accepted) throw new Error(allocation.reason);
+      phase = 'position-write';
       await db('teleeg_v8_shadow_positions?on_conflict=signal_id', {
         method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal',
         body: {
@@ -534,6 +575,7 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
           features: {...(candidate.features ?? {}), riskAllocation: allocation},
         },
       });
+      phase = 'database-error';
       await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
         method: 'PATCH', prefer: 'return=minimal',
         body: {status: 'accepted', decision_reason: 'accepted', decided_at: new Date().toISOString()},
@@ -541,14 +583,17 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
       openPositions.push({market_id: candidate.market_id, side: candidate.side, risk_usdt: allocation.riskUsdt, features: candidate.features ?? {}});
       accepted++;
     } catch (error) {
-      const message = String(error);
-      const knownReasons = ['symbol-already-open', 'fill-price-unavailable', 'invalid-stop-distance', 'fill-stop-risk-out-of-bounds', 'fill-target-risk-too-low', 'portfolio-risk-cap', 'correlated-risk-cap', 'drawdown-stop', 'loss-streak-stop'];
-      const reason = knownReasons.find(item => message.includes(item)) ?? 'fill-price-unavailable';
+      const reason = classifyFinalizeFailure(error, phase);
       reasons[reason] = (reasons[reason] ?? 0) + 1;
-      await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
-        method: 'PATCH', prefer: 'return=minimal',
-        body: {status: 'rejected', decision_reason: reason, decided_at: new Date().toISOString()},
-      });
+      try {
+        await db(`teleeg_v8_shadow_signals?signal_id=eq.${encodeURIComponent(candidate.signal_id)}&status=eq.pending`, {
+          method: 'PATCH', prefer: 'return=minimal',
+          body: {status: 'rejected', decision_reason: reason, decided_at: new Date().toISOString()},
+        });
+      } catch (persistenceError) {
+        reasons['database-error'] = (reasons['database-error'] ?? 0) + 1;
+        console.error('TeleEdge V8 finalize rejection could not be persisted', {signalId: candidate.signal_id, reason, error: String(persistenceError)});
+      }
     }
   }
   const active = await db('teleeg_v8_shadow_positions?select=signal_id&status=eq.open');
@@ -759,9 +804,10 @@ async function runMail(now: number, workerToken: string) {
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return response({error: 'method-not-allowed'}, 405);
+  const workerToken = req.headers.get('x-teleeg-token') ?? '';
+  if (!workerToken) return response({error: 'unauthorized'}, 401);
   if (!SUPABASE_URL || !ADMIN_KEY) return response({error: 'Supabase runtime secrets are unavailable'}, 500);
   try {
-    const workerToken = req.headers.get('x-teleeg-token') ?? '';
     if (!await authorized(req)) return response({error: 'unauthorized'}, 401);
     const input = await req.json().catch(() => ({}));
     const action = input.action;

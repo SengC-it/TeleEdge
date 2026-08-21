@@ -18,9 +18,13 @@ USD-M USDT perpetual universe and never submits exchange orders.
 
 Supabase runs a market-context job every four hours, scans 12 staggered
 full-universe shards, globally ranks the completed cycle, and monitors open
-positions every minute. A Vault-held token authenticates database cron calls
-to the Edge Function. Vercel only holds a public Supabase key and can read one
-RLS-protected status row; it has no database administrator key.
+positions every minute. A Vault-held `x-teleeg-token` authenticates database
+cron calls to `teleeg-worker`; this function keeps its custom SHA-256 check and
+does not depend on a Supabase JWT. Both `teleeg-worker` and `teleeg-reviews`
+set `verify_jwt = false` because their callers use separate server-to-server
+tokens, and each function validates its own token before privileged work.
+Vercel only holds a public Supabase key and can read one RLS-protected status
+row; it has no database administrator key.
 
 ## Frozen rules
 
@@ -40,6 +44,7 @@ RLS-protected status row; it has no database administrator key.
 - `supabase/functions/teleeg-worker/`: cloud strategy and worker.
 - `supabase/functions/teleeg-reviews/`: authenticated server-to-server review
   history endpoint.
+- `docs/DEPLOYMENT.md`: Edge Function auth and pre-deployment contract.
 - `index.html`, `api/status.mjs`: Vercel status dashboard.
 - `src/`: original local paper daemon retained for diagnostics.
 
@@ -70,8 +75,11 @@ locations:
 - Supabase Edge Function secret: `TELEEDGE_REVIEWS_TOKEN`
 
 Do not use a `NEXT_PUBLIC_` variable, put the token in a fixture, or commit the
-value. `supabase/config.toml` sets `verify_jwt = false` only for this function;
-the custom token check runs before any service-role query.
+value. `supabase/config.toml` sets `verify_jwt = false` for both server-to-server
+functions: `teleeg-reviews` validates `TELEEDGE_REVIEWS_TOKEN`, while
+`teleeg-worker` validates the hashed cron `x-teleeg-token`. These tokens are
+independent and must never be mixed; each custom check runs before any
+service-role query or worker action.
 
 Messages use `smtp.gmail.com:465` and display the sender as
 `TeleEdge <GMAIL_USER>`. Entry and settlement emails use plain Chinese wording

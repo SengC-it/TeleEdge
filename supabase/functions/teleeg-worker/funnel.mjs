@@ -39,3 +39,24 @@ function recordFunnel(funnel, event) {
 export function summarizeFunnel(funnel) {
   return {stages: funnel?.stages || stages(), byDimension: funnel?.byDimension || {}, rejectionReasons: funnel?.rejectionReasons || {}};
 }
+
+export function compactFunnelSummary(summary, maxRejectionReasons = 8) {
+  const funnel = summary?.funnel ?? summary ?? {};
+  const topRejectionReasons = Object.entries(funnel.rejectionReasons ?? {})
+    .map(([reason, count]) => ({reason, count: Number(count) || 0}))
+    .sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason))
+    .slice(0, maxRejectionReasons);
+  const v8 = summary?.v8Shadow ?? {};
+  return {
+    stages: funnel.stages ?? stages(),
+    topRejectionReasons,
+    candidateCount: Number(summary?.candidates ?? 0),
+    acceptedCount: Number(summary?.accepted ?? 0),
+    v8Shadow: {
+      candidates: Number(v8.candidates ?? 0),
+      accepted: Number(v8.accepted ?? 0),
+      rejected: Number(v8.rejected ?? 0),
+      errors: Number(v8.errors ?? 0),
+    },
+  };
+}

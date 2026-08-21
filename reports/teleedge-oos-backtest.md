@@ -6,27 +6,29 @@
 
 | 模型 | Trades | Signals/月 | Win rate | Net expectancy (R) | Profit factor | Max drawdown | Funding PnL | Modeled costs |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| V7.5 Control | 15 | 3.750 | 40.0% | 0.150 | 1.237 | 3.1% | -29.42 | 15.92 |
-| V8 Shadow | 20 | 2.228 | 50.0% | 0.459 | 1.876 | 2.4% | -17.34 | 14.78 |
+| V7.5 Control | 15 | 3.750 | 40.0% | 0.148 | 1.235 | 3.1% | -30.77 | 15.46 |
+| V8 Shadow | 19 | 2.228 | 52.6% | 0.536 | 2.074 | 2.2% | -15.05 | 13.76 |
 
-V8 − V7.5 OOS expectancy: **0.310 R**；profit factor delta: **0.639**；max drawdown delta: **-0.8 pp**。
+V8 − V7.5 OOS expectancy: **0.387 R**；profit factor delta: **0.839**；max drawdown delta: **-0.9 pp**。
 
 ## Walk-forward folds
 
 | Fold | Model | Trades | Net expectancy (R) | Profit factor | Max drawdown |
 |---|---|---:|---:|---:|---:|
-| 2025 | V7.5 Control | 15 | 0.150 | 1.237 | 3.1% |
+| 2025 | V7.5 Control | 15 | 0.148 | 1.235 | 3.1% |
 | 2026-H1 | V7.5 Control | 0 | — | — | 0.0% |
-| 2025 | V8 Shadow | 16 | 0.077 | 1.117 | 2.4% |
+| 2025 | V8 Shadow | 15 | 0.148 | 1.235 | 2.2% |
 | 2026-H1 | V8 Shadow | 4 | 1.989 | — | 0.0% |
 
 ## 设计与限制
 
-- 信号只读取 scan time 之前的完整 1h 数据；成交使用 signal 后第一根 1h 的开盘价，禁止使用 signal close 作为成交价。
+- Scan cadence: 4h UTC windows；signal 后固定 20 分钟进入 decision，再取 decision_time 之后的可执行价格，禁止使用 signal close。
+- Execution interval: 1h；executionProxy=true。正式数据缺少 1m 时不静默回退，只有显式 smoke proxy 才使用 1h。
 - SL/TP 在完整 1h bar 上结算，若同一 bar 同时触发，SL 优先；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。
 - V7.5 使用冻结 0.6% 风险；V8 使用独立 research allocator（edge/liquidity/volatility/portfolio correlation/drawdown/loss streak）。
 - 当前样本为 5 个币种、282780 根 1h 价格记录和 35415 条资金费记录；这不是完整 V7.5 Control OOS。
-- 生产策略 Alpha 覆盖要求：daily breakout long、funding crowding short、volume shock short、V8 bear trend short；本报告的固定样本没有完成 expanded/non-core universe 和 point-in-time universe 验证。
+- requiredAlphaCoverage: daily_breakout_long, funding_crowding_short, volume_shock_short, v8_bear_trend_short。observedAlphaCoverage（由实际 signals/trades 动态计算）：daily_breakout_long, v8_bear_trend_short, v8_daily_breakout_long。
+- 固定五币种样本没有完成 expanded/non-core universe 和 point-in-time universe 验证；未观察到的 Alpha 不得称为已测试。
 - 当前 exchangeInfo 快照无法证明没有历史退市 survivorship bias，结果不应外推到全市场。
 - M4 INCOMPLETE：OOS 样本量不足（任一模型少于 30 笔），因此不报告统计显著的盈利或 V8 优越性结论。
 

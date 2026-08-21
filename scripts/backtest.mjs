@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
-import {APP_DIR, CORE_MARKETS, DAY, H1, modelConfig, v8ShadowConfig, WORKSPACE_DIR} from '../src/config.mjs';
+import {APP_DIR, CORE_MARKETS, DAY, H1, H4, modelConfig, v8ShadowConfig, WORKSPACE_DIR} from '../src/config.mjs';
 import {aggregate} from '../src/indicators.mjs';
 import {buildBreadth, buildBtcEnvironment, generateLatestCandidates} from '../src/strategy.mjs';
 import {generateV8ShadowCandidates} from '../src/v8-shadow.mjs';
@@ -14,6 +14,13 @@ import {accrueFunding, calculateMetrics, cohortMetrics, priceAtOrBefore, settleO
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
 const SNAPSHOT_END = Date.parse('2026-07-15T00:00:00.000Z');
 const INITIAL_EQUITY = 10_000;
+const DECISION_LATENCY_MS = 20 * 60_000;
+export const REQUIRED_ALPHA_COVERAGE = Object.freeze([
+  'daily_breakout_long',
+  'funding_crowding_short',
+  'volume_shock_short',
+  'v8_bear_trend_short',
+]);
 
 function cliValue(name, fallback = null) {
   const index = process.argv.indexOf(name);
@@ -106,9 +113,11 @@ function marketFor(symbol, exchange) {
   };
 }
 
-function makeScanTimes(start, end, stepDays) {
-  const first = Math.ceil(start / DAY) * DAY;
-  const step = Math.max(1, Math.round(stepDays)) * DAY;
+export function makeScanTimes(start, end, intervalHours = 4) {
+  const hours = Number(intervalHours);
+  if (!Number.isFinite(hours) || hours <= 0) throw new Error('scan interval must be a positive number of hours');
+  const step = Math.max(1, Math.round(hours)) * H1;
+  const first = Math.ceil(start / step) * step;
   const output = [];
   for (let t = first; t < end; t += step) output.push(t);
   return output;
@@ -121,7 +130,7 @@ function signalEvent(candidate, model) {
     marketId: candidate.marketId,
     side: candidate.side,
     family: candidate.family,
-    alpha: candidate.alpha || (model === 'V7.5' ? 'control' : 'unknown'),
+    alpha: candidate.alpha || 'unknown',
     btcRouter: candidate.btcRouter || 'unknown',
     edgeScore: candidate.edgeScore,
   };
@@ -145,6 +154,13 @@ function createModel(name, v8 = false) {
 
 function recordReject(model, reason) {
   model.rejectionReasons[reason] = (model.rejectionReasons[reason] || 0) + 1;
+}
+
+export function observedAlphaCoverage(model) {
+  return [...new Set([
+    ...model.signalEvents.map(event => event.alpha),
+    ...model.trades.map(trade => trade.alpha),
+  ].filter(alpha => typeof alpha === 'string' && alpha.length > 0))].sort();
 }
 
 function settleOpen(model, dataBySymbol, now, costRate) {
@@ -171,10 +187,36 @@ function settleOpen(model, dataBySymbol, now, costRate) {
   model.open = kept;
 }
 
-function createPosition(model, candidate, data, scanTime) {
-  const fillBar = nextBar(data.h1, candidate.t);
-  if (!fillBar || fillBar.t >= SNAPSHOT_END) return {reason: 'fill-price-unavailable'};
-  const fillPrice = Number(fillBar.o);
+export function resolveExecution(data, candidate, executionProxy = false, endTime = SNAPSHOT_END) {
+  const decisionTime = candidate.t + DECISION_LATENCY_MS;
+  const minuteBar = nextBar(data.m1, decisionTime);
+  if (minuteBar && minuteBar.t < endTime) {
+    return {
+      accepted: true,
+      decisionTime,
+      fillTime: minuteBar.t,
+      fillPrice: Number(minuteBar.o),
+      interval: '1m',
+      executionProxy: false,
+    };
+  }
+  if (!executionProxy) return {accepted: false, reason: 'execution-data-unavailable', decisionTime};
+  const proxyBar = nextBar(data.h1, decisionTime);
+  if (!proxyBar || proxyBar.t >= endTime) return {accepted: false, reason: 'fill-price-unavailable', decisionTime};
+  return {
+    accepted: true,
+    decisionTime,
+    fillTime: proxyBar.t,
+    fillPrice: Number(proxyBar.o),
+    interval: '1h',
+    executionProxy: true,
+  };
+}
+
+function createPosition(model, candidate, data, {executionProxy = false, endTime = SNAPSHOT_END} = {}) {
+  const execution = resolveExecution(data, candidate, executionProxy, endTime);
+  if (!execution.accepted || !(execution.fillPrice > 0)) return {reason: execution.reason || 'fill-price-unavailable'};
+  const fillPrice = execution.fillPrice;
   const filledRisk = recalculateFilledRisk({
     side: candidate.side,
     family: candidate.family,
@@ -215,8 +257,8 @@ function createPosition(model, candidate, data, scanTime) {
       route: candidate.route,
       signalTime: candidate.t,
       signalPrice: candidate.signalPrice ?? candidate.entry,
-      decisionTime: scanTime,
-      fillTime: fillBar.t,
+      decisionTime: execution.decisionTime,
+      fillTime: execution.fillTime,
       fillPrice: filledRisk.fillPrice,
       entry: filledRisk.fillPrice,
       stop: filledRisk.stop,
@@ -228,16 +270,22 @@ function createPosition(model, candidate, data, scanTime) {
       notionalUsdt: filledRisk.fillPrice * quantity,
       riskUsdt: allocation.riskUsdt,
       fundingPnlUsdt: 0,
-      lastFundingTime: fillBar.t,
-      lastCheckedAt: fillBar.t,
+      lastFundingTime: execution.fillTime,
+      lastCheckedAt: execution.fillTime,
       btcRouter: candidate.btcRouter,
-      features: {...candidate.features, btcRouter: candidate.btcRouter, riskAllocation: allocation},
+      features: {
+        ...candidate.features,
+        btcRouter: candidate.btcRouter,
+        riskAllocation: allocation,
+        executionProxy: execution.executionProxy,
+        executionInterval: execution.interval,
+      },
     },
     allocation,
   };
 }
 
-function processCandidates(model, candidates, dataBySymbol, scanTime) {
+function processCandidates(model, candidates, dataBySymbol, {executionProxy = false, endTime = SNAPSHOT_END} = {}) {
   const unseen = candidates.filter(candidate => !model.knownSignalIds.has(candidate.id));
   model.signalEvents.push(...unseen.map(candidate => signalEvent(candidate, model.name)));
   const ranked = rankCandidates(unseen);
@@ -249,7 +297,7 @@ function processCandidates(model, candidates, dataBySymbol, scanTime) {
     else if (model.open.length >= cap) reason = 'portfolio-cap';
     else if (model.open.filter(position => position.side === candidate.side).length >= maxPerSide) reason = 'side-cap';
     const data = dataBySymbol.get(candidate.marketId);
-    const created = !reason && data ? createPosition(model, candidate, data, scanTime) : null;
+    const created = !reason && data ? createPosition(model, candidate, data, {executionProxy, endTime}) : null;
     if (!reason && !created?.position) reason = created?.reason || 'market-data-unavailable';
     if (reason) {
       recordReject(model, reason);
@@ -316,6 +364,7 @@ function modelReport(model, start, end) {
     acceptedSignals: model.acceptedSignals,
     rejectionReasons: model.rejectionReasons,
     openAtEnd: model.open.length,
+    observedAlphaCoverage: observedAlphaCoverage(model),
   };
 }
 
@@ -342,22 +391,25 @@ function markdownReport(report) {
     `V8 − V7.5 OOS expectancy: **${markdownMetric(comparison.netExpectancyRDelta)} R**；profit factor delta: **${markdownMetric(comparison.profitFactorDelta)}**；max drawdown delta: **${markdownMetric(comparison.maxDrawdownPctDelta * 100, 1)} pp**。\n\n` +
     `## Walk-forward folds\n\n| Fold | Model | Trades | Net expectancy (R) | Profit factor | Max drawdown |\n|---|---|---:|---:|---:|---:|\n${walkForwardRows}\n\n` +
     `## 设计与限制\n\n` +
-    `- 信号只读取 scan time 之前的完整 1h 数据；成交使用 signal 后第一根 1h 的开盘价，禁止使用 signal close 作为成交价。\n` +
+    `- Scan cadence: ${report.methodology.scanCadence}；signal 后固定 20 分钟进入 decision，再取 decision_time 之后的可执行价格，禁止使用 signal close。\n` +
+    `- Execution interval: ${report.data.executionInterval}；executionProxy=${report.data.executionProxy}。正式数据缺少 1m 时不静默回退，只有显式 smoke proxy 才使用 1h。\n` +
     `- SL/TP 在完整 1h bar 上结算，若同一 bar 同时触发，SL 优先；资金费使用历史事件，缺少 mark price 时回退到事件前最近 1h close。\n` +
     `- V7.5 使用冻结 0.6% 风险；V8 使用独立 research allocator（edge/liquidity/volatility/portfolio correlation/drawdown/loss streak）。\n` +
     `- 当前样本为 ${report.data.symbols.length} 个币种、${report.data.sampleSize.priceRows} 根 1h 价格记录和 ${report.data.sampleSize.fundingRows} 条资金费记录；这不是完整 V7.5 Control OOS。\n` +
-    `- 生产策略 Alpha 覆盖要求：daily breakout long、funding crowding short、volume shock short、V8 bear trend short；本报告的固定样本没有完成 expanded/non-core universe 和 point-in-time universe 验证。\n` +
+    `- requiredAlphaCoverage: ${report.data.requiredAlphaCoverage.join(', ')}。observedAlphaCoverage（由实际 signals/trades 动态计算）：${report.data.observedAlphaCoverage.length ? report.data.observedAlphaCoverage.join(', ') : 'none'}。\n` +
+    `- 固定五币种样本没有完成 expanded/non-core universe 和 point-in-time universe 验证；未观察到的 Alpha 不得称为已测试。\n` +
     `- 当前 exchangeInfo 快照无法证明没有历史退市 survivorship bias，结果不应外推到全市场。\n` +
     `- ${report.conclusion}\n\n` +
     `## Splits\n\n` +
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, stepDays = 1, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'smoke', allowExternalCache = false, dataRoot: requestedDataRoot = null} = {}) {
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, dataRoot: requestedDataRoot = null} = {}) {
   const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
   const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
   const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
   const fundingDir = legacyLayout ? path.join(dataRoot, 'v38_funding_cache') : path.join(dataRoot, 'funding');
+  const minuteDir = legacyLayout ? path.join(dataRoot, 'v60_full_universe_cache', 'minute') : path.join(dataRoot, 'minute');
   const exchange = exchangeMarkets(dataRoot, legacyLayout);
   const manifestFile = legacyLayout ? path.join(APP_DIR, 'data', 'backtest-manifest.json') : path.join(dataRoot, 'manifest.json');
   const manifest = fs.existsSync(manifestFile) ? JSON.parse(fs.readFileSync(manifestFile, 'utf8')) : null;
@@ -366,17 +418,18 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   for (const symbol of symbols) {
     const h1 = loadRows(priceDir, symbol);
     const funding = loadRows(fundingDir, symbol, true);
+    const m1 = loadRows(minuteDir, symbol);
     if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
     const daily = aggregate(h1.filter(row => row.t + H1 <= end), DAY, end);
-    const bars4h = aggregate(h1.filter(row => row.t + H1 <= end), 4 * H1, end);
-    dataBySymbol.set(symbol, {market: marketFor(symbol, exchange), h1, funding, daily, bars4h});
+    const bars4h = aggregate(h1.filter(row => row.t + H1 <= end), H4, end);
+    dataBySymbol.set(symbol, {market: marketFor(symbol, exchange), h1, m1, funding, daily, bars4h});
   }
   const available = [...dataBySymbol].filter(([, data]) => data.h1.length && data.funding.length);
   if (!available.length) throw new Error(`No backtest data under ${dataRoot}. Run npm run backtest:fetch or explicitly use npm run backtest:smoke for the legacy external cache.`);
   const dailyByMarket = new Map(available.map(([symbol, data]) => [symbol, data.daily]));
   const breadthByTime = buildBreadth(dailyByMarket);
   const btcEnvironment = buildBtcEnvironment(dailyByMarket.get('BTCUSDT') || []);
-  const scanTimes = makeScanTimes(start, end, stepDays);
+  const scanTimes = makeScanTimes(start, end, scanIntervalHours);
   const control = createModel('V7.5 Control');
   const shadow = createModel('V8 Shadow', true);
   for (const scanTime of scanTimes) {
@@ -391,8 +444,8 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       const args = {market: data.market, h1, daily, bars4h, funding, breadthByTime, btcEnvironment, endTime: scanTime};
       const controlCandidates = generateLatestCandidates(args).filter(candidate => candidate.t === scanTime);
       const shadowCandidates = generateV8ShadowCandidates(args).filter(candidate => candidate.t === scanTime);
-      processCandidates(control, controlCandidates, dataBySymbol, scanTime);
-      processCandidates(shadow, shadowCandidates, dataBySymbol, scanTime);
+      processCandidates(control, controlCandidates, dataBySymbol, {executionProxy, endTime: end});
+      processCandidates(shadow, shadowCandidates, dataBySymbol, {executionProxy, endTime: end});
     }
   }
   closeAtEnd(control, dataBySymbol, end, modelConfig.stressRoundTripCost);
@@ -400,6 +453,20 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const models = [modelReport(control, start, end), modelReport(shadow, start, end)];
   const controlOos = models[0].splits.oos;
   const shadowOos = models[1].splits.oos;
+  const observedAlphaCoverage = [...new Set(models.flatMap(model => model.observedAlphaCoverage))].sort();
+  const symbolsWithOneMinute = available.filter(([, data]) => data.m1.length > 0).length;
+  const oneMinuteRows = available.reduce((sum, [, data]) => sum + data.m1.length, 0);
+  const hasCompleteOneMinuteExecution = available.length > 0 && symbolsWithOneMinute === available.length;
+  const executionInterval = hasCompleteOneMinuteExecution ? '1m' : executionProxy ? '1h' : 'unavailable';
+  const m4Reasons = [
+    'point_in_time_universe_required',
+    'historical_delisting_survivorship_handling_required',
+    'expanded_non_core_universe_required',
+    'sufficient_oos_sample_required',
+    ...(hasCompleteOneMinuteExecution ? [] : ['one_minute_execution_data_missing']),
+    ...(executionProxy ? ['execution_proxy_used'] : []),
+    ...(Math.round(Number(scanIntervalHours)) === 4 ? [] : ['production_scan_cadence_is_4h']),
+  ];
   const comparison = {
     netExpectancyRDelta: (shadowOos.netExpectancyR ?? 0) - (controlOos.netExpectancyR ?? 0),
     profitFactorDelta: (shadowOos.profitFactor ?? 0) - (controlOos.profitFactor ?? 0),
@@ -429,23 +496,34 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       sampleSize: {
         priceRows: available.reduce((sum, [, data]) => sum + data.h1.length, 0),
         fundingRows: available.reduce((sum, [, data]) => sum + data.funding.length, 0),
+        oneMinuteRows,
         symbolsWithBothFeeds: available.length,
+        symbolsWithOneMinute,
       },
-      alphaCoverage: ['daily_breakout_long', 'funding_crowding_short', 'volume_shock_short', 'v8_bear_trend_short'],
+      requiredAlphaCoverage: REQUIRED_ALPHA_COVERAGE,
+      observedAlphaCoverage,
+      executionProxy,
+      executionInterval,
+      decisionLatencyMinutes: DECISION_LATENCY_MS / 60_000,
+      m4Reasons,
       survivorshipWarning: 'Current snapshot exchangeInfo does not contain historical delistings; this is not a full-universe survivorship-free result.',
     },
     methodology: {
-      scanCadence: `${stepDays}d at UTC day boundary`,
+      scanCadence: `${scanIntervalHours}h UTC windows`,
       train: ['2021-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z'],
       validation: ['2024-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z'],
       walkForwardOos: ['2025-01-01T00:00:00.000Z', new Date(end).toISOString()],
       signalCohort: 'signalTime',
-      fill: 'first 1h bar at or after signal time, open price',
+      executionLatency: 'decision_time = signal_time + 20 minutes; fill_time >= decision_time',
+      fill: hasCompleteOneMinuteExecution ? 'first 1m bar at or after decision time, open price' : executionProxy ? 'explicit smoke-only 1h proxy at or after decision time, open price' : 'unavailable without 1m execution data',
+      executionInterval,
+      executionProxy,
       settlement: 'completed 1h bars; SL priority on same bar',
       funding: 'historical funding rows; markPrice fallback to prior completed 1h close',
       costRate: modelConfig.stressRoundTripCost,
       lookaheadGuards: ['completed h1 slice', 'next-bar open fill', 'completed-bar-only settlement', 'no OOS parameter tuning'],
-      alphaCoverage: ['daily_breakout_long', 'funding_crowding_short', 'volume_shock_short', 'v8_bear_trend_short'],
+      requiredAlphaCoverage: REQUIRED_ALPHA_COVERAGE,
+      observedAlphaCoverage,
     },
     models,
     comparison,
@@ -465,12 +543,14 @@ if (process.argv[1]?.replaceAll('\\', '/').endsWith('/scripts/backtest.mjs')) {
   const start = dateValue(cliValue('--start', process.env.BACKTEST_START), Date.parse('2021-01-01T00:00:00Z'));
   const requestedEnd = dateValue(cliValue('--end', process.env.BACKTEST_END), SNAPSHOT_END);
   const end = Math.min(requestedEnd, SNAPSHOT_END);
-  const stepDays = Number(cliValue('--step-days', process.env.BACKTEST_STEP_DAYS || 1));
+  const scanIntervalHours = Number(cliValue('--scan-interval-hours', process.env.BACKTEST_SCAN_INTERVAL_HOURS || 4));
   const output = cliValue('--output', path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'));
-  const mode = cliValue('--mode', process.env.BACKTEST_MODE || 'smoke');
+  const mode = cliValue('--mode', process.env.BACKTEST_MODE || 'formal');
   const allowExternalCache = process.argv.includes('--allow-external-cache');
+  const executionProxy = process.argv.includes('--execution-proxy');
+  if (executionProxy && mode !== 'smoke') throw new Error('--execution-proxy is allowed only with --mode smoke');
   const dataRoot = cliValue('--data-root', process.env.BACKTEST_DATA_ROOT || null);
-  const report = await runBacktest({symbols, start, end, stepDays, outputBase: output, mode, allowExternalCache, dataRoot});
+  const report = await runBacktest({symbols, start, end, scanIntervalHours, outputBase: output, mode, executionProxy, allowExternalCache, dataRoot});
   for (const model of report.models) {
     const oos = model.splits.oos;
     console.log(`${model.model}: trades=${oos.trades} expectancyR=${oos.netExpectancyR ?? 'n/a'} PF=${oos.profitFactor ?? 'n/a'} MDD=${oos.maxDrawdownPct ?? 'n/a'}`);

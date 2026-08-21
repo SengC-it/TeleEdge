@@ -47,7 +47,9 @@ function mapControlCandidate(candidate, alpha) {
     ...candidate,
     id: `V8|${alpha}|${candidate.id}`,
     modelVersion: v8ShadowConfig.version,
-    alpha,
+    alpha: alpha === 'bull'
+      ? 'v8_daily_breakout_long'
+      : `v8_${candidate.alpha || (candidate.family === 'fundingCrowdingReversal' ? 'funding_crowding_short' : 'volume_shock_short')}`,
     family,
     route: `v8_${alpha}`,
     edgeSegment: `v8-${candidate.edgeSegment}`,
@@ -77,7 +79,7 @@ function bearTrendCandidate({market, h1, daily: providedDaily, funding, breadthB
   return {
     id: `V8|bear|${market.symbol}|${t}`,
     modelVersion: v8ShadowConfig.version,
-    alpha: 'bear',
+    alpha: 'v8_bear_trend_short',
     marketId: market.symbol,
     symbol: market.baseAsset,
     core: true,
@@ -96,7 +98,7 @@ function bearTrendCandidate({market, h1, daily: providedDaily, funding, breadthB
     eventScore: Math.abs(bar.c / daily[i - v8ShadowConfig.bear.lookback].c - 1) * 100,
     dayVolume: bar.q,
     ...context,
-    features: {...context, alpha: 'bear', breakoutLookback: v8ShadowConfig.bear.lookback},
+    features: {...context, alpha: 'v8_bear_trend_short', breakoutLookback: v8ShadowConfig.bear.lookback},
   };
 }
 

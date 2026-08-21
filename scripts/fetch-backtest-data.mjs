@@ -62,6 +62,7 @@ const start = dateValue(cliValue('--start', '2021-01-01T00:00:00Z'), Date.parse(
 const end = dateValue(cliValue('--end', '2026-07-15T00:00:00Z'), Date.parse('2026-07-15T00:00:00Z'));
 const symbols = (cliValue('--symbols', DEFAULT_SYMBOLS.join(',')) || '')
   .split(',').map(value => value.trim().toUpperCase()).filter(Boolean);
+const includeOneMinute = process.argv.includes('--include-1m') || process.env.BACKTEST_INCLUDE_1M === '1';
 if (!(end > start) || !symbols.length) throw new Error('Use a positive --start/--end range and at least one --symbols value');
 
 const exchangeInfo = await fetchJson('https://fapi.binance.com/fapi/v1/exchangeInfo');
@@ -85,7 +86,14 @@ for (const symbol of symbols) {
   ]);
   artifacts.push({...writeArtifact(path.join(DATA_DIR, 'price'), symbol, price), kind: 'price', symbol});
   artifacts.push({...writeArtifact(path.join(DATA_DIR, 'funding'), symbol, funding), kind: 'funding', symbol});
-  console.log(`${symbol}: price=${price.length} funding=${funding.length}`);
+  let minute = [];
+  if (includeOneMinute) {
+    minute = await fetchPaged('/fapi/v1/klines', {symbol, interval: '1m', startTime: start, endTime: end}, {
+      mapRow: row => ({t: Number(row[0]), o: Number(row[1]), h: Number(row[2]), l: Number(row[3]), c: Number(row[4]), q: Number(row[7])}),
+    });
+    artifacts.push({...writeArtifact(path.join(DATA_DIR, 'minute'), symbol, minute), kind: 'minute', symbol});
+  }
+  console.log(`${symbol}: price=${price.length} funding=${funding.length} minute=${minute.length}`);
 }
 
 const manifest = {
@@ -103,6 +111,12 @@ const manifest = {
     note: 'Current exchangeInfo cannot reconstruct symbols that delisted before the snapshot. Supply dated exchangeInfo snapshots before declaring M4 complete.',
   },
   requiredAlphaCoverage: ['daily_breakout_long', 'funding_crowding_short', 'volume_shock_short', 'v8_bear_trend_short'],
+  execution: {
+    decisionLatencyMinutes: 20,
+    preferredInterval: '1m',
+    oneMinuteAvailable: includeOneMinute,
+    executionProxyAllowedOnlyInSmoke: true,
+  },
   sources: {
     price: {provider: 'Binance USD-M Futures REST API', endpoint: 'https://fapi.binance.com/fapi/v1/klines', interval: '1h'},
     funding: {provider: 'Binance USD-M Futures REST API', endpoint: 'https://fapi.binance.com/fapi/v1/fundingRate'},

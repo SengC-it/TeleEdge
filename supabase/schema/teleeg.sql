@@ -290,6 +290,36 @@ insert into public.teleeg_public_status (
   from public.teleeg_account where id = 1
 on conflict (id) do nothing;
 
+create or replace function public.teleeg_compact_scan_summary(p_summary jsonb)
+returns jsonb
+language sql
+stable
+set search_path = public, pg_catalog
+as $$
+  with reason_rows as (
+    select key as reason, (value #>> '{}')::integer as count
+    from jsonb_each(coalesce(p_summary->'funnel'->'rejectionReasons', '{}'::jsonb))
+    order by (value #>> '{}')::integer desc, key
+    limit 8
+  )
+  select jsonb_build_object(
+    'stages', coalesce(p_summary->'funnel'->'stages', '{}'::jsonb),
+    'topRejectionReasons', coalesce(
+      (select jsonb_agg(jsonb_build_object('reason', reason, 'count', count) order by count desc, reason)
+       from reason_rows),
+      '[]'::jsonb
+    ),
+    'candidateCount', coalesce(p_summary->'candidates', '0'::jsonb),
+    'acceptedCount', coalesce(p_summary->'accepted', '0'::jsonb),
+    'v8Shadow', jsonb_build_object(
+      'candidates', coalesce(p_summary->'v8Shadow'->'candidates', '0'::jsonb),
+      'accepted', coalesce(p_summary->'v8Shadow'->'accepted', '0'::jsonb),
+      'rejected', coalesce(p_summary->'v8Shadow'->'rejected', '0'::jsonb),
+      'errors', coalesce(p_summary->'v8Shadow'->'errors', '0'::jsonb)
+    )
+  );
+$$;
+
 create or replace function public.teleeg_refresh_public_status()
 returns void
 language plpgsql
@@ -335,7 +365,7 @@ begin
     (select count(*) from public.teleeg_outbox where status in ('pending', 'failed')),
     v_context.as_of, v_scan.completed_at, v_monitor.completed_at,
     v_context.btc_router, v_context.breadth_above_50,
-    coalesce(v_scan.summary, '{}'::jsonb),
+    public.teleeg_compact_scan_summary(coalesce(v_scan.summary, '{}'::jsonb)),
     case when v_error.completed_at is not null
       and v_error.completed_at > now() - interval '24 hours' then v_error.error else null end,
     now()
@@ -675,6 +705,7 @@ grant all on table public.teleeg_outbox to service_role;
 grant all on table public.teleeg_public_status to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
+revoke all on function public.teleeg_compact_scan_summary(jsonb) from public, anon, authenticated;
 revoke all on function public.teleeg_refresh_public_status() from public, anon, authenticated;
 revoke all on function public.teleeg_accept_candidate(text) from public, anon, authenticated;
 revoke all on function public.teleeg_settle_position(text, text, numeric, timestamptz, boolean, numeric, timestamptz, numeric, numeric, numeric, numeric) from public, anon, authenticated;

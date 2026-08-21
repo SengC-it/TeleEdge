@@ -27,7 +27,17 @@ if (!fs.existsSync(manifestFile)) {
   const complete = manifest.status === 'COMPLETE'
     && manifest.universe?.pointInTime === true
     && manifest.universe?.historicalDelistingsResolved === true
+    && manifest.execution?.preferredInterval === '1m'
+    && manifest.execution?.oneMinuteAvailable === true
     && !missing.length && !mismatched.length;
-  console.log(JSON.stringify({status: manifest.status, complete, snapshotTimestamp: manifest.snapshotTimestamp, artifacts: manifest.artifacts?.length ?? 0, missing, mismatched}, null, 2));
+  console.log(JSON.stringify({
+    status: manifest.status,
+    complete,
+    snapshotTimestamp: manifest.snapshotTimestamp,
+    execution: manifest.execution ?? null,
+    artifacts: manifest.artifacts?.length ?? 0,
+    missing,
+    mismatched,
+  }, null, 2));
   if (process.argv.includes('--strict') && !complete) process.exitCode = 1;
 }

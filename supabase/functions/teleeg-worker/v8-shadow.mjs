@@ -4,16 +4,19 @@ export const V8_SHADOW_VERSION = 'V8-shadow-research-20260819';
 const BEAR = Object.freeze({lookback: 20, minAdx: 18, minVolume: 20_000_000, minStopPct: 0.02, maxStopPct: 0.12, targetR: 2});
 
 function mapControl(candidate, alpha) {
+  const observedAlpha = alpha === 'bull'
+    ? 'v8_daily_breakout_long'
+    : `v8_${candidate.alpha || (candidate.family === 'fundingCrowdingReversal' ? 'funding_crowding_short' : 'volume_shock_short')}`;
   return {
     ...candidate,
     signalId: `V8|${alpha}|${candidate.signalId}`,
     modelVersion: V8_SHADOW_VERSION,
-    alpha,
+    alpha: observedAlpha,
     family: alpha === 'bull' ? 'v8BullTrendBreakout'
       : candidate.family === 'fundingCrowdingReversal' ? 'v8FundingCrowdingReversal' : 'v8VolumeShockReversal',
     route: `v8_${alpha}`,
     edgeSegment: `v8-${candidate.edgeSegment}`,
-    features: {...candidate.features, alpha},
+    features: {...candidate.features, alpha: observedAlpha},
   };
 }
 
@@ -49,9 +52,9 @@ function bearCandidate({market, daily, context}) {
     edgeScore: Math.max(0, Number(context.btcBearAgeDays || 0) / 100),
     eventScore: Math.abs(bar.c / daily[i - BEAR.lookback].c - 1) * 100,
     dayVolume: bar.q,
-    alpha: 'bear',
+    alpha: 'v8_bear_trend_short',
     modelVersion: V8_SHADOW_VERSION,
-    features: {...context, alpha: 'bear', breakoutLookback: BEAR.lookback},
+    features: {...context, alpha: 'v8_bear_trend_short', breakoutLookback: BEAR.lookback},
   };
 }
 

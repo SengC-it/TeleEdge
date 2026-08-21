@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {accrueFunding, calculateMetrics, firstCompletedTouch, settleOnCompletedBars} from '../src/backtest.mjs';
+import {observedAlphaCoverage, REQUIRED_ALPHA_COVERAGE} from '../scripts/backtest.mjs';
 import {H1} from '../src/config.mjs';
 
 test('backtest settlement excludes incomplete and pre-fill hourly bars with SL priority', () => {
@@ -48,4 +49,17 @@ test('settlement net R includes modeled cost and funding', () => {
   assert.equal(result.trade.exitReason, 'sl');
   assert.ok(result.trade.netPnlUsdt < 0);
   assert.ok(result.trade.netR < 0);
+});
+
+test('backtest reports required and observed Alpha coverage separately', () => {
+  assert.deepEqual(REQUIRED_ALPHA_COVERAGE, [
+    'daily_breakout_long',
+    'funding_crowding_short',
+    'volume_shock_short',
+    'v8_bear_trend_short',
+  ]);
+  assert.deepEqual(observedAlphaCoverage({
+    signalEvents: [{alpha: 'daily_breakout_long'}, {alpha: 'v8_bear_trend_short'}],
+    trades: [{alpha: 'daily_breakout_long'}],
+  }), ['daily_breakout_long', 'v8_bear_trend_short']);
 });

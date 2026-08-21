@@ -18,6 +18,12 @@
     "volume_shock_short",
     "v8_bear_trend_short"
   ],
+  "execution": {
+    "decisionLatencyMinutes": 20,
+    "preferredInterval": "1m",
+    "oneMinuteAvailable": false,
+    "executionProxyAllowedOnlyInSmoke": true
+  },
   "sources": {
     "price": {
       "provider": "Binance Public Data",
