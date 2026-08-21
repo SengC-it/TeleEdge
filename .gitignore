@@ -9,3 +9,5 @@ supabase/.temp/
 *.log
 data/backtest/price/
 data/backtest/funding/
+data/backtest/
+data/formal-validation/

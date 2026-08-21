@@ -12,6 +12,20 @@ npm run backtest
 
 `backtest:fetch` downloads bounded 1h klines, funding events, and an exchange-info snapshot. Add `--include-1m` to fetch the preferred execution data into the ignored `data/backtest/minute` directory. It writes `data/backtest/manifest.json` with the snapshot timestamp, source endpoints, row counts, and SHA256 for every artifact. `backtest:verify-data -- --strict` is the release gate for a future complete artifact and requires verified 1m execution data.
 
+## Formal dataset build
+
+The formal dataset builder uses the Binance Data Vision monthly archive index for the historical symbol set, not the current exchangeInfo response. It discovers bare USDT perpetual archive symbols, keeps current exchangeInfo only as a lifecycle cross-check, downloads monthly 1h klines, monthly 1m klines, and monthly funding events, verifies each source zip against its sibling `.CHECKSUM`, and writes resumable `.part` files plus `data/backtest/source/archive-index.json` and `data/backtest/source/current-exchangeInfo.json` as source evidence. The default snapshot is the first UTC day of the current month, so the dataset ends at the last complete monthly archive; use an explicit UTC month boundary for reproducibility.
+
+```powershell
+npm run backtest:formal:discover -- --snapshot-end 2026-08-01T00:00:00Z
+npm run backtest:formal -- --snapshot-end 2026-08-01T00:00:00Z --concurrency 2 --rate-limit-ms 250
+npm run backtest:verify-data -- --strict
+```
+
+The 1m formal artifacts are intentionally generated outside Git because a full 2021-to-snapshotEnd all-symbol dataset is large. The builder records source URLs, source checksum values, derived artifact hashes, row counts, lifecycle evidence, and a `quality-report.json` with core/expanded counts, historical-delisted counts, annual active counts, missing artifacts, rows, bytes, and verifier output. `--discover-only` creates the PIT archive-index/universe evidence without downloading candles; it is a discovery step, not a formal dataset.
+
+Archive first/last kline observations identify symbols that existed historically, but they do not by themselves prove exact delist timestamps. Unless an external historical lifecycle evidence file is supplied with `--historical-lifecycle-evidence`, the manifest keeps `historicalDelistingsResolved=false` and remains `M4-INCOMPLETE`. A failed strict gate blocks any formal OOS run; this phase does not tune parameters or report profitability.
+
 The formal harness defaults to `BACKTEST_SCAN_INTERVAL_HOURS=4`. A strategy signal is generated at a completed candle, then `decision_time = signal_time + 20 minutes`; `fill_time` must be at or after that decision time. With 1m artifacts, the fill is the first eligible 1m open. A formal run never silently substitutes an hourly open when 1m data is absent.
 
 Each scan cycle collects every available market before performing one V7.5 global breakout dedupe/rank and one V8 global dedupe/rank; the production edge/event/day-volume ordering and three-per-side cap therefore apply across the whole cycle. Breadth remains CORE-only even when expanded markets are available as trade candidates. The downloader advances Binance pagination by the requested candle interval, and artifact verification checks both SHA256 and timestamp continuity.

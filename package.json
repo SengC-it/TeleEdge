@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "check": "node --check src/daemon.mjs && node --check src/cli.mjs && node --check api/status.mjs && node --check api/send-mail.mjs && node --check api/reviews.mjs && node --check src/funnel.mjs && node --check src/fill-risk.mjs && node --check src/risk.mjs && node --check src/backtest.mjs && node --check src/v8-shadow.mjs && node --check scripts/backtest-data.mjs && node --check scripts/backtest.mjs && node --check scripts/fetch-backtest-data.mjs && node --check scripts/verify-backtest-data.mjs && node --check supabase/functions/teleeg-worker/auth.mjs && node --check supabase/functions/teleeg-worker/finalize.mjs && node --check supabase/functions/teleeg-worker/strategy.mjs && node --check supabase/functions/teleeg-worker/funnel.mjs && node --check supabase/functions/teleeg-worker/risk.mjs && node --check supabase/functions/teleeg-worker/v8-shadow.mjs && node --check supabase/functions/teleeg-reviews/reviews.mjs",
+    "check": "node --check src/daemon.mjs && node --check src/cli.mjs && node --check api/status.mjs && node --check api/send-mail.mjs && node --check api/reviews.mjs && node --check src/funnel.mjs && node --check src/fill-risk.mjs && node --check src/risk.mjs && node --check src/backtest.mjs && node --check src/v8-shadow.mjs && node --check scripts/backtest-data.mjs && node --check scripts/backtest.mjs && node --check scripts/fetch-backtest-data.mjs && node --check scripts/build-formal-dataset.mjs && node --check scripts/verify-backtest-data.mjs && node --check supabase/functions/teleeg-worker/auth.mjs && node --check supabase/functions/teleeg-worker/finalize.mjs && node --check supabase/functions/teleeg-worker/strategy.mjs && node --check supabase/functions/teleeg-worker/funnel.mjs && node --check supabase/functions/teleeg-worker/risk.mjs && node --check supabase/functions/teleeg-worker/v8-shadow.mjs && node --check supabase/functions/teleeg-reviews/reviews.mjs",
     "scan": "node src/cli.mjs scan",
     "monitor": "node src/cli.mjs monitor",
     "status": "node src/cli.mjs status",
     "backtest": "node scripts/backtest.mjs",
     "backtest:smoke": "node scripts/backtest.mjs --mode smoke --allow-external-cache --execution-proxy",
     "backtest:fetch": "node scripts/fetch-backtest-data.mjs",
+    "backtest:formal": "node scripts/build-formal-dataset.mjs",
+    "backtest:formal:discover": "node scripts/build-formal-dataset.mjs --discover-only",
     "backtest:verify-data": "node scripts/verify-backtest-data.mjs",
     "start": "node src/daemon.mjs"
   },
