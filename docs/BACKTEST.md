@@ -16,6 +16,10 @@ The formal harness defaults to `BACKTEST_SCAN_INTERVAL_HOURS=4`. A strategy sign
 
 Each scan cycle collects every available market before performing one V7.5 global breakout dedupe/rank and one V8 global dedupe/rank; the production edge/event/day-volume ordering and three-per-side cap therefore apply across the whole cycle. Breadth remains CORE-only even when expanded markets are available as trade candidates. The downloader advances Binance pagination by the requested candle interval, and artifact verification checks both SHA256 and timestamp continuity.
 
+Every market has its own point-in-time `eligibleStart`/`eligibleEnd`. Signal features and execution coverage are evaluated inside that lifecycle window, so a later listing or a historical delivery does not force every other market to fail formal execution. Before each delayed acceptance, the harness advances open positions to `decision_time` and applies the shared local/backtest acceptance contract: symbol-open, 72-hour cooldown, portfolio/side caps, fill-risk revalidation, tick rounding, step-size round-down, and minimum quantity.
+
+The strict manifest gate requires per-market price/funding (and, for formal execution, minute) artifacts with `symbol`, `kind`, `interval`, `activeStart`, `activeEnd`, `rows`, and SHA256, plus row-count, continuity, active-window, point-in-time-universe, delisting, and expanded-universe checks. An empty or short artifact cannot make M4 complete; the checked-in manifest intentionally remains `M4-INCOMPLETE`.
+
 For the already available local research cache, use the explicitly named smoke command:
 
 ```powershell

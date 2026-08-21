@@ -519,6 +519,24 @@ export function firstTouch(position, bars, now = Infinity) {
   return null;
 }
 
+function rankValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : -Infinity;
+}
+
+function signalTimeValue(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return numeric;
+  return Date.parse(value || '') || 0;
+}
+
+function compareRankedCandidates(a, b) {
+  return rankValue(b.edge_score) - rankValue(a.edge_score)
+    || rankValue(b.event_score) - rankValue(a.event_score)
+    || rankValue(b.day_volume) - rankValue(a.day_volume)
+    || String(a.signal_id ?? a.id ?? '').localeCompare(String(b.signal_id ?? b.id ?? ''));
+}
+
 export function rankCandidates(candidates, cap = 3) {
   const unique = new Map();
   for (const candidate of candidates) {
@@ -530,8 +548,7 @@ export function rankCandidates(candidates, cap = 3) {
       previous?.features?.breakoutLookback,
       candidate.features?.breakoutLookback,
     ].filter(value => Number.isFinite(Number(value))).map(Number));
-    if (!previous || +candidate.edge_score > +previous.edge_score
-      || (+candidate.edge_score === +previous.edge_score && +candidate.event_score > +previous.event_score)) {
+    if (!previous || compareRankedCandidates(candidate, previous) < 0) {
       unique.set(key, {
         ...candidate,
         features: {...candidate.features, matchedBreakouts: [...matched].sort((a, b) => a - b)},
@@ -546,10 +563,8 @@ export function rankCandidates(candidates, cap = 3) {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(candidate);
   }
-  return [...groups.values()].flatMap(group => group.sort((a, b) => +b.edge_score - +a.edge_score
-    || +b.event_score - +a.event_score || +b.day_volume - +a.day_volume).slice(0, cap))
-    .sort((a, b) => Date.parse(a.signal_time) - Date.parse(b.signal_time)
-      || +b.edge_score - +a.edge_score || +b.event_score - +a.event_score);
+  return [...groups.values()].flatMap(group => group.sort(compareRankedCandidates).slice(0, cap))
+    .sort((a, b) => signalTimeValue(a.signal_time) - signalTimeValue(b.signal_time) || compareRankedCandidates(a, b));
 }
 
 export {DAY, H4, adx, atr, ema};

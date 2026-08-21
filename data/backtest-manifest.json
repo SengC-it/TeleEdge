@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "status": "M4-INCOMPLETE",
   "scope": "formal V7.5 vs V8 OOS is not complete",
   "snapshotTimestamp": "2026-07-15T00:00:00.000Z",
@@ -9,7 +9,9 @@
     "source": "Binance USD-M exchangeInfo snapshot",
     "pointInTime": false,
     "historicalDelistingsResolved": false,
+    "expandedNonCoreCovered": false,
     "symbols": [],
+    "markets": [],
     "note": "Populate with scripts/fetch-backtest-data.mjs. A current exchangeInfo response is not a point-in-time historical universe."
   },
   "requiredAlphaCoverage": [

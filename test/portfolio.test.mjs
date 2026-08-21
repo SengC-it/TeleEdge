@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {acceptCandidates, rankCandidates} from '../src/portfolio.mjs';
 
-const market = symbol => ({
+const market = (symbol, {tickSize = '0.01', stepSize = '0.001', minQty = '0.001'} = {}) => ({
   symbol,
   filters: [
-    {filterType: 'PRICE_FILTER', tickSize: '0.01'},
-    {filterType: 'LOT_SIZE', stepSize: '0.001', minQty: '0.001'},
+    {filterType: 'PRICE_FILTER', tickSize},
+    {filterType: 'LOT_SIZE', stepSize, minQty},
   ],
 });
 
@@ -22,6 +22,12 @@ test('ranking keeps only three candidates per timestamp and side', () => {
     candidate('A', 1), candidate('B', 4), candidate('C', 3), candidate('D', 2),
   ]);
   assert.deepEqual(ranked.map(item => item.id), ['B', 'C', 'D']);
+});
+
+test('local exact-tie ranking is deterministic across input order', () => {
+  const rows = ['C', 'A', 'E', 'B', 'D'].map(id => candidate(id, 1));
+  assert.deepEqual(rankCandidates(rows).map(item => item.id), ['A', 'B', 'C']);
+  assert.deepEqual(rankCandidates([...rows].reverse()).map(item => item.id), ['A', 'B', 'C']);
 });
 
 test('same symbol and side at one timestamp uses one ranking slot and preserves breakout horizons', () => {
@@ -102,4 +108,34 @@ test('fill that violates the family stop-risk bounds is rejected', () => {
   });
   assert.equal(result.accepted.length, 0);
   assert.equal(result.rejected[0].reason, 'fill-stop-risk-out-of-bounds');
+});
+
+test('production acceptance enforces the 72h symbol cooldown', () => {
+  const item = candidate('COOLDOWN', 1, 'COOLDOWNUSDT');
+  const state = {
+    equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [],
+    cooldowns: {COOLDOWNUSDT: item.t - 72 * 3_600_000 + 1},
+  };
+  const result = acceptCandidates([item], state, new Map([['COOLDOWNUSDT', market('COOLDOWNUSDT')]]));
+  assert.equal(result.accepted.length, 0);
+  assert.equal(result.rejected[0].reason, 'symbol-cooldown');
+});
+
+test('production acceptance rounds quantity down to the market step size', () => {
+  const item = {...candidate('STEP', 1, 'STEPUSDT'), sl: 93, target: 114};
+  const result = acceptCandidates([item], {
+    equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [], cooldowns: {},
+  }, new Map([['STEPUSDT', market('STEPUSDT', {stepSize: '0.3', minQty: '0.3'})]]));
+  assert.equal(result.accepted.length, 1);
+  assert.equal(result.accepted[0].quantity, 8.4);
+  assert.ok(Math.abs(result.accepted[0].riskUsdt - 58.8) < 1e-9);
+});
+
+test('production acceptance rejects quantity below market minimum', () => {
+  const item = {...candidate('MINQTY', 1, 'MINQTYUSDT'), sl: 93, target: 114};
+  const result = acceptCandidates([item], {
+    equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [], cooldowns: {},
+  }, new Map([['MINQTYUSDT', market('MINQTYUSDT', {stepSize: '0.1', minQty: '9'})]]));
+  assert.equal(result.accepted.length, 0);
+  assert.equal(result.rejected[0].reason, 'quantity-below-market-minimum');
 });

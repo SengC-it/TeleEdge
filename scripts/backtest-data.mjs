@@ -12,6 +12,28 @@ export function intervalToMs(interval) {
   return Number(match[1]) * INTERVAL_UNITS[match[2]];
 }
 
+export function timestampValue(value) {
+  if (Number.isFinite(Number(value))) return Number(value);
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+export function activeWindowForMarket({symbol, market = {}, manifest = null, startTime, endTime}) {
+  const declared = [...(manifest?.markets || []), ...(manifest?.universe?.markets || [])]
+    .find(item => item.symbol === symbol) || {};
+  const declaredStart = timestampValue(declared.activeStart ?? declared.eligibleStart ?? market.onboardDate);
+  const declaredEnd = timestampValue(declared.activeEnd ?? declared.eligibleEnd ?? market.deliveryDate);
+  const eligibleStart = Math.max(startTime, Number.isFinite(declaredStart) && declaredStart > 0 ? declaredStart : startTime);
+  const eligibleEnd = Math.min(endTime, Number.isFinite(declaredEnd) && declaredEnd > 0 ? declaredEnd : endTime);
+  return {
+    symbol,
+    eligibleStart,
+    eligibleEnd,
+    active: eligibleEnd > eligibleStart,
+    lifecycleDeclared: Boolean(declared.activeStart || declared.activeEnd || declared.eligibleStart || declared.eligibleEnd),
+  };
+}
+
 export function continuityIssues(rows, interval) {
   const step = intervalToMs(interval);
   const issues = [];
@@ -33,10 +55,15 @@ export function continuityIssues(rows, interval) {
 
 export function hasCompleteSeries(rows, interval, startTime, endTime) {
   if (!Array.isArray(rows) || !rows.length) return false;
+  if (!(Number(endTime) > Number(startTime))) return false;
   const step = intervalToMs(interval);
-  if (continuityIssues(rows, step).length) return false;
-  const first = Number(rows[0]?.t);
-  const last = Number(rows.at(-1)?.t);
+  const relevant = rows.filter(row => {
+    const timestamp = Number(row?.t);
+    return Number.isFinite(timestamp) && timestamp + step > startTime && timestamp < endTime;
+  });
+  if (!relevant.length || continuityIssues(relevant, step).length) return false;
+  const first = Number(relevant[0]?.t);
+  const last = Number(relevant.at(-1)?.t);
   return Number.isFinite(first) && Number.isFinite(last)
     && first <= startTime
     && last + step >= endTime;

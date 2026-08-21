@@ -7,10 +7,11 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 import {DAY, H1} from '../src/config.mjs';
 import {settleOnCompletedBars} from '../src/backtest.mjs';
-import {buildCoreBreadth, processCandidates} from '../scripts/backtest.mjs';
+import {advanceModelTo, buildCoreBreadth, processCandidates} from '../scripts/backtest.mjs';
 import {fetchPaged} from '../scripts/fetch-backtest-data.mjs';
-import {continuityIssues} from '../scripts/backtest-data.mjs';
+import {activeWindowForMarket, continuityIssues, hasCompleteSeries} from '../scripts/backtest-data.mjs';
 import {verifyBacktestManifest} from '../scripts/verify-backtest-data.mjs';
+import {acceptCandidates, evaluateCandidateAcceptance} from '../src/portfolio.mjs';
 
 const market = symbol => ({
   symbol,
@@ -54,6 +55,7 @@ const model = () => ({
   signalEvents: [],
   allocations: [],
   knownSignalIds: new Set(),
+  cooldowns: {},
   rejectionReasons: {},
   acceptedSignals: 0,
 });
@@ -76,6 +78,70 @@ test('backtest ranks all same-cycle markets globally and is input-order independ
   };
   assert.deepEqual(run(candidates), ['EEEUSDT', 'DDDUSDT', 'CCCUSDT']);
   assert.deepEqual(run([...candidates].reverse()), ['EEEUSDT', 'DDDUSDT', 'CCCUSDT']);
+});
+
+test('decision-time advancement releases capacity before acceptance', () => {
+  const base = Date.parse('2026-01-01T00:00:00Z');
+  const state = model();
+  const oldPosition = {
+    id: 'old', marketId: 'OLDUSDT', symbol: 'OLD', side: 'long', status: 'open',
+    fillTime: base, entry: 100, stop: 95, target: 105, quantity: 1, riskUsdt: 5, fundingPnlUsdt: 0,
+  };
+  state.open = [
+    oldPosition,
+    ...Array.from({length: 6}, (_, index) => ({id: `long-${index}`, marketId: `LONG${index}USDT`, side: 'long', status: 'open', riskUsdt: 1})),
+    ...Array.from({length: 3}, (_, index) => ({id: `short-${index}`, marketId: `SHORT${index}USDT`, side: 'short', status: 'open', riskUsdt: 1})),
+  ];
+  const dataBySymbol = new Map([
+    ['OLDUSDT', {
+      market: market('OLDUSDT'), h1: [], funding: [],
+      m1: [{t: base + 10 * 60_000, h: 106, l: 99, o: 100, c: 105}],
+      execution: {oneMinuteComplete: true},
+    }],
+    ['NEWUSDT', {
+      market: market('NEWUSDT'), h1: [], funding: [],
+      m1: [{t: base + 20 * 60_000, h: 101, l: 99, o: 100, c: 100}],
+      execution: {oneMinuteComplete: true},
+    }],
+  ]);
+  const decisionTime = base + 20 * 60_000;
+  advanceModelTo(state, dataBySymbol, decisionTime, {preferMinute: true});
+  assert.equal(state.trades[0].exitReason, 'tp');
+  assert.equal(state.open.length, 9);
+  const next = {...candidate('NEWUSDT', 1), id: 'new-signal', t: base};
+  processCandidates(state, [next], dataBySymbol, {endTime: base + H1, rankedCandidates: [next]});
+  assert.equal(state.open.some(position => position.marketId === 'NEWUSDT'), true);
+});
+
+test('local and backtest acceptance share fill, tick, step, minimum and risk outputs', () => {
+  const base = Date.parse('2026-01-02T00:00:00Z');
+  const decisionTime = base + 20 * 60_000;
+  const marketId = 'PARITYUSDT';
+  const item = {...candidate(marketId, 1), id: 'parity-signal', t: base, fillTime: decisionTime, fillPrice: 101};
+  const marketData = market(marketId);
+  const contract = evaluateCandidateAcceptance(item, {
+    activePositions: [], cooldowns: {}, equityUsdt: 10_000, market: marketData,
+    decisionTime, fillTime: decisionTime, fillPrice: 101, strictFill: true,
+  });
+  const local = acceptCandidates([item], {
+    equityUsdt: 10_000, positions: [], closedPositions: [], processedSignalIds: [], cooldowns: {},
+  }, new Map([[marketId, marketData]]), {decisionTime, strictFill: true});
+  const state = model();
+  const dataBySymbol = new Map([[marketId, {
+    market: marketData,
+    h1: [], funding: [],
+    m1: [{t: decisionTime, h: 102, l: 100, o: 101, c: 101}],
+    execution: {oneMinuteComplete: true},
+  }]]);
+  processCandidates(state, [item], dataBySymbol, {endTime: base + H1, rankedCandidates: [item]});
+  const localPosition = local.accepted[0];
+  const backtestPosition = state.open[0];
+  assert.equal(contract.accepted, true);
+  assert.equal(local.accepted.length, 1);
+  assert.equal(state.acceptedSignals, 1);
+  for (const field of ['quantity', 'stop', 'target', 'stopPct', 'effectiveTargetR', 'riskUsdt', 'notionalUsdt']) {
+    assert.equal(backtestPosition[field], localPosition[field], field);
+  }
 });
 
 function dailySeries(direction) {
@@ -137,6 +203,54 @@ test('artifact verification reports timestamp continuity failures in addition to
     assert.equal(result.continuity.length, 1);
     assert.equal(result.complete, false);
     assert.equal(continuityIssues(rows, '1m')[0].reason, 'non-contiguous-timestamp');
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('per-symbol active windows allow later-listed and delisted markets to verify independently', () => {
+  const globalStart = 0;
+  const globalEnd = 5 * 60_000;
+  const lifecycle = activeWindowForMarket({
+    symbol: 'LATEUSDT',
+    market: {onboardDate: 2 * 60_000},
+    manifest: {markets: [{symbol: 'LATEUSDT', activeStart: 2 * 60_000, activeEnd: 5 * 60_000}]},
+    startTime: globalStart,
+    endTime: globalEnd,
+  });
+  const rows = [2, 3, 4].map(minute => ({t: minute * 60_000}));
+  assert.equal(lifecycle.eligibleStart, 2 * 60_000);
+  assert.equal(lifecycle.eligibleEnd, globalEnd);
+  assert.equal(hasCompleteSeries(rows, '1m', lifecycle.eligibleStart, lifecycle.eligibleEnd), true);
+  assert.equal(hasCompleteSeries(rows, '1m', globalStart, globalEnd), false);
+});
+
+test('strict artifact gate rejects empty or short required market artifacts', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-backtest-gate-'));
+  try {
+    const relative = 'minute/NEWUSDT.json.gz';
+    const file = path.join(root, relative);
+    fs.mkdirSync(path.dirname(file), {recursive: true});
+    fs.writeFileSync(file, zlib.gzipSync(JSON.stringify([])));
+    const manifest = {
+      schemaVersion: 2,
+      status: 'COMPLETE',
+      universe: {
+        symbols: ['NEWUSDT'], pointInTime: true, historicalDelistingsResolved: true,
+        expandedNonCoreCovered: true, markets: [{symbol: 'NEWUSDT', activeStart: 0, activeEnd: 60_000}],
+      },
+      execution: {preferredInterval: '1m', oneMinuteAvailable: true},
+      artifacts: [{
+        path: relative, symbol: 'NEWUSDT', kind: 'minute', interval: '1m', activeStart: '1970-01-01T00:00:00.000Z', activeEnd: '1970-01-01T00:01:00.000Z', rows: 1,
+        sha256: crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex'),
+      }],
+    };
+    const result = verifyBacktestManifest(manifest, root);
+    assert.equal(result.complete, false);
+    assert.equal(result.rowCounts.length, 1);
+    assert.equal(result.coverage[0].firstIssues[0].reason, 'empty-artifact');
+    assert.ok(result.missing.some(item => item.key === 'NEWUSDT|price'));
+    assert.ok(result.missing.some(item => item.key === 'NEWUSDT|funding'));
   } finally {
     fs.rmSync(root, {recursive: true, force: true});
   }

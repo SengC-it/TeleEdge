@@ -2,9 +2,22 @@ import {modelConfig} from './config.mjs';
 import {recalculateFilledRisk} from './fill-risk.mjs';
 import {marketRules, roundDown, roundToTick} from './market-data.mjs';
 
+function numericTime(value) {
+  if (Number.isFinite(Number(value))) return Number(value);
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+function rankValue(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : -Infinity;
+}
+
 function compareCandidates(a, b) {
-  return b.edgeScore - a.edgeScore || b.eventScore - a.eventScore || b.dayVolume - a.dayVolume
-    || String(a.id).localeCompare(String(b.id));
+  return rankValue(b.edgeScore) - rankValue(a.edgeScore)
+    || rankValue(b.eventScore) - rankValue(a.eventScore)
+    || rankValue(b.dayVolume) - rankValue(a.dayVolume)
+    || String(a.id ?? a.signalId ?? '').localeCompare(String(b.id ?? b.signalId ?? ''));
 }
 
 function candidateKey(candidate) {
@@ -47,32 +60,74 @@ export function rankCandidates(input) {
   }
   return [...groups.values()].flatMap(group => {
     return group.sort(compareCandidates).slice(0, modelConfig.sameTimePerSide);
-  }).sort((a, b) => a.t - b.t || compareCandidates(a, b));
+  }).sort((a, b) => numericTime(a.t) - numericTime(b.t) || compareCandidates(a, b));
 }
 
-function positionFromCandidate(candidate, state, market, options) {
+/**
+ * Shared local/backtest acceptance contract. The database RPC applies the
+ * same gate ordering and fill-risk/quantity rules to the persisted candidate.
+ */
+export function evaluateCandidateAcceptance(candidate, {
+  activePositions = [],
+  cooldowns = {},
+  equityUsdt = 0,
+  market = null,
+  decisionTime = Date.now(),
+  fillTime = candidate.fillTime ?? decisionTime,
+  fillPrice = candidate.fillPrice,
+  strictFill = false,
+  positionCap = modelConfig.cap,
+  sideCap = modelConfig.maxPerSide,
+} = {}) {
+  const openPositions = (activePositions || []).filter(position => position.status == null || position.status === 'open');
+  const configuredFillPrice = fillPrice ?? candidate.fillPrice;
+  if (strictFill && !(Number(configuredFillPrice) > 0)) return {accepted: false, reason: 'fill-price-unavailable'};
+  if (!(numericTime(fillTime) >= numericTime(candidate.t))) return {accepted: false, reason: 'invalid-fill-time'};
+  if (!market) return {accepted: false, reason: 'market-data-unavailable'};
   const rules = marketRules(market);
+  if (!(rules.tickSize > 0)) return {accepted: false, reason: 'invalid-market-tick'};
+  if (!(rules.stepSize > 0)) return {accepted: false, reason: 'invalid-market-step'};
+  if (openPositions.some(position => position.marketId === candidate.marketId)) return {accepted: false, reason: 'symbol-already-open'};
+  if (numericTime(candidate.t) < numericTime(cooldowns[candidate.marketId] ?? -Infinity) + modelConfig.cooldownMs) {
+    return {accepted: false, reason: 'symbol-cooldown'};
+  }
+  if (openPositions.length >= positionCap) return {accepted: false, reason: 'portfolio-cap'};
+  if (openPositions.filter(position => position.side === candidate.side).length >= sideCap) return {accepted: false, reason: 'side-cap'};
   const entry = roundToTick(candidate.entry, rules.tickSize);
-  const stop = roundToTick(candidate.sl, rules.tickSize);
-  const decisionTime = options.decisionTime;
-  const fillTime = candidate.fillTime ?? decisionTime;
-  const configuredFillPrice = candidate.fillPrice ?? options.fillPrices?.get(candidate.marketId);
-  if (options.strictFill && !(Number(configuredFillPrice) > 0)) return null;
-  const fillPrice = roundToTick(Number(configuredFillPrice ?? entry), rules.tickSize);
-  if (!(fillPrice > 0) || !(fillTime >= candidate.t)) return null;
+  const roundedFillPrice = roundToTick(Number(configuredFillPrice ?? entry), rules.tickSize);
+  if (!(roundedFillPrice > 0)) return {accepted: false, reason: 'fill-price-unavailable'};
   const filledRisk = recalculateFilledRisk({
     side: candidate.side,
     family: candidate.family,
-    fillPrice,
-    stop,
+    fillPrice: roundedFillPrice,
+    stop: roundToTick(candidate.sl, rules.tickSize),
     targetR: candidate.targetR,
     tickSize: rules.tickSize,
   });
-  if (!filledRisk.accepted) return null;
-  const plannedRiskUsdt = state.equityUsdt * modelConfig.riskFraction;
+  if (!filledRisk.accepted) return {accepted: false, reason: filledRisk.reason, filledRisk, rules, entry};
+  const plannedRiskUsdt = Number(equityUsdt) * modelConfig.riskFraction;
   const quantity = roundDown(plannedRiskUsdt / Math.abs(filledRisk.fillPrice - filledRisk.stop), rules.stepSize);
-  if (!(quantity > 0) || quantity < rules.minQty) return null;
+  if (!(quantity > 0) || quantity < rules.minQty) {
+    return {accepted: false, reason: 'quantity-below-market-minimum', filledRisk, rules, entry, quantity};
+  }
   const riskUsdt = quantity * Math.abs(filledRisk.fillPrice - filledRisk.stop);
+  return {accepted: true, rules, entry, fillPrice: filledRisk.fillPrice, fillTime, filledRisk, quantity, riskUsdt};
+}
+
+function positionFromCandidate(candidate, state, market, options, acceptance = null) {
+  const decisionTime = options.decisionTime;
+  const contract = acceptance || evaluateCandidateAcceptance(candidate, {
+    activePositions: state.positions,
+    cooldowns: state.cooldowns,
+    equityUsdt: state.equityUsdt,
+    market,
+    decisionTime,
+    fillTime: candidate.fillTime ?? decisionTime,
+    fillPrice: candidate.fillPrice ?? options.fillPrices?.get(candidate.marketId),
+    strictFill: options.strictFill,
+  });
+  if (!contract.accepted) return null;
+  const {entry, fillTime, filledRisk, quantity, riskUsdt} = contract;
   return {
     id: candidate.id,
     modelVersion: modelConfig.version,
@@ -126,6 +181,7 @@ export function acceptCandidates(candidates, state, marketById, options = {}) {
     strictFill: Boolean(options.strictFill),
     funnel: options.funnel,
   };
+  state.cooldowns ||= {};
   const known = new Set(state.processedSignalIds);
   const unseen = candidates.filter(candidate => !known.has(candidate.id));
   const ranked = rankCandidates(unseen);
@@ -144,41 +200,21 @@ export function acceptCandidates(candidates, state, marketById, options = {}) {
   });
   for (const candidate of ranked) {
     report(candidate, 'ranked', true);
-    let reason = null;
-    if (active.some(position => position.marketId === candidate.marketId)) reason = 'symbol-already-open';
-    else if (candidate.t < (state.cooldowns[candidate.marketId] ?? -Infinity) + modelConfig.cooldownMs) reason = 'symbol-cooldown';
-    else if (active.length >= modelConfig.cap) reason = 'portfolio-cap';
-    else if (active.filter(position => position.side === candidate.side).length >= modelConfig.maxPerSide) reason = 'side-cap';
-    if (reason) {
-      rejected.push({candidate, reason});
-      report(candidate, 'accepted', false, reason);
-      continue;
-    }
     const market = marketById.get(candidate.marketId);
-    let position = null;
-    if (market) {
-      const rules = marketRules(market);
-      const entry = roundToTick(candidate.entry, rules.tickSize);
-      const configuredFillPrice = candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId);
-      const fillPrice = roundToTick(Number(configuredFillPrice ?? entry), rules.tickSize);
-      if (normalizedOptions.strictFill && !(Number(configuredFillPrice) > 0)) {
-        reason = 'fill-price-unavailable';
-      } else {
-        const filledRisk = recalculateFilledRisk({
-          side: candidate.side,
-          family: candidate.family,
-          fillPrice,
-          stop: roundToTick(candidate.sl, rules.tickSize),
-          targetR: candidate.targetR,
-          tickSize: rules.tickSize,
-        });
-        if (!filledRisk.accepted) reason = filledRisk.reason;
-        else position = positionFromCandidate(candidate, state, market, normalizedOptions);
-      }
-    }
+    const configuredFillPrice = candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId);
+    const acceptance = evaluateCandidateAcceptance(candidate, {
+      activePositions: active,
+      cooldowns: state.cooldowns,
+      equityUsdt: state.equityUsdt,
+      market,
+      decisionTime: normalizedOptions.decisionTime,
+      fillTime: candidate.fillTime ?? normalizedOptions.decisionTime,
+      fillPrice: configuredFillPrice,
+      strictFill: normalizedOptions.strictFill,
+    });
+    const position = acceptance.accepted ? positionFromCandidate(candidate, state, market, normalizedOptions, acceptance) : null;
     if (!position) {
-      reason ||= normalizedOptions.strictFill && !(Number(candidate.fillPrice ?? normalizedOptions.fillPrices?.get(candidate.marketId)) > 0)
-        ? 'fill-price-unavailable' : 'quantity-below-market-minimum';
+      const reason = acceptance.reason || 'quantity-below-market-minimum';
       rejected.push({candidate, reason});
       report(candidate, 'accepted', false, reason);
       continue;

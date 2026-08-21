@@ -41,6 +41,20 @@ test('cloud finalizer keeps only three signals per timestamp and side', () => {
   assert.deepEqual(rankCandidates(rows).map(row => row.signal_id), ['s4', 's3', 's2']);
 });
 
+test('cloud exact-tie ranking is deterministic across database return order', () => {
+  const rows = ['C', 'A', 'E', 'B', 'D'].map(symbol => ({
+    signal_id: symbol,
+    signal_time: '2026-07-16T00:00:00.000Z',
+    market_id: `${symbol}USDT`,
+    side: 'short',
+    edge_score: 1,
+    event_score: 1,
+    day_volume: 1,
+  }));
+  assert.deepEqual(rankCandidates(rows).map(row => row.signal_id), ['A', 'B', 'C']);
+  assert.deepEqual(rankCandidates([...rows].reverse()).map(row => row.signal_id), ['A', 'B', 'C']);
+});
+
 test('cloud ranking deduplicates breakout horizons per market', () => {
   const rows = [5, 10, 20].map(lookback => ({
     signal_id: `eth-${lookback}`,
