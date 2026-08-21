@@ -1,11 +1,13 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import {execFile as execFileCallback} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {once} from 'node:events';
 import {finished} from 'node:stream/promises';
+import {isMainThread, parentPort, Worker} from 'node:worker_threads';
 import {promisify} from 'node:util';
 import {CORE_MARKETS} from '../src/config.mjs';
 import {verifyBacktestManifest} from './verify-backtest-data.mjs';
@@ -459,6 +461,7 @@ function parseArgs(argv = process.argv.slice(2)) {
     keepSourceArchives: false,
     lifecycleEvidence: null,
     concurrency: 2,
+    transformConcurrency: 2,
     rateLimitMs: DEFAULT_RATE_LIMIT_MS,
     retries: DEFAULT_RETRIES,
   };
@@ -486,12 +489,14 @@ function parseArgs(argv = process.argv.slice(2)) {
   result.keepSourceArchives = argv.includes('--keep-source-archives');
   result.lifecycleEvidence = value('--historical-lifecycle-evidence');
   result.concurrency = Number(value('--concurrency') || result.concurrency);
+  result.transformConcurrency = Number(value('--transform-concurrency') || result.transformConcurrency);
   result.rateLimitMs = Number(value('--rate-limit-ms') || result.rateLimitMs);
   result.retries = Number(value('--retries') || result.retries);
   if (!(result.end > result.start)) throw new Error('snapshot-end must be after start');
   if (new Date(result.start).getUTCDate() !== 1 || new Date(result.start).getUTCHours() !== 0) throw new Error('Formal dataset start must be a UTC month boundary');
   if (new Date(result.end).getUTCDate() !== 1 || new Date(result.end).getUTCHours() !== 0) throw new Error('Formal dataset snapshot-end must be a UTC month boundary');
   if (!Number.isInteger(result.concurrency) || result.concurrency < 1 || result.concurrency > 32) throw new Error('--concurrency must be an integer from 1 to 32');
+  if (!Number.isInteger(result.transformConcurrency) || result.transformConcurrency < 1 || result.transformConcurrency > 4) throw new Error('--transform-concurrency must be an integer from 1 to 4');
   if (!Number.isFinite(result.maxSymbols) || result.maxSymbols < 1) result.maxSymbols = null;
   return result;
 }
@@ -743,6 +748,62 @@ async function writeArtifactFromArchives(archives, {root, symbol, kind, start, e
   return artifact;
 }
 
+class ArtifactTransformPool {
+  constructor(size) {
+    this.queue = [];
+    this.workers = [];
+    this.nextId = 1;
+    for (let index = 0; index < Math.max(1, size); index++) {
+      const worker = new Worker(new URL(import.meta.url), {type: 'module'});
+      const state = {worker, busy: false, task: null};
+      worker.on('message', message => {
+        const task = state.task;
+        state.busy = false;
+        state.task = null;
+        if (!task) return;
+        if (message.ok) {
+          task.resolve(message.artifact);
+        } else {
+          const error = new Error(message.error?.message || 'Artifact transform worker failed');
+          if (message.error?.stack) error.stack = message.error.stack;
+          task.reject(error);
+        }
+        this.dispatch();
+      });
+      worker.on('error', error => {
+        const task = state.task;
+        state.busy = false;
+        state.task = null;
+        if (task) task.reject(error);
+        this.dispatch();
+      });
+      this.workers.push(state);
+    }
+  }
+
+  run(archives, options) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({id: this.nextId++, archives, options, resolve, reject});
+      this.dispatch();
+    });
+  }
+
+  dispatch() {
+    for (const state of this.workers) {
+      if (state.busy || !this.queue.length) continue;
+      const task = this.queue.shift();
+      state.busy = true;
+      state.task = task;
+      state.worker.postMessage({id: task.id, archives: task.archives, options: task.options});
+    }
+  }
+
+  async close() {
+    await Promise.all(this.workers.map(state => state.worker.terminate()));
+    this.workers = [];
+  }
+}
+
 async function mapConcurrent(items, concurrency, handler) {
   const result = new Array(items.length);
   let next = 0;
@@ -930,30 +991,36 @@ export async function buildFormalDataset(options = {}) {
   const progressWriter = createSerializedProgressWriter(progressFile, progress);
 
   if (!args.discoverOnly) {
-    await mapConcurrent(symbols, args.concurrency ?? 2, async symbol => {
-      const source = archivesBySymbol[symbol];
-      for (const kind of ['price', 'funding', 'minute']) {
-        const saved = progress[`${symbol}|${kind}`];
-        const savedFile = saved?.path ? path.join(APP_DIR, saved.path) : null;
-        if (savedFile && fs.existsSync(savedFile) && saved.sha256 === sha256File(savedFile)) {
-          artifacts.push(saved);
-          if (kind === 'price') summaries.set(symbol, saved);
-          continue;
+    const workerCount = Math.min(args.transformConcurrency ?? 2, Math.max(1, os.cpus().length - 1));
+    const transformPool = new ArtifactTransformPool(workerCount);
+    try {
+      await mapConcurrent(symbols, args.concurrency ?? 2, async symbol => {
+        const source = archivesBySymbol[symbol];
+        for (const kind of ['price', 'funding', 'minute']) {
+          const saved = progress[`${symbol}|${kind}`];
+          const savedFile = saved?.path ? path.join(APP_DIR, saved.path) : null;
+          if (savedFile && fs.existsSync(savedFile) && saved.sha256 === sha256File(savedFile)) {
+            artifacts.push(saved);
+            if (kind === 'price') summaries.set(symbol, saved);
+            continue;
+          }
+          const records = [];
+          for (const archive of source[kind]) {
+            const downloaded = await downloadArchive(archive, {root, gate, retries: args.retries, keepSourceArchives: args.keepSourceArchives});
+            if (downloaded) records.push(downloaded);
+          }
+          if (!records.length) continue;
+          const artifact = await transformPool.run(records, {root, symbol, kind, start: args.start, end: args.end});
+          artifact.sourceArchiveCount = records.length;
+          artifact.sourceArchiveSha256 = records.map(record => record.sourceSha256);
+          artifacts.push(artifact);
+          if (kind === 'price') summaries.set(symbol, artifact);
+          await progressWriter.update({[`${symbol}|${kind}`]: {...artifact, completedAt: new Date().toISOString()}});
         }
-        const records = [];
-        for (const archive of source[kind]) {
-          const downloaded = await downloadArchive(archive, {root, gate, retries: args.retries, keepSourceArchives: args.keepSourceArchives});
-          if (downloaded) records.push(downloaded);
-        }
-        if (!records.length) continue;
-        const artifact = await writeArtifactFromArchives(records, {root, symbol, kind, start: args.start, end: args.end});
-        artifact.sourceArchiveCount = records.length;
-        artifact.sourceArchiveSha256 = records.map(record => record.sourceSha256);
-        artifacts.push(artifact);
-        if (kind === 'price') summaries.set(symbol, artifact);
-        await progressWriter.update({[`${symbol}|${kind}`]: {...artifact, completedAt: new Date().toISOString()}});
-      }
-    });
+      });
+    } finally {
+      await transformPool.close();
+    }
   }
   await progressWriter.flush();
   artifacts.sort((a, b) => `${a.symbol}|${a.kind}`.localeCompare(`${b.symbol}|${b.kind}`));
@@ -1067,7 +1134,20 @@ export async function buildFormalDataset(options = {}) {
   return {manifest, verifier, quality, sourceIndex};
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+if (!isMainThread) {
+  parentPort.on('message', async ({id, archives, options}) => {
+    try {
+      const artifact = await writeArtifactFromArchives(archives, options);
+      parentPort.postMessage({id, ok: true, artifact});
+    } catch (error) {
+      parentPort.postMessage({
+        id,
+        ok: false,
+        error: {message: error.message, stack: error.stack},
+      });
+    }
+  });
+} else if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   try {
     await buildFormalDataset(parseArgs());
   } catch (error) {

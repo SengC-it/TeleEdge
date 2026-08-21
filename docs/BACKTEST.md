@@ -18,11 +18,11 @@ The formal dataset builder uses the Binance Data Vision monthly archive index fo
 
 ```powershell
 npm run backtest:formal:discover -- --snapshot-end 2026-08-01T00:00:00Z
-npm run backtest:formal -- --snapshot-end 2026-08-01T00:00:00Z --concurrency 2 --rate-limit-ms 250
+npm run backtest:formal -- --snapshot-end 2026-08-01T00:00:00Z --concurrency 16 --transform-concurrency 2 --rate-limit-ms 250
 npm run backtest:verify-data -- --strict
 ```
 
-The 1m formal artifacts are intentionally generated outside Git because a full 2021-to-snapshotEnd all-symbol dataset is large. The builder records source URLs, source checksum values, derived artifact hashes, row counts, lifecycle evidence, and a `quality-report.json` with core/expanded counts, historical-delisted counts, annual active counts, missing artifacts, rows, bytes, and verifier output. `--discover-only` creates the PIT archive-index/universe evidence without downloading candles; it is a discovery step, not a formal dataset.
+The 1m formal artifacts are intentionally generated outside Git because a full 2021-to-snapshotEnd all-symbol dataset is large. The builder records source URLs, source checksum values, derived artifact hashes, row counts, lifecycle evidence, and a `quality-report.json` with core/expanded counts, historical-delisted counts, annual active counts, missing artifacts, rows, bytes, and verifier output. Download concurrency and CPU-bound ZIP/CSV/gzip transformation concurrency are separate controls; the latter uses bounded worker threads so the four-core development host is not limited to one synchronous transform. `--discover-only` creates the PIT archive-index/universe evidence without downloading candles; it is a discovery step, not a formal dataset.
 
 Archive first/last kline observations identify symbols that existed historically, but they do not by themselves prove exact listing or delist timestamps. Each market record exposes `actualFirstArchiveMonth`, `actualLastArchiveMonth`, `firstObserved`, `lastObserved`, `listingEvidenceSource`, `delistEvidenceSource`, and `lifecycleExact`. Unless an external historical lifecycle evidence file supplies timestamped listing/onboard and delist/delivery evidence for every archive-only market, the manifest keeps `pointInTime=false` and `historicalDelistingsResolved=false`; inferred archive windows remain explicitly non-PIT. A failed strict gate blocks any formal OOS run; this phase does not tune parameters or report profitability.
 
