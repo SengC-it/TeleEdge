@@ -1,48 +1,96 @@
 # M4 Formal Dataset Quality Report
 
-Status: **M4-INCOMPLETE**. This report records dataset construction and gate results only. No strategy run, optimization, or profitability conclusion was performed.
+Status: **M4-INCOMPLETE**. The reproducible acquisition run and strict verification were completed, but the dataset did not pass the formal gate. No V7.5/V8 strategy run, optimization, or profitability conclusion was performed.
 
-## Discovery snapshot
+## Scope and provenance
 
-- Backtest start: `2021-01-01T00:00:00Z`
-- Snapshot end: `2026-08-01T00:00:00Z` (last complete monthly archive boundary)
-- Source: Binance Data Vision USD-M monthly archive-prefix listing; current `exchangeInfo` is stored only as a cross-check.
+- Backtest interval: `2021-01-01T00:00:00Z` through `2026-08-01T00:00:00Z`
+- Source: Binance Data Vision USD-M monthly archive listings; current `exchangeInfo` is a cross-check only.
 - Discovered archive symbols: 830
+- Dataset symbols with actual archives: 829
+- Symbol excluded because no actual archive was found: `LENDUSDT`
 - Core symbols: 70
-- Expanded/non-core symbols: 760
-- Archive-only symbols not present in current perpetual exchangeInfo: 180
-- Active symbols by year: 2021 296; 2022 315; 2023 408; 2024 537; 2025 761; 2026 761
+- Expanded/non-core symbols: 759
+- Current symbols: 650
+- Historical archive-only symbols: 179
+- Lifecycle-exact symbols: 650
+- Lifecycle-unresolved symbols: 179
 
-Generated evidence is kept outside Git under `data/backtest/source/`:
+The builder records actual first/last archive month and first/last observed price timestamp per market. It does not promote an archive observation or an inferred last kline into historical listing/delist evidence.
 
-- `archive-index.json` records the source endpoints, snapshot, archive prefixes, month window, and SHA256.
-- `current-exchangeInfo.json` records the contemporaneous cross-check and SHA256.
-- `quality-report.json` records counts, missing artifacts, rows, bytes, and verifier output.
+Evidence and hashes are stored outside Git under `data/backtest/source/`:
 
-The discovery command was:
+- `archive-index.json`: archive prefixes, actual archive keys, snapshot, requested month window, and source metadata; SHA-256 `7ff9cd5758ae99eaf66a6224ce75ae281007fd5a769cb076fabbb497cf49b169`
+- `current-exchangeInfo.json`: contemporaneous exchange-info cross-check and SHA-256 recorded in `manifest.json`
+- `manifest.json`: per-symbol lifecycle and per-artifact `symbol`, `kind`, `interval`, active window, rows, and SHA-256
+- `quality-report.json`: generated counts and strict verifier result
+
+## Universe quality
+
+Resolved-lifecycle active symbols by year:
+
+| Year | Active symbols |
+| --- | ---: |
+| 2021 | 116 |
+| 2022 | 135 |
+| 2023 | 228 |
+| 2024 | 357 |
+| 2025 | 581 |
+| 2026 | 581 |
+
+Lifecycle evidence coverage:
+
+- Listing evidence: 650 / 829
+- Delist/delivery evidence: 122 / 829
+- Exact lifecycle: 650 / 829
+- Unresolved lifecycle: 179 / 829
+- `pointInTime`: `false`
+- `historicalDelistingsResolved`: `false`
+
+The 179 archive-only markets lack timestamped listing and/or delivery/delist evidence. Their active windows remain explicitly unresolved; they are not counted as resolved PIT lifecycle records.
+
+## Downloaded artifacts
+
+The resumable builder completed the available archive acquisition with checksum validation, retry, pagination, per-symbol active-window transformation, and serialized progress writes.
+
+| Artifact | Files | Rows | Missing non-empty artifact |
+| --- | ---: | ---: | --- |
+| 1h price | 828 | 14,330,187 | `GAIBUSDT` |
+| 1m execution/settlement | 828 | 859,795,074 | `GAIBUSDT` |
+| funding events | 829 | 2,481,882 | none by row count |
+
+- Total derived artifacts: 2,485
+- Derived data bytes: 13,422,831,479 (~12.5 GiB)
+- Funding is represented as an event stream; the manifest records the funding interval metadata/fallback contract. Funding rows are not treated as continuous candles.
+
+The missing `GAIBUSDT` price and 1m artifacts, plus event-window/active-window violations, prevent the required-artifact contract from passing. “No missing funding file” does not mean funding coverage passed.
+
+## Strict verifier
+
+Command:
 
 ```powershell
-npm run backtest:formal:discover -- --snapshot-end 2026-08-01T00:00:00Z --rate-limit-ms 100 --concurrency 4
+npm run backtest:verify-data -- --strict
 ```
 
-Discovery intentionally downloaded no candles. Therefore the discovery manifest has 0 derived artifacts and reports 830 missing price, 830 missing funding, and 830 missing 1m artifacts. `npm run backtest:verify-data -- --strict` exited 1 with `status=M4-INCOMPLETE`, `complete=false`, and `artifacts=0`.
+Result: exit code `1`.
 
-## Downloader validation
+| Check | Result |
+| --- | ---: |
+| `status` | `M4-INCOMPLETE` |
+| `complete` | `false` |
+| missing artifacts | 2 |
+| SHA/hash mismatches | 0 |
+| row-count failures | 0 |
+| timestamp continuity failures | 120 |
+| active-window/coverage failures | 728 |
+| expanded/non-core artifact contract | failed |
+| `formalOosAllowed` | `false` |
 
-A one-month BTC-only build validated the real source path without representing formal OOS:
+The coverage failures include funding event-window violations and price/1m active-window gaps. The expanded/non-core contract is not inferred from the manifest boolean; it is failed from the actual market/artifact checks.
 
-- Window: `2021-01-01T00:00:00Z` to `2021-02-01T00:00:00Z`
-- 1h price rows: 744
-- Funding event rows: 93
-- 1m rows: 44,640
-- Derived artifact bytes: 1,195,198
-- SHA256, row count, continuity, and active-window coverage: passed
-- Re-running the same command reused the completed artifacts through the progress/resume path
+## Gate decision and next work
 
-This validation remains `formalOosAllowed=false` because it is one symbol, has no expanded market, and does not satisfy the historical lifecycle gate.
+M4 remains **INCOMPLETE**. Formal OOS is blocked until all required lifecycle evidence and active-window coverage pass, `GAIBUSDT` has complete price/1m artifacts, continuity and funding event-window failures are resolved, and the actual expanded/non-core artifact contract passes.
 
-## Remaining strict-gate blockers
-
-1. The archive index provides historical symbol evidence, but exact historical delivery/delist evidence has not been supplied for all 180 archive-only symbols. The builder therefore keeps `historicalDelistingsResolved=false`; archive last-kline boundaries are explicitly marked inferred.
-2. The complete 830-symbol 1h/1m/funding artifact set was not silently substituted with a partial set. The formal downloader supports checksum verification, retries, `.part` resume, monthly pagination, per-symbol lifecycle windows, and quality reporting, but the full artifact build remains a separate large data acquisition step.
-3. Until every lifecycle and required artifact passes the strict verifier, formal V7.5 vs V8 OOS is forbidden. M4 remains incomplete and no profitability statement is valid.
+No formal V7.5 baseline or V8 result is reported from this dataset. Any five-coin or other reduced run remains smoke/sanity evidence only and must not be described as full V7.5 Control OOS.
