@@ -94,3 +94,4 @@ The coverage failures include funding event-window violations and price/1m activ
 M4 remains **INCOMPLETE**. Formal OOS is blocked until all required lifecycle evidence and active-window coverage pass, `GAIBUSDT` has complete price/1m artifacts, continuity and funding event-window failures are resolved, and the actual expanded/non-core artifact contract passes.
 
 No formal V7.5 baseline or V8 result is reported from this dataset. Any five-coin or other reduced run remains smoke/sanity evidence only and must not be described as full V7.5 Control OOS.
+
