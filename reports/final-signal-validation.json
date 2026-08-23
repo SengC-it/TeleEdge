@@ -3402,7 +3402,361 @@
             "timeToSlHours": 43.583333333333336
           }
         }
-      ]
+      ],
+      "rejectionBreakdown": {
+        "total": 24,
+        "categories": {
+          "fill unavailable": 0,
+          "slippage": 0,
+          "stop-risk": 0,
+          "cooldown": 0,
+          "position cap": 0,
+          "quantity/minQty": 0,
+          "symbol already open": 0,
+          "other": 24
+        },
+        "byReason": {
+          "invalid-market-tick": 24
+        },
+        "signals": [
+          {
+            "signalId": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
+            "symbol": "1000CATUSDT",
+            "side": "short",
+            "signalTime": 1769601600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1769602800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000",
+            "symbol": "1MBABYDOGEUSDT",
+            "side": "short",
+            "signalTime": 1753718400000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1753719600000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1742932800000",
+            "symbol": "ACTUSDT",
+            "side": "short",
+            "signalTime": 1742932800000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1742934000000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
+            "symbol": "ACTUSDT",
+            "side": "short",
+            "signalTime": 1754884800000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1754886000000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "ADAUSDT|v39_10d|long|1757808000000",
+            "symbol": "ADAUSDT",
+            "side": "long",
+            "signalTime": 1757808000000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1757809200000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "AEROUSDT|v59_volume_shock_reversal|short|1757088000000",
+            "symbol": "AEROUSDT",
+            "side": "short",
+            "signalTime": 1757088000000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1757089200000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "ALTUSDT|v59_volume_shock_reversal|short|1755057600000",
+            "symbol": "ALTUSDT",
+            "side": "short",
+            "signalTime": 1755057600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1755058800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
+            "symbol": "AUCTIONUSDT",
+            "side": "short",
+            "signalTime": 1753718400000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1753719600000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BCHUSDT|v39_5d|long|1754697600000",
+            "symbol": "BCHUSDT",
+            "side": "long",
+            "signalTime": 1754697600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1754698800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BIGTIMEUSDT|v59_volume_shock_reversal|short|1753084800000",
+            "symbol": "BIGTIMEUSDT",
+            "side": "short",
+            "signalTime": 1753084800000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1753086000000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_5d|long|1754611200000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1754611200000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1754612400000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_5d|long|1754697600000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1754697600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1754698800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_10d|long|1755043200000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1755043200000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1755044400000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_5d|long|1755734400000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1755734400000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1755735600000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_10d|long|1757808000000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1757808000000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1757809200000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_20d|long|1758067200000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1758067200000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1758068400000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_20d|long|1758153600000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1758153600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1758154800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BTCUSDT|v39_10d|long|1755129600000",
+            "symbol": "BTCUSDT",
+            "side": "long",
+            "signalTime": 1755129600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1755130800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "CAKEUSDT|v59_volume_shock_reversal|short|1749672000000",
+            "symbol": "CAKEUSDT",
+            "side": "short",
+            "signalTime": 1749672000000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1749673200000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "CAKEUSDT|v39_10d|long|1757721600000",
+            "symbol": "CAKEUSDT",
+            "side": "long",
+            "signalTime": 1757721600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1757722800000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "DOGEUSDT|v39_10d|long|1759795200000",
+            "symbol": "DOGEUSDT",
+            "side": "long",
+            "signalTime": 1759795200000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1759796400000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
+            "symbol": "HANAUSDT",
+            "side": "short",
+            "signalTime": 1772884800000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1772886000000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
+            "symbol": "PARTIUSDT",
+            "side": "short",
+            "signalTime": 1768363200000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1768364400000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
+            "symbol": "SCRUSDT",
+            "side": "short",
+            "signalTime": 1755028800000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "invalid-market-tick",
+            "firstFailureTimestamp": 1755030000000,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          }
+        ]
+      }
     },
     "v8": {
       "name": "V8 Shadow",
@@ -8738,29 +9092,581 @@
   },
   "releaseChecklist": [
     {
-      "item": "V7.5 Control signal pipeline",
-      "status": "PASS",
-      "evidence": "frozen candidate generation and state-isolation tests pass"
+      "item": "V7.5 Control ranked rejection audit",
+      "status": "BLOCKED",
+      "evidence": "24 per-signal rows with raw reason and category"
     },
     {
       "item": "V8 Shadow signal pipeline",
       "status": "PASS",
-      "evidence": "frozen V8 shadow namespace and state-isolation tests pass"
+      "evidence": "existing SHADOW GO report and frozen state-isolation tests"
     },
     {
-      "item": "history / reviews / email / dashboard",
+      "item": "notifiable alert stage contract",
       "status": "PASS",
-      "evidence": "existing contract tests pass"
+      "evidence": "candidate → ranked → accepted → notifiable → email contract tests"
+    },
+    {
+      "item": "V7.5/V8 overlap dedupe",
+      "status": "PASS",
+      "evidence": "shared alert key, source labels, SQL outbox migration, and preview smoke"
+    },
+    {
+      "item": "history / reviews / email / dashboard / status",
+      "status": "PASS",
+      "evidence": "preview contract smoke; public payload is compact and uses notifiable alert count"
     },
     {
       "item": "real-money automatic order path",
       "status": "PASS",
-      "evidence": "static audit found no Binance order endpoint; system remains signal-only"
+      "evidence": "static audit found no Binance order endpoint; signal-only advisory"
     },
     {
-      "item": "production signal gate",
-      "status": "SHADOW",
-      "evidence": "manual approval required; no deployment performed"
+      "item": "production release",
+      "status": "BLOCKED",
+      "evidence": "The persisted V7.5 accepted=0 result was invalidated by the missing exchange-rule loader input. A fresh signal-validation replay is required after the loader fix before PR #1 can become Ready for Review."
     }
+  ],
+  "acceptanceAudit": {
+    "status": "INVALIDATED_BY_ACCEPTANCE_LOADER_BUG",
+    "rankedSignals": 24,
+    "persistedAcceptedSignals": 0,
+    "recomputedAcceptedSignals": null,
+    "requiresReplay": true,
+    "rows": [
+      {
+        "signalId": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
+        "symbol": "1000CATUSDT",
+        "side": "short",
+        "signalTime": 1769601600000,
+        "firstFailureTimestamp": 1769602800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000",
+        "symbol": "1MBABYDOGEUSDT",
+        "side": "short",
+        "signalTime": 1753718400000,
+        "firstFailureTimestamp": 1753719600000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1742932800000",
+        "symbol": "ACTUSDT",
+        "side": "short",
+        "signalTime": 1742932800000,
+        "firstFailureTimestamp": 1742934000000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
+        "symbol": "ACTUSDT",
+        "side": "short",
+        "signalTime": 1754884800000,
+        "firstFailureTimestamp": 1754886000000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "ADAUSDT|v39_10d|long|1757808000000",
+        "symbol": "ADAUSDT",
+        "side": "long",
+        "signalTime": 1757808000000,
+        "firstFailureTimestamp": 1757809200000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "AEROUSDT|v59_volume_shock_reversal|short|1757088000000",
+        "symbol": "AEROUSDT",
+        "side": "short",
+        "signalTime": 1757088000000,
+        "firstFailureTimestamp": 1757089200000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "ALTUSDT|v59_volume_shock_reversal|short|1755057600000",
+        "symbol": "ALTUSDT",
+        "side": "short",
+        "signalTime": 1755057600000,
+        "firstFailureTimestamp": 1755058800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
+        "symbol": "AUCTIONUSDT",
+        "side": "short",
+        "signalTime": 1753718400000,
+        "firstFailureTimestamp": 1753719600000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BCHUSDT|v39_5d|long|1754697600000",
+        "symbol": "BCHUSDT",
+        "side": "long",
+        "signalTime": 1754697600000,
+        "firstFailureTimestamp": 1754698800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BIGTIMEUSDT|v59_volume_shock_reversal|short|1753084800000",
+        "symbol": "BIGTIMEUSDT",
+        "side": "short",
+        "signalTime": 1753084800000,
+        "firstFailureTimestamp": 1753086000000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_5d|long|1754611200000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1754611200000,
+        "firstFailureTimestamp": 1754612400000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_5d|long|1754697600000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1754697600000,
+        "firstFailureTimestamp": 1754698800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_10d|long|1755043200000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1755043200000,
+        "firstFailureTimestamp": 1755044400000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_5d|long|1755734400000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1755734400000,
+        "firstFailureTimestamp": 1755735600000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_10d|long|1757808000000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1757808000000,
+        "firstFailureTimestamp": 1757809200000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_20d|long|1758067200000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1758067200000,
+        "firstFailureTimestamp": 1758068400000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BNBUSDT|v39_20d|long|1758153600000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1758153600000,
+        "firstFailureTimestamp": 1758154800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "BTCUSDT|v39_10d|long|1755129600000",
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "signalTime": 1755129600000,
+        "firstFailureTimestamp": 1755130800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "CAKEUSDT|v59_volume_shock_reversal|short|1749672000000",
+        "symbol": "CAKEUSDT",
+        "side": "short",
+        "signalTime": 1749672000000,
+        "firstFailureTimestamp": 1749673200000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "CAKEUSDT|v39_10d|long|1757721600000",
+        "symbol": "CAKEUSDT",
+        "side": "long",
+        "signalTime": 1757721600000,
+        "firstFailureTimestamp": 1757722800000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "DOGEUSDT|v39_10d|long|1759795200000",
+        "symbol": "DOGEUSDT",
+        "side": "long",
+        "signalTime": 1759795200000,
+        "firstFailureTimestamp": 1759796400000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
+        "symbol": "HANAUSDT",
+        "side": "short",
+        "signalTime": 1772884800000,
+        "firstFailureTimestamp": 1772886000000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
+        "symbol": "PARTIUSDT",
+        "side": "short",
+        "signalTime": 1768363200000,
+        "firstFailureTimestamp": 1768364400000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      },
+      {
+        "signalId": "SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
+        "symbol": "SCRUSDT",
+        "side": "short",
+        "signalTime": 1755028800000,
+        "firstFailureTimestamp": 1755030000000,
+        "reason": "invalid-market-tick",
+        "stage": "accepted signal",
+        "boundary": null
+      }
+    ],
+    "reason": "The persisted validation run had no data/backtest exchangeInfo.json. marketFor() therefore supplied empty filters and the frozen acceptance contract rejected every ranked V7.5 signal at invalid-market-tick. The verified source snapshot exists, and the loader is now fixed; no formal replay was run in this M5 pass.",
+    "evidence": {
+      "missingRootExchangeInfo": "D:\\Codex\\Gmail\\tele-v75\\data\\backtest\\exchangeInfo.json",
+      "availableVerifiedSource": "D:\\Codex\\Gmail\\tele-v75\\data\\backtest\\source\\current-exchangeInfo.json",
+      "allSignalsHadMinuteData": true
+    }
+  },
+  "notifiableAlertIncrement": {
+    "v75Notifiable": 0,
+    "v8OnlyNotifiable": 24,
+    "overlapDeduped": 0,
+    "combinedNotifiable": 24,
+    "actualSignalIncreasePct": null,
+    "emailSent": null,
+    "alerts": [
+      {
+        "key": "1000CATUSDT|short|1769601600000",
+        "symbol": "1000CATUSDT",
+        "side": "short",
+        "signalTime": 1769601600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ACTUSDT|short|1742932800000",
+        "symbol": "ACTUSDT",
+        "side": "short",
+        "signalTime": 1742932800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ACTUSDT|short|1754884800000",
+        "symbol": "ACTUSDT",
+        "side": "short",
+        "signalTime": 1754884800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ADAUSDT|long|1757808000000",
+        "symbol": "ADAUSDT",
+        "side": "long",
+        "signalTime": 1757808000000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ADAUSDT|short|1780012800000",
+        "symbol": "ADAUSDT",
+        "side": "short",
+        "signalTime": 1780012800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "AEROUSDT|short|1757088000000",
+        "symbol": "AEROUSDT",
+        "side": "short",
+        "signalTime": 1757088000000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ALTUSDT|short|1755057600000",
+        "symbol": "ALTUSDT",
+        "side": "short",
+        "signalTime": 1755057600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "AUCTIONUSDT|short|1753718400000",
+        "symbol": "AUCTIONUSDT",
+        "side": "short",
+        "signalTime": 1753718400000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BCHUSDT|long|1754697600000",
+        "symbol": "BCHUSDT",
+        "side": "long",
+        "signalTime": 1754697600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BIGTIMEUSDT|short|1753084800000",
+        "symbol": "BIGTIMEUSDT",
+        "side": "short",
+        "signalTime": 1753084800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BNBUSDT|long|1754611200000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1754611200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BNBUSDT|long|1757808000000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1757808000000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BTCUSDT|long|1755129600000",
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "signalTime": 1755129600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BTCUSDT|short|1769385600000",
+        "symbol": "BTCUSDT",
+        "side": "short",
+        "signalTime": 1769385600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BTCUSDT|short|1780012800000",
+        "symbol": "BTCUSDT",
+        "side": "short",
+        "signalTime": 1780012800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "CAKEUSDT|long|1757721600000",
+        "symbol": "CAKEUSDT",
+        "side": "long",
+        "signalTime": 1757721600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "CAKEUSDT|short|1749672000000",
+        "symbol": "CAKEUSDT",
+        "side": "short",
+        "signalTime": 1749672000000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "DOGEUSDT|long|1759795200000",
+        "symbol": "DOGEUSDT",
+        "side": "long",
+        "signalTime": 1759795200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "DOGEUSDT|short|1767225600000",
+        "symbol": "DOGEUSDT",
+        "side": "short",
+        "signalTime": 1767225600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "DOGEUSDT|short|1769731200000",
+        "symbol": "DOGEUSDT",
+        "side": "short",
+        "signalTime": 1769731200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ETCUSDT|short|1769731200000",
+        "symbol": "ETCUSDT",
+        "side": "short",
+        "signalTime": 1769731200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "HANAUSDT|short|1772884800000",
+        "symbol": "HANAUSDT",
+        "side": "short",
+        "signalTime": 1772884800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "PARTIUSDT|short|1768363200000",
+        "symbol": "PARTIUSDT",
+        "side": "short",
+        "signalTime": 1768363200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "SCRUSDT|short|1755028800000",
+        "symbol": "SCRUSDT",
+        "side": "short",
+        "signalTime": 1755028800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      }
+    ]
+  },
+  "notificationStages": [
+    {
+      "stage": "candidate",
+      "v75": 36,
+      "v8": 32,
+      "userReceipt": false
+    },
+    {
+      "stage": "ranked signal",
+      "v75": 24,
+      "v8": 32,
+      "userReceipt": false
+    },
+    {
+      "stage": "accepted signal",
+      "v75": 0,
+      "v8": 24,
+      "userReceipt": false
+    },
+    {
+      "stage": "notifiable alert",
+      "v75": 0,
+      "v8": 24,
+      "userReceipt": true
+    },
+    {
+      "stage": "email sent",
+      "v75": null,
+      "v8": null,
+      "userReceipt": true
+    }
+  ],
+  "productionReleaseStatus": "BLOCKED",
+  "releaseBlockers": [
+    "The persisted V7.5 accepted=0 result was invalidated by the missing exchange-rule loader input.",
+    "A fresh signal-validation replay is required after the loader fix before PR #1 can become Ready for Review."
   ]
 }

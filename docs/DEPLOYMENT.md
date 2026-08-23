@@ -28,5 +28,7 @@ Neither function depends on a Supabase JWT. The two tokens are not interchangeab
 3. Run `npm test` and `npm run check`.
 4. Verify worker requests with no token and an incorrect token return `401`; a correct worker token reaches the requested action. Verify that a reviews token does not authorize the worker and vice versa.
 5. Confirm full funnel diagnostics remain in `teleeg_job_runs.summary.funnel`. The public `teleeg_public_status.last_scan_summary` is intentionally compact and excludes `byDimension`.
+6. Apply the advisory-alert migration before enabling V8 notifications. It adds the shared `alert_key`, V8 position reference, source labels, and atomic outbox dedupe. A same-key V7.5/V8 acceptance creates one delivery item; V8-only items are labelled `V8 SHADOW / EXPERIMENTAL`.
+7. Run `npm run preview:smoke`. This validates the V7.5 pipeline, V8 shadow pipeline, overlap dedupe, V8-only notification, email handoff, reviews, dashboard/status projection, Supabase read/write contract, and the no-order-path audit without contacting production.
 
 No production deployment is part of this Draft PR acceptance round.

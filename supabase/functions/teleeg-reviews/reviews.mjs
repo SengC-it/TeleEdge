@@ -1,6 +1,6 @@
 function latestByEvent(outbox, signalId, eventType) {
   return (outbox || [])
-    .filter(item => item.position_signal_id === signalId && item.event_type === eventType)
+    .filter(item => (item.position_signal_id === signalId || item.v8_position_signal_id === signalId) && item.event_type === eventType)
     .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0] || null;
 }
 
@@ -32,8 +32,9 @@ export async function authorizeReviewsRequest(request, expectedToken) {
   return mismatch === 0;
 }
 
-export function buildReviewsPayload(positions, outbox = []) {
-  const trades = [...(positions || [])]
+export function buildReviewsPayload(positions, outbox = [], shadowPositions = []) {
+  const allPositions = [...(positions || []), ...(shadowPositions || [])];
+  const trades = allPositions
     .map(position => ({
       ...position,
       notificationStatus: {
@@ -45,7 +46,7 @@ export function buildReviewsPayload(positions, outbox = []) {
   const closed = trades.filter(position => position.status === 'closed');
   return {
     ok: true,
-    source: 'teleeg_positions',
+    source: shadowPositions?.length ? 'teleeg_positions+teleeg_v8_shadow_positions' : 'teleeg_positions',
     closedSignals: closed.length,
     wins: closed.filter(position => position.exit_reason === 'tp').length,
     losses: closed.filter(position => position.exit_reason === 'sl').length,

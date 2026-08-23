@@ -1,10 +1,11 @@
-import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+import crypto from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {APP_DIR, CORE_MARKETS, H1} from '../src/config.mjs';
 import {runBacktest} from './backtest.mjs';
+import {notifiableAlert, rejectionBreakdown, sourceForModel, summarizeNotifiableAlerts} from '../src/notifiable-alerts.mjs';
 
 const OOS_START = Date.parse('2025-01-01T00:00:00.000Z');
 const OOS_END = Date.parse('2026-07-15T00:00:00.000Z');
@@ -347,6 +348,11 @@ function modelResult(model) {
   const ranked = model.rankedSignalArtifactPrefix ? [] : oosEvents(model.signalEvents);
   const accepted = oosEvents(model.acceptedSignalEvents);
   const trades = (model.trades || []).filter(trade => timestamp(trade.signalTime) >= OOS_START && timestamp(trade.signalTime) < OOS_END).map(compactTrade);
+  const rejectionEvents = (model.rejectionEvents || []).filter(event => timestamp(event.signalTime) >= OOS_START && timestamp(event.signalTime) < OOS_END);
+  const acceptedAlertEvents = accepted.length
+    ? accepted.map(event => notifiableAlert(event, sourceForModel(model.model)))
+    : trades.map(trade => notifiableAlert(trade, sourceForModel(model.model)));
+  const notifiable = summarizeNotifiableAlerts(acceptedAlertEvents);
   const observations = [];
   return {
     model,
@@ -360,6 +366,10 @@ function modelResult(model) {
     accepted,
     acceptedCount: Number(model.acceptedSignalCount ?? accepted.length),
     trades,
+    rejectionEvents,
+    rejectionBreakdown: rejectionBreakdown(rejectionEvents),
+    notifiable,
+    notifiableSource: accepted.length ? 'accepted-events' : trades.length ? 'closed-trades-fallback' : 'unavailable',
     observations,
   };
 }
@@ -372,7 +382,18 @@ function modelSummary(result) {
     rankedSignals: result.rankedCount,
     uniqueAlerts: result.rankedKeys.size,
     simulatedAcceptedSignals: result.acceptedCount,
+    rejectionBreakdown: result.rejectionBreakdown,
     closedSimulatedTrades: result.trades.length,
+    notifiableAlerts: result.notifiable.combined,
+    notifiableAlertRecords: result.notifiable.alerts.map(alert => ({
+      key: alert.key,
+      symbol: alert.symbol,
+      side: alert.side,
+      signalTime: alert.signalTime,
+      sourceLabel: alert.sourceLabel,
+      emailSent: alert.emailSent,
+    })),
+    notifiableSource: result.notifiableSource,
     uniqueSignalSymbols: signalQuality.uniqueSymbols,
     observedAlphaCoverage: result.model.observedAlphaCoverage || [],
     signalQuality,
@@ -386,6 +407,30 @@ function modelSummary(result) {
     trade: tradeBreakdown(result.trades, result.model.splits.oos),
     tradeRecords: result.trades,
     signalObservations: result.observations,
+  };
+}
+
+function notifiableIncrement(v75, v8) {
+  const v75Alerts = v75.notifiableAlertRecords || [];
+  const v8Alerts = v8.notifiableAlertRecords || [];
+  const merged = summarizeNotifiableAlerts([
+    ...v75Alerts.map(alert => notifiableAlert(alert, 'V7.5 CONTROL')),
+    ...v8Alerts.map(alert => notifiableAlert(alert, 'V8 SHADOW')),
+  ]);
+  return {
+    v75Notifiable: v75Alerts.length,
+    v8OnlyNotifiable: merged.v8Only,
+    overlapDeduped: merged.overlapDeduped,
+    combinedNotifiable: merged.combined,
+    actualSignalIncreasePct: v75Alerts.length ? (merged.combined - v75Alerts.length) / v75Alerts.length * 100 : null,
+    alerts: merged.alerts.map(alert => ({
+      key: alert.key,
+      symbol: alert.symbol,
+      side: alert.side,
+      signalTime: alert.signalTime,
+      sources: alert.sources,
+      sourceLabel: alert.sourceLabel,
+    })),
   };
 }
 
@@ -477,6 +522,22 @@ function markdown(report) {
     '| Model | 24h directional edge | TP-first-SL | Sim expectancy R | PF | DD |',
     '|---|---:|---:|---:|---:|---:|',
     edgeRows,
+    '',
+    '## Acceptance and notification contract',
+    '',
+    '- `candidate` → `ranked signal` → `accepted signal` → `notifiable alert` → `email sent`.',
+    '- Production user-facing counts use `notifiable alert`; ranked signals are diagnostic and are not user receipt counts.',
+    `- V7.5 notifiable alerts: ${report.notifiableAlertIncrement?.v75Notifiable ?? 'n/a'}`,
+    `- V8-only notifiable alerts: ${report.notifiableAlertIncrement?.v8OnlyNotifiable ?? 'n/a'}`,
+    `- Overlap deduped notifiable alerts: ${report.notifiableAlertIncrement?.overlapDeduped ?? 'n/a'}`,
+    `- Combined notifiable alerts: ${report.notifiableAlertIncrement?.combinedNotifiable ?? 'n/a'}`,
+    `- Actual notifiable signal increase: ${format(report.notifiableAlertIncrement?.actualSignalIncreasePct)}% (null when V7.5 baseline is zero)`,
+    '',
+    '## V7.5 ranked rejection audit',
+    '',
+    `- Audit rows: ${report.models.v75.rejectionBreakdown?.total ?? 'n/a'}`,
+    `- Raw reasons: ${JSON.stringify(report.models.v75.rejectionBreakdown?.byReason || {})}`,
+    ...(report.models.v75.rejectionBreakdown?.signals || []).map(row => `- ${row.signalId}: **${row.reason}** (${row.rawReason})`),
     '',
     '## Signal increment',
     '',
@@ -594,6 +655,7 @@ async function main() {
   const v75Summary = modelSummary(models.v75);
   const v8Summary = modelSummary(models.v8);
   const signalIncrement = increment(models.v75, models.v8);
+  const notifiableAlertIncrement = notifiableIncrement(v75Summary, v8Summary);
   const gateResult = gate(v8Summary);
   const report = {
     reportVersion: 1,
@@ -629,6 +691,7 @@ async function main() {
       }, {}),
     },
     signalIncrement,
+    notifiableAlertIncrement,
     models: {v75: v75Summary, v8: v8Summary},
     alphaCoverage: {
       v75: tradeReport.models.find(model => model.model === 'V7.5 Control')?.observedAlphaCoverage || [],

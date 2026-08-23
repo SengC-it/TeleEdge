@@ -36,13 +36,14 @@ Deno.serve(async (request: Request) => {
   }
   if (!SUPABASE_URL || !ADMIN_KEY) return reply({ok: false, error: 'reviews runtime secrets unavailable'}, 500);
   try {
-    // teleeg_positions is the only source of trade history. Outbox rows only
-    // decorate each position with notification delivery state.
-    const [positions, outbox] = await Promise.all([
+    // Control and shadow positions are both advisory history. Outbox rows
+    // decorate either position with notification delivery state.
+    const [positions, shadowPositions, outbox] = await Promise.all([
       db('teleeg_positions?select=*&order=signal_time.desc'),
+      db('teleeg_v8_shadow_positions?select=*&order=signal_time.desc'),
       db('teleeg_outbox?select=*&order=created_at.desc'),
     ]);
-    return reply(buildReviewsPayload(positions, outbox));
+    return reply(buildReviewsPayload(positions, outbox, shadowPositions));
   } catch (error) {
     console.error(error);
     return reply({ok: false, error: String(error)}, 500);

@@ -52,6 +52,8 @@ export function compactFunnelSummary(summary, maxRejectionReasons = 8) {
     topRejectionReasons,
     candidateCount: Number(summary?.candidates ?? 0),
     acceptedCount: Number(summary?.accepted ?? 0),
+    notifiableAlertCount: Number(summary?.notifiableAlerts ?? 0),
+    emailSentCount: Number(summary?.emailSent ?? 0),
     v8Shadow: {
       candidates: Number(v8.candidates ?? 0),
       accepted: Number(v8.accepted ?? 0),

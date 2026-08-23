@@ -94,16 +94,21 @@ function nextBar(rows, timestamp) {
   return rows[low] ?? null;
 }
 
-function exchangeMarkets(dataRoot, externalCache) {
-  const file = externalCache
-    ? path.join(dataRoot, 'v60_full_universe_cache', 'exchangeInfo.json')
-    : path.join(dataRoot, 'exchangeInfo.json');
-  if (!fs.existsSync(file)) return new Map();
+export function exchangeMarkets(dataRoot, externalCache) {
+  const candidates = externalCache
+    ? [path.join(dataRoot, 'v60_full_universe_cache', 'exchangeInfo.json')]
+    : [
+      path.join(dataRoot, 'exchangeInfo.json'),
+      path.join(dataRoot, 'source', 'current-exchangeInfo.json'),
+      path.join(dataRoot, 'source', 'exchangeInfo.json'),
+    ];
+  const file = candidates.find(candidate => fs.existsSync(candidate));
+  if (!file) return new Map();
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
   return new Map((parsed.symbols || []).map(item => [item.symbol, item]));
 }
 
-function marketFor(symbol, exchange) {
+export function marketFor(symbol, exchange) {
   const item = exchange.get(symbol) || {};
   return {
     symbol,
@@ -185,12 +190,24 @@ function createModel(name, v8 = false) {
     acceptedSignalEvents: [],
     cooldowns: {},
     rejectionReasons: {},
+    rejectionEvents: [],
     acceptedSignals: 0,
   };
 }
 
-function recordReject(model, reason) {
+function recordReject(model, reason, candidate = null, recordEvent = true) {
   model.rejectionReasons[reason] = (model.rejectionReasons[reason] || 0) + 1;
+  if (recordEvent && candidate) {
+    model.rejectionEvents ||= [];
+    model.rejectionEvents.push({
+      signalId: candidate.id,
+      symbol: candidate.marketId || candidate.symbol,
+      side: candidate.side,
+      signalTime: candidate.t,
+      stage: 'accepted signal',
+      reason,
+    });
+  }
 }
 
 export function observedAlphaCoverage(model) {
@@ -523,7 +540,7 @@ export function processCandidates(model, candidates, dataBySymbol, {
     }) : null;
     if (!reason && !created?.position) reason = created?.reason || 'market-data-unavailable';
     if (reason) {
-      recordReject(model, reason);
+      recordReject(model, reason, candidate, shouldRecord(candidate));
       continue;
     }
     model.open.push(created.position);
@@ -577,6 +594,7 @@ function modelReport(model, start, end) {
     walkForward,
     acceptedSignals: model.acceptedSignals,
     rejectionReasons: model.rejectionReasons,
+    rejectionEvents: model.rejectionEvents,
     openAtEnd: model.open.length,
     observedAlphaCoverage: observedAlphaCoverage(model),
     rawCandidateEvents: model.rawCandidateEvents,

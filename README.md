@@ -10,8 +10,12 @@ USD-M USDT perpetual universe and never submits exchange orders.
 - Durable state and scheduler: existing Supabase project `crypto-alerts`
 - Edge worker: `teleeg-worker`
 - Database isolation: every TeleEdge-owned table starts with `teleeg_`
-- Notifications: durable `teleeg_outbox`; Gmail SMTP delivery runs through
-  Vercel with the sender display name `TeleEdge`.
+- Notifications: durable `teleeg_outbox`; the user-facing contract is
+  `candidate → ranked signal → accepted signal → notifiable alert → email sent`.
+  V7.5 and V8 use `symbol|side|signal timestamp` dedupe keys, so overlap is
+  one alert with both source labels; V8-only alerts are marked
+  `V8 SHADOW / EXPERIMENTAL`. Gmail SMTP delivery runs through Vercel with
+  the sender display name `TeleEdge`.
 - Review history: Vercel `/api/reviews` uses the server-only
   `TELEEDGE_REVIEWS_TOKEN` header to call the `teleeg-reviews` Edge Function;
   the function validates that token before using the service role key.

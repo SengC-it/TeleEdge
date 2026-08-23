@@ -8,6 +8,7 @@ import {fetchMinuteRange, getFundingRates, getTickerPrice, mapLimit} from './bin
 import {notify} from './notifier.mjs';
 import {createFunnel, summarizeFunnel} from './funnel.mjs';
 import {acceptV8ShadowCandidates, generateV8ShadowCandidates, runV8ShadowMonitor} from './v8-shadow.mjs';
+import {mergeNotifiableAlerts, notifiableAlert} from './notifiable-alerts.mjs';
 
 function eligibleMarkets(exchangeInfo, endTime) {
   return (exchangeInfo.symbols || []).filter(market => market.quoteAsset === 'USDT'
@@ -109,6 +110,10 @@ export async function runScan(now = Date.now()) {
       decisionTime: now,
       fillPrices,
     });
+    const notifiableAlerts = mergeNotifiableAlerts([
+      ...decision.accepted.map(position => notifiableAlert(position, 'V7.5 CONTROL')),
+      ...v8Decision.accepted.map(position => notifiableAlert(position, 'V8 SHADOW')),
+    ]);
     state.v8Shadow.lastScanSummary = {
       scanTime: now,
       candidates: v8Fresh.length,
@@ -136,6 +141,11 @@ export async function runScan(now = Date.now()) {
       activePositions: state.positions.length,
       exchangeInfoFallback: exchangeInfo._fallbackError || null,
       v8Shadow: state.v8Shadow.lastScanSummary,
+      notifiableAlerts: notifiableAlerts.length,
+      v75NotifiableAlerts: notifiableAlerts.filter(alert => alert.sourceLabel === 'V7.5 CONTROL').length,
+      v8OnlyNotifiableAlerts: notifiableAlerts.filter(alert => alert.sourceLabel === 'V8 SHADOW / EXPERIMENTAL').length,
+      overlapDedupedAlerts: notifiableAlerts.filter(alert => alert.sourceLabel === 'V7.5 CONTROL + V8 SHADOW').length,
+      emailSent: 0,
     };
     state.service.lastScanCompletedAt = Date.now();
     state.service.lastScanSummary = summary;
@@ -143,15 +153,23 @@ export async function runScan(now = Date.now()) {
     if (errors.length) state.service.lastError = `${errors.length} market-data errors; first: ${errors[0].market.symbol}: ${errors[0].error}`;
     saveState(state);
     appendNdjson(EVENTS_FILE, {eventId: `scan-${now}`, type: 'scan', at: Date.now(), payload: summary});
-    for (const position of decision.accepted) {
+    for (const alert of notifiableAlerts) {
       try {
-        await notify('entry', position);
+        const result = await notify('entry', {
+          ...alert.payload,
+          sources: alert.sources,
+          sourceLabel: alert.sourceLabel,
+          notificationStage: 'notifiable alert',
+        });
+        if (result.delivered) summary.emailSent++;
       } catch (error) {
         state.service.status = 'degraded';
         state.service.lastError = `Entry notification failed: ${error}`;
         saveState(state);
       }
     }
+    state.service.lastScanSummary = summary;
+    saveState(state);
     return summary;
   } catch (error) {
     state.service.status = 'degraded';

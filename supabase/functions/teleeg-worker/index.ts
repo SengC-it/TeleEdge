@@ -403,6 +403,12 @@ function finalizeContext(candidate: any) {
   };
 }
 
+function advisoryAlertKey(candidate: any) {
+  const signalTime = Date.parse(candidate.signal_time);
+  if (!candidate.market_id || !candidate.side || !Number.isFinite(signalTime)) throw new Error('invalid advisory alert identity');
+  return `${candidate.market_id}|${candidate.side}|${signalTime}`;
+}
+
 async function rejectFinalizeCandidate(candidate: any, reason: string, reasons: Record<string, number>, funnel: any) {
   const context = finalizeContext(candidate);
   reasons[reason] = (reasons[reason] ?? 0) + 1;
@@ -488,8 +494,26 @@ async function runFinalize(now: number, cycle: number, v8Shadow: Record<string, 
         await rejectFinalizeCandidate(candidate, decision.reason || 'acceptance-rpc-error', reasons, funnel);
       }
     }
-    const active = await db('teleeg_positions?select=signal_id&status=eq.open');
-    const summary = {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons, funnel: summarizeFunnel(funnel), v8Shadow};
+    const [active, acceptedControl, acceptedShadow, outbox] = await Promise.all([
+      db('teleeg_positions?select=signal_id&status=eq.open'),
+      db(`teleeg_candidates?select=market_id,side,signal_time&cycle_time=eq.${encodeURIComponent(iso(cycle))}&status=eq.accepted`),
+      db(`teleeg_v8_shadow_signals?select=market_id,side,signal_time&cycle_time=eq.${encodeURIComponent(iso(cycle))}&status=eq.accepted`),
+      db('teleeg_outbox?select=alert_key,alert_classification,status,event_type&event_type=eq.entry&limit=1000'),
+    ]);
+    const acceptedAlertKeys = new Set([...acceptedControl, ...acceptedShadow].map(advisoryAlertKey));
+    const notifiable = (outbox ?? []).filter((item: any) => acceptedAlertKeys.has(item.alert_key));
+    const summary = {
+      cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted,
+      rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons,
+      funnel: summarizeFunnel(funnel), v8Shadow,
+      notifiableAlerts: notifiable.length,
+      emailSent: notifiable.filter((item: any) => item.status === 'sent').length,
+      notifiableSources: Object.fromEntries(notifiable.reduce((counts: Map<string, number>, item: any) => {
+        const label = item.alert_classification || 'UNKNOWN';
+        counts.set(label, (counts.get(label) || 0) + 1);
+        return counts;
+      }, new Map())),
+    };
     (summary as any).publicStatus = compactFunnelSummary(summary);
     await finishJob(job.id, 'ok', summary);
     return summary;
@@ -511,6 +535,9 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
     });
   }
   let accepted = 0;
+  let notifiableAlerts = 0;
+  let overlapDeduped = 0;
+  let notificationErrors = 0;
   const reasons: Record<string, number> = {};
   const accounts = await db('teleeg_v8_shadow_account?select=equity,peak_equity,realized_pnl&id=eq.1');
   const account = accounts[0] ?? {equity: 10000, peak_equity: 10000, realized_pnl: 0};
@@ -580,6 +607,35 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
         method: 'PATCH', prefer: 'return=minimal',
         body: {status: 'accepted', decision_reason: 'accepted', decided_at: new Date().toISOString()},
       });
+      try {
+        phase = 'notification';
+        const alert = await rpc('teleeg_queue_advisory_alert', {
+          p_alert_key: advisoryAlertKey(candidate),
+          p_model_source: 'V8 SHADOW',
+          p_market_id: candidate.market_id,
+          p_side: candidate.side,
+          p_signal_time: candidate.signal_time,
+          p_subject: `[TeleEdge Shadow] ${candidate.side.toUpperCase()} ${candidate.market_id}`,
+          p_message: `TeleEdge V8 Shadow advisory signal\n\nSymbol: ${candidate.market_id}\nSide: ${candidate.side}\nSignal time: ${candidate.signal_time}\nFill price: ${filledRisk.fillPrice}\nStop: ${filledRisk.stop}\nTarget: ${filledRisk.target}\n\nV8 SHADOW / EXPERIMENTAL. No automatic order is submitted.`,
+          p_payload: {
+            signal_id: candidate.signal_id,
+            market_id: candidate.market_id,
+            side: candidate.side,
+            signal_time: candidate.signal_time,
+            signal_price: candidate.signal_price,
+            fill_price: filledRisk.fillPrice,
+            stop: filledRisk.stop,
+            target: filledRisk.target,
+            source: 'V8 SHADOW',
+          },
+          p_v8_position_signal_id: candidate.signal_id,
+        });
+        if (alert?.notifiable) notifiableAlerts++;
+        if (alert?.deduped) overlapDeduped++;
+      } catch (error) {
+        notificationErrors++;
+        console.error('TeleEdge V8 advisory alert queue failed after shadow acceptance', {signalId: candidate.signal_id, error: String(error)});
+      }
       openPositions.push({market_id: candidate.market_id, side: candidate.side, risk_usdt: allocation.riskUsdt, features: candidate.features ?? {}});
       accepted++;
     } catch (error) {
@@ -597,7 +653,7 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
     }
   }
   const active = await db('teleeg_v8_shadow_positions?select=signal_id&status=eq.open');
-  return {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons};
+  return {cycle: iso(cycle), candidates: rows.length, ranked: ranked.length, accepted, rejected: rows.length - accepted, activePositions: active.length, rejectionReasons: reasons, notifiableAlerts, overlapDeduped, notificationErrors};
 }
 
 async function minuteBars(symbol: string, startTime: number, endTime: number) {
