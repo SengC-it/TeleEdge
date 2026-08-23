@@ -41,7 +41,7 @@ function readGzipJson(file) {
   return text ? JSON.parse(text) : [];
 }
 
-function loadRows(directory, symbol, funding = false) {
+function loadRows(directory, symbol, funding = false, {startTime = -Infinity, endTime = Infinity} = {}) {
   if (!fs.existsSync(directory)) return [];
   const files = fs.readdirSync(directory)
     .filter(name => name.match(new RegExp(`^${symbol}-\\d+\\.json\\.gz$`)))
@@ -53,7 +53,7 @@ function loadRows(directory, symbol, funding = false) {
   for (const file of sourceFiles) {
     for (const row of readGzipJson(path.join(directory, file))) {
       const t = Number(row.t ?? row.fundingTime);
-      if (!Number.isFinite(t)) continue;
+      if (!Number.isFinite(t) || t < startTime || t >= endTime) continue;
       byTime.set(t, funding ? {t, rate: Number(row.rate ?? row.fundingRate), markPrice: Number(row.markPrice) || null}
         : {t, o: Number(row.o), h: Number(row.h), l: Number(row.l), c: Number(row.c), q: Number(row.q || 0)});
     }
@@ -639,17 +639,20 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const dataBySymbol = new Map();
   const missing = [];
   for (const symbol of symbols) {
-    const h1 = loadRows(priceDir, symbol);
-    const priceRows = h1.length;
-    const funding = loadRows(fundingDir, symbol, true);
-    const m1 = lazyMinute ? [] : loadRows(minuteDir, symbol);
     const market = marketFor(symbol, exchange);
     const lifecycle = activeWindowForMarket({symbol, market, manifest, startTime: start, endTime: end});
-    if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
     const indicatorWarmupStart = Math.max(lifecycle.eligibleStart, historyStart ?? start);
-    const signalH1 = h1.filter(row => row.t >= indicatorWarmupStart && row.t < lifecycle.eligibleEnd);
+    const dataWindowEnd = Math.min(lifecycle.eligibleEnd, end);
+    const executionWindowStart = Math.max(lifecycle.eligibleStart, start);
+    const executionWindowEnd = dataWindowEnd;
+    const h1 = loadRows(priceDir, symbol, false, {startTime: indicatorWarmupStart, endTime: dataWindowEnd});
+    const priceRows = h1.length;
+    const funding = loadRows(fundingDir, symbol, true, {startTime: indicatorWarmupStart, endTime: dataWindowEnd});
+    const m1 = lazyMinute ? [] : loadRows(minuteDir, symbol);
+    if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
+    const signalH1 = h1;
     const firstPositiveRow = signalH1.find(row => row.q > 0) || null;
-    const signalFunding = funding.filter(row => row.t >= indicatorWarmupStart && row.t < lifecycle.eligibleEnd);
+    const signalFunding = funding;
     const daily = aggregate(signalH1.filter(row => row.t + H1 <= end), DAY, end);
     const bars4h = aggregate(signalH1.filter(row => row.t + H1 <= end), H4, end);
     const minuteArtifact = declaredMinuteArtifact(manifest, symbol);
@@ -667,24 +670,26 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       daily,
       bars4h,
       lifecycle,
+      executionWindowStart,
+      executionWindowEnd,
       execution: {
         oneMinuteComplete: lazyMinute
           ? lifecycle.active && Number(minuteArtifact?.rows || 0) > 0
           : lifecycle.active && hasCompleteSeries(m1, '1m', lifecycle.eligibleStart, lifecycle.eligibleEnd),
-        oneHourComplete: lifecycle.active && hasCompleteSeries(h1, '1h', lifecycle.eligibleStart, lifecycle.eligibleEnd),
+        oneHourComplete: lifecycle.active && hasCompleteSeries(h1, '1h', executionWindowStart, executionWindowEnd),
       },
     };
     data.loadPrice = () => {
       if (data.priceLoaded) return data.h1;
-      data.h1 = loadRows(priceDir, symbol);
+      data.h1 = loadRows(priceDir, symbol, false, {startTime: indicatorWarmupStart, endTime: dataWindowEnd});
       data.priceLoaded = true;
       return data.h1;
     };
     data.loadMinute = () => {
       if (data.minuteLoaded) return data.m1;
-      data.m1 = loadRows(minuteDir, symbol);
+      data.m1 = loadRows(minuteDir, symbol, false, {startTime: executionWindowStart, endTime: executionWindowEnd});
       data.minuteLoaded = true;
-      data.execution.oneMinuteComplete = lifecycle.active && hasCompleteSeries(data.m1, '1m', lifecycle.eligibleStart, lifecycle.eligibleEnd);
+      data.execution.oneMinuteComplete = lifecycle.active && hasCompleteSeries(data.m1, '1m', executionWindowStart, executionWindowEnd);
       return data.m1;
     };
     dataBySymbol.set(symbol, data);
