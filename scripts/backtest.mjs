@@ -437,6 +437,7 @@ export function processCandidates(model, candidates, dataBySymbol, {
   endTime = SNAPSHOT_END,
   minuteExecutionAvailable = true,
   rankedCandidates = null,
+  eventWindow = null,
 } = {}) {
   model.cooldowns ||= {};
   model.rawCandidateEvents ||= [];
@@ -446,8 +447,10 @@ export function processCandidates(model, candidates, dataBySymbol, {
   const ranked = rankedCandidates
     ? rankedCandidates.filter(candidate => !model.knownSignalIds.has(candidate.id))
     : rankCandidates(unseen);
-  model.rawCandidateEvents.push(...unseen.map(candidate => signalEvent(candidate, model.name)));
-  model.signalEvents.push(...ranked.map(candidate => signalEvent(candidate, model.name)));
+  const shouldRecord = candidate => !eventWindow
+    || (Number(candidate.t) >= Number(eventWindow.start) && Number(candidate.t) < Number(eventWindow.end));
+  model.rawCandidateEvents.push(...unseen.filter(shouldRecord).map(candidate => signalEvent(candidate, model.name)));
+  model.signalEvents.push(...ranked.filter(shouldRecord).map(candidate => signalEvent(candidate, model.name)));
   const cap = model.v8 ? v8ShadowConfig.positionCap : modelConfig.cap;
   const maxPerSide = model.v8 ? v8ShadowConfig.maxPerSide : modelConfig.maxPerSide;
   for (const candidate of ranked) {
@@ -495,10 +498,12 @@ export function processCandidates(model, candidates, dataBySymbol, {
     }
     model.open.push(created.position);
     model.allocations.push(created.allocation);
-    model.acceptedSignalEvents.push(signalEvent(candidate, model.name));
+    if (shouldRecord(candidate)) model.acceptedSignalEvents.push(signalEvent(candidate, model.name));
     model.acceptedSignals++;
   }
-  for (const candidate of unseen) model.knownSignalIds.add(candidate.id);
+  for (const candidate of unseen) {
+    if (!eventWindow || Number(candidate.t) >= Number(eventWindow.start)) model.knownSignalIds.add(candidate.id);
+  }
 }
 
 function closeAtEnd(model, dataBySymbol, endTime, costRate, {preferMinute = false} = {}) {
@@ -584,7 +589,7 @@ function markdownReport(report) {
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, dataRoot: requestedDataRoot = null} = {}) {
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, recordEventsFrom = null, recordEventsUntil = null, dataRoot: requestedDataRoot = null} = {}) {
   const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
   const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
   const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
@@ -687,11 +692,13 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       executionProxy,
       endTime: end,
       rankedCandidates: controlRanked,
+      eventWindow: recordEventsFrom == null ? null : {start: recordEventsFrom, end: recordEventsUntil ?? end},
     });
     processCandidates(shadow, shadowCandidates, dataBySymbol, {
       executionProxy,
       endTime: end,
       rankedCandidates: shadowRanked,
+      eventWindow: recordEventsFrom == null ? null : {start: recordEventsFrom, end: recordEventsUntil ?? end},
     });
   }
   closeAtEnd(control, dataBySymbol, end, modelConfig.stressRoundTripCost, {preferMinute: true});

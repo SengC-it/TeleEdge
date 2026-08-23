@@ -536,6 +536,8 @@ async function main() {
     allowExternalCache: false,
     lazyMinute: true,
     lazyPrice: true,
+    recordEventsFrom: OOS_START,
+    recordEventsUntil: OOS_END,
     dataRoot: path.join(APP_DIR, 'data', 'backtest'),
   });
   if (tradeReport.data.executionProxy !== false || tradeReport.data.executionInterval !== '1m') {
