@@ -24,6 +24,10 @@ function yearKey(value) {
   return String(new Date(numericTime(value)).getUTCFullYear());
 }
 
+export function drawdownPercent(maxDrawdownRatio) {
+  return Number.isFinite(Number(maxDrawdownRatio)) ? Number(maxDrawdownRatio) * 100 : null;
+}
+
 export function firstCompletedTouch(position, bars, now = Infinity, barIntervalMs = H1) {
   const fillTime = numericTime(position.fillTime ?? position.fill_time);
   const interval = Number(barIntervalMs) > 0 ? Number(barIntervalMs) : H1;

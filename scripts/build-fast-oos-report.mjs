@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {drawdownPercent} from '../src/backtest.mjs';
 
 const APP_DIR = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BACKTEST_FILE = path.join(APP_DIR, 'reports', 'm5-fast-backtest.json');
@@ -60,6 +61,7 @@ function modelMetrics(model) {
     profitFactorStatus: oos.profitFactorStatus,
     maxDrawdownUsdt: finiteOrNull(oos.maxDrawdownUsdt),
     maxDrawdownPct: finiteOrNull(oos.maxDrawdownPct),
+    maxDrawdownPercent: drawdownPercent(oos.maxDrawdownPct),
     netPnlUsdt: finiteOrNull(oos.netPnlUsdt),
     grossPnlUsdt: finiteOrNull(oos.grossPnlUsdt),
     feesAndCostsUsdt: finiteOrNull(oos.feesAndCostsUsdt),
@@ -112,7 +114,7 @@ function markdown(report) {
     `| Net expectancy (R) | ${fmt(model.netExpectancyR)} |`,
     `| 95% CI | ${model.expectancyR95CI ? model.expectancyR95CI.map(fmt).join(' … ') : 'n/a'} |`,
     `| Profit factor | ${fmt(model.profitFactor)} |`,
-    `| Max drawdown | ${fmt(model.maxDrawdownPct)}% / ${fmt(model.maxDrawdownUsdt)} USDT |`,
+    `| Max drawdown | ${fmt(model.maxDrawdownPercent)}% / ${fmt(model.maxDrawdownUsdt)} USDT |`,
     `| Net PnL | ${fmt(model.netPnlUsdt)} USDT |`,
     `| Gross PnL | ${fmt(model.grossPnlUsdt)} USDT |`,
     `| Fees/costs | ${fmt(model.feesAndCostsUsdt)} USDT |`,

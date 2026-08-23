@@ -9,7 +9,7 @@ import {recalculateFilledRisk} from '../src/fill-risk.mjs';
 import {marketRules} from '../src/market-data.mjs';
 import {evaluateCandidateAcceptance, rankCandidates} from '../src/portfolio.mjs';
 import {allocateResearchRisk} from '../src/risk.mjs';
-import {accrueFunding, calculateMetrics, cohortMetrics, priceAtOrBefore, settleOnCompletedBars} from '../src/backtest.mjs';
+import {accrueFunding, calculateMetrics, drawdownPercent, priceAtOrBefore, settleOnCompletedBars} from '../src/backtest.mjs';
 import {activeWindowForMarket, hasCompleteSeries} from './backtest-data.mjs';
 
 const DEFAULT_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
@@ -132,14 +132,34 @@ export function buildCoreBreadth(dailyByMarket) {
 function signalEvent(candidate, model) {
   return {
     model,
-    signalTime: candidate.t,
+    id: candidate.id,
     marketId: candidate.marketId,
+    symbol: candidate.marketId || candidate.symbol,
     side: candidate.side,
     family: candidate.family,
     alpha: candidate.alpha || 'unknown',
+    regime: candidate.btcRouter || 'unknown',
     btcRouter: candidate.btcRouter || 'unknown',
+    signalTime: candidate.t,
+    signalPrice: Number(candidate.signalPrice ?? candidate.entry) || null,
+    stop: Number(candidate.sl) || null,
+    target: Number(candidate.target) || null,
+    targetR: Number(candidate.targetR) || null,
+    stopPct: Number(candidate.stopPct) || null,
     edgeScore: candidate.edgeScore,
+    eventScore: candidate.eventScore,
+    dayVolume: candidate.dayVolume,
+    core: Boolean(candidate.core),
   };
+}
+
+function declaredMinuteArtifact(manifest, symbol) {
+  return (manifest?.artifacts || []).find(item => item.symbol === symbol && item.kind === 'minute') || null;
+}
+
+function ensureMinuteData(data) {
+  if (typeof data.loadMinute === 'function') data.loadMinute();
+  return data.m1;
 }
 
 function createModel(name, v8 = false) {
@@ -152,7 +172,9 @@ function createModel(name, v8 = false) {
     trades: [],
     signalEvents: [],
     allocations: [],
+    rawCandidateEvents: [],
     knownSignalIds: new Set(),
+    acceptedSignalEvents: [],
     cooldowns: {},
     rejectionReasons: {},
     acceptedSignals: 0,
@@ -168,6 +190,39 @@ export function observedAlphaCoverage(model) {
     ...model.signalEvents.map(event => event.alpha),
     ...model.trades.map(trade => trade.alpha),
   ].filter(alpha => typeof alpha === 'string' && alpha.length > 0))].sort();
+}
+
+function eventTime(event) {
+  if (Number.isFinite(Number(event?.signalTime))) return Number(event.signalTime);
+  return Date.parse(event?.signalTime || '') || 0;
+}
+
+function eventsInWindow(events, start, end) {
+  return (events || []).filter(event => eventTime(event) >= start && eventTime(event) < end);
+}
+
+function alertKey(event) {
+  return `${event.marketId}|${event.side}|${event.signalTime}`;
+}
+
+function signalCohortMetrics(model, start, end, periodStart, periodEnd) {
+  const raw = eventsInWindow(model.rawCandidateEvents, start, end);
+  const ranked = eventsInWindow(model.signalEvents, start, end);
+  const accepted = eventsInWindow(model.acceptedSignalEvents, start, end);
+  const trades = (model.trades || []).filter(trade => eventTime({signalTime: trade.signalTime ?? trade.signal_time}) >= start
+    && eventTime({signalTime: trade.signalTime ?? trade.signal_time}) < end);
+  return {
+    ...calculateMetrics(trades, {
+      signals: ranked.length,
+      initialEquity: INITIAL_EQUITY,
+      periodStart,
+      periodEnd,
+    }),
+    rawCandidates: raw.length,
+    rankedSignals: ranked.length,
+    uniqueAlerts: new Set(ranked.map(alertKey)).size,
+    acceptedSignals: accepted.length,
+  };
 }
 
 function closePositionAtEnd(position, data, endTime, costRate, useMinute) {
@@ -235,6 +290,12 @@ export function advanceModelTo(model, dataBySymbol, now, {
   costRate = modelConfig.stressRoundTripCost,
   preferMinute = false,
 } = {}) {
+  if (preferMinute) {
+    for (const position of model.open) {
+      const data = dataBySymbol.get(position.marketId);
+      if (data) ensureMinuteData(data);
+    }
+  }
   settleOpen(model, dataBySymbol, now, costRate, {preferMinute});
 }
 
@@ -372,11 +433,15 @@ export function processCandidates(model, candidates, dataBySymbol, {
   rankedCandidates = null,
 } = {}) {
   model.cooldowns ||= {};
+  model.rawCandidateEvents ||= [];
+  model.signalEvents ||= [];
+  model.acceptedSignalEvents ||= [];
   const unseen = candidates.filter(candidate => !model.knownSignalIds.has(candidate.id));
-  model.signalEvents.push(...unseen.map(candidate => signalEvent(candidate, model.name)));
   const ranked = rankedCandidates
     ? rankedCandidates.filter(candidate => !model.knownSignalIds.has(candidate.id))
     : rankCandidates(unseen);
+  model.rawCandidateEvents.push(...unseen.map(candidate => signalEvent(candidate, model.name)));
+  model.signalEvents.push(...ranked.map(candidate => signalEvent(candidate, model.name)));
   const cap = model.v8 ? v8ShadowConfig.positionCap : modelConfig.cap;
   const maxPerSide = model.v8 ? v8ShadowConfig.maxPerSide : modelConfig.maxPerSide;
   for (const candidate of ranked) {
@@ -387,6 +452,7 @@ export function processCandidates(model, candidates, dataBySymbol, {
     const data = dataBySymbol.get(candidate.marketId);
     const symbolEndTime = Math.min(endTime, data?.lifecycle?.eligibleEnd ?? endTime);
     const symbolMinuteAvailable = data?.execution?.oneMinuteComplete ?? minuteExecutionAvailable;
+    if (!reason && data && symbolMinuteAvailable) ensureMinuteData(data);
     const execution = !reason && data
       ? resolveExecution(data, candidate, executionProxy, symbolEndTime, symbolMinuteAvailable)
       : null;
@@ -422,6 +488,7 @@ export function processCandidates(model, candidates, dataBySymbol, {
     }
     model.open.push(created.position);
     model.allocations.push(created.allocation);
+    model.acceptedSignalEvents.push(signalEvent(candidate, model.name));
     model.acceptedSignals++;
   }
   for (const candidate of unseen) model.knownSignalIds.add(candidate.id);
@@ -431,6 +498,7 @@ function closeAtEnd(model, dataBySymbol, endTime, costRate, {preferMinute = fals
   for (const position of model.open) {
     const data = dataBySymbol.get(position.marketId);
     if (!data) continue;
+    if (preferMinute) ensureMinuteData(data);
     const useMinute = preferMinute && data.execution?.oneMinuteComplete === true;
     const symbolEnd = Math.min(endTime, data.lifecycle?.eligibleEnd ?? endTime);
     recordClosedTrade(model, closePositionAtEnd(position, data, symbolEnd, costRate, useMinute), position.marketId);
@@ -447,23 +515,28 @@ function modelReport(model, start, end) {
   const walkForward = {
     '2025': {
       trainingWindow: [start, Date.parse('2025-01-01T00:00:00Z')],
-      oos: cohortMetrics(model.trades, model.signalEvents, Date.parse('2025-01-01T00:00:00Z'), Math.min(Date.parse('2026-01-01T00:00:00Z'), end), {initialEquity: INITIAL_EQUITY}),
+      oos: signalCohortMetrics(model, Date.parse('2025-01-01T00:00:00Z'), Math.min(Date.parse('2026-01-01T00:00:00Z'), end), start, end),
     },
     '2026-H1': {
       trainingWindow: [start, Date.parse('2026-01-01T00:00:00Z')],
-      oos: cohortMetrics(model.trades, model.signalEvents, Date.parse('2026-01-01T00:00:00Z'), end, {initialEquity: INITIAL_EQUITY}),
+      oos: signalCohortMetrics(model, Date.parse('2026-01-01T00:00:00Z'), end, start, end),
     },
   };
+  const full = signalCohortMetrics(model, start, end, start, end);
   return {
     model: model.name,
     modelVersion: model.v8 ? v8ShadowConfig.version : modelConfig.version,
-    full: calculateMetrics(model.trades, {signals: model.signalEvents.length, initialEquity: INITIAL_EQUITY, periodStart: start, periodEnd: end}),
-    splits: Object.fromEntries(Object.entries(segments).map(([name, [from, to]]) => [name, cohortMetrics(model.trades, model.signalEvents, from, to, {initialEquity: INITIAL_EQUITY})])),
+    full,
+    splits: Object.fromEntries(Object.entries(segments).map(([name, [from, to]]) => [name, signalCohortMetrics(model, from, to, start, end)])),
     walkForward,
     acceptedSignals: model.acceptedSignals,
     rejectionReasons: model.rejectionReasons,
     openAtEnd: model.open.length,
     observedAlphaCoverage: observedAlphaCoverage(model),
+    rawCandidateEvents: model.rawCandidateEvents,
+    signalEvents: model.signalEvents,
+    acceptedSignalEvents: model.acceptedSignalEvents,
+    trades: model.trades,
   };
 }
 
@@ -476,11 +549,11 @@ function markdownReport(report) {
   const rows = ['V7.5 Control', 'V8 Shadow'].map(name => {
     const item = report.models.find(model => model.model === name);
     const oos = item.splits.oos;
-    return `| ${name} | ${oos.trades} | ${markdownMetric(oos.signalsPerMonth)} | ${markdownMetric(oos.winRate == null ? null : oos.winRate * 100, 1)}% | ${markdownMetric(oos.expectancyR)} | ${markdownMetric(oos.profitFactor)} | ${markdownMetric(oos.maxDrawdownPct == null ? null : oos.maxDrawdownPct * 100, 1)}% | ${markdownMetric(oos.fundingPnlUsdt, 2)} | ${markdownMetric(oos.feesAndCostsUsdt, 2)} |`;
+    return `| ${name} | ${oos.trades} | ${markdownMetric(oos.signalsPerMonth)} | ${markdownMetric(oos.winRate == null ? null : oos.winRate * 100, 1)}% | ${markdownMetric(oos.expectancyR)} | ${markdownMetric(oos.profitFactor)} | ${markdownMetric(drawdownPercent(oos.maxDrawdownPct), 1)}% | ${markdownMetric(oos.fundingPnlUsdt, 2)} | ${markdownMetric(oos.feesAndCostsUsdt, 2)} |`;
   }).join('\n');
   const walkForwardRows = report.models.flatMap(model => ['2025', '2026-H1'].map(fold => {
     const item = model.walkForward[fold].oos;
-    return `| ${fold} | ${model.model} | ${item.trades} | ${markdownMetric(item.netExpectancyR)} | ${markdownMetric(item.profitFactor)} | ${markdownMetric(item.maxDrawdownPct == null ? null : item.maxDrawdownPct * 100, 1)}% |`;
+    return `| ${fold} | ${model.model} | ${item.trades} | ${markdownMetric(item.netExpectancyR)} | ${markdownMetric(item.profitFactor)} | ${markdownMetric(drawdownPercent(item.maxDrawdownPct), 1)}% |`;
   })).join('\n');
   const comparison = report.comparison;
   return `# TeleEdge ${report.data.scopeLabel}\n\n` +
@@ -503,7 +576,7 @@ function markdownReport(report) {
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, dataRoot: requestedDataRoot = null} = {}) {
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, dataRoot: requestedDataRoot = null} = {}) {
   const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
   const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
   const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
@@ -517,7 +590,7 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   for (const symbol of symbols) {
     const h1 = loadRows(priceDir, symbol);
     const funding = loadRows(fundingDir, symbol, true);
-    const m1 = loadRows(minuteDir, symbol);
+    const m1 = lazyMinute ? [] : loadRows(minuteDir, symbol);
     const market = marketFor(symbol, exchange);
     const lifecycle = activeWindowForMarket({symbol, market, manifest, startTime: start, endTime: end});
     if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
@@ -525,10 +598,13 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
     const signalFunding = funding.filter(row => row.t >= lifecycle.eligibleStart && row.t < lifecycle.eligibleEnd);
     const daily = aggregate(signalH1.filter(row => row.t + H1 <= end), DAY, end);
     const bars4h = aggregate(signalH1.filter(row => row.t + H1 <= end), H4, end);
-    dataBySymbol.set(symbol, {
+    const minuteArtifact = declaredMinuteArtifact(manifest, symbol);
+    const data = {
       market,
       h1,
       m1,
+      minuteLoaded: !lazyMinute,
+      minuteArtifactRows: Number(minuteArtifact?.rows || 0),
       funding,
       signalH1,
       signalFunding,
@@ -536,10 +612,20 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       bars4h,
       lifecycle,
       execution: {
-        oneMinuteComplete: lifecycle.active && hasCompleteSeries(m1, '1m', lifecycle.eligibleStart, lifecycle.eligibleEnd),
+        oneMinuteComplete: lazyMinute
+          ? lifecycle.active && Number(minuteArtifact?.rows || 0) > 0
+          : lifecycle.active && hasCompleteSeries(m1, '1m', lifecycle.eligibleStart, lifecycle.eligibleEnd),
         oneHourComplete: lifecycle.active && hasCompleteSeries(h1, '1h', lifecycle.eligibleStart, lifecycle.eligibleEnd),
       },
-    });
+    };
+    data.loadMinute = () => {
+      if (data.minuteLoaded) return data.m1;
+      data.m1 = loadRows(minuteDir, symbol);
+      data.minuteLoaded = true;
+      data.execution.oneMinuteComplete = lifecycle.active && hasCompleteSeries(data.m1, '1m', lifecycle.eligibleStart, lifecycle.eligibleEnd);
+      return data.m1;
+    };
+    dataBySymbol.set(symbol, data);
   }
   const available = [...dataBySymbol].filter(([, data]) => data.lifecycle.active && data.h1.length && data.funding.length);
   if (!available.length) throw new Error(`No backtest data under ${dataRoot}. Run npm run backtest:fetch or explicitly use npm run backtest:smoke for the legacy external cache.`);
@@ -551,9 +637,9 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const scanTimes = makeScanTimes(start, end, scanIntervalHours);
   const control = createModel('V7.5 Control');
   const shadow = createModel('V8 Shadow', true);
-  const symbolsWithOneMinute = available.filter(([, data]) => data.m1.length > 0).length;
+  const symbolsWithOneMinute = available.filter(([, data]) => lazyMinute ? data.minuteArtifactRows > 0 : data.m1.length > 0).length;
   const symbolsWithCompleteOneMinute = available.filter(([, data]) => data.execution.oneMinuteComplete).length;
-  const oneMinuteRows = available.reduce((sum, [, data]) => sum + data.m1.length, 0);
+  const oneMinuteRows = available.reduce((sum, [, data]) => sum + (lazyMinute ? data.minuteArtifactRows : data.m1.length), 0);
   for (const scanTime of scanTimes) {
     const controlCandidates = [];
     const shadowCandidates = [];
@@ -644,7 +730,8 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
          oneMinuteRows,
          symbolsWithBothFeeds: available.length,
          symbolsWithOneMinute,
-         symbolsWithCompleteOneMinute,
+       symbolsWithCompleteOneMinute,
+       minuteLoadedLazily: lazyMinute,
        },
        executionCoverage: Object.fromEntries(available.map(([symbol, data]) => [symbol, {
          eligibleStart: new Date(data.lifecycle.eligibleStart).toISOString(),

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {accrueFunding, calculateMetrics, firstCompletedTouch, settleOnCompletedBars} from '../src/backtest.mjs';
+import {accrueFunding, calculateMetrics, drawdownPercent, firstCompletedTouch, settleOnCompletedBars} from '../src/backtest.mjs';
 import {observedAlphaCoverage, REQUIRED_ALPHA_COVERAGE} from '../scripts/backtest.mjs';
 import {H1} from '../src/config.mjs';
 
@@ -61,6 +61,14 @@ test('settlement net R includes modeled cost and funding', () => {
   assert.equal(result.trade.exitReason, 'sl');
   assert.ok(result.trade.netPnlUsdt < 0);
   assert.ok(result.trade.netR < 0);
+});
+
+test('backtest drawdown ratio is rendered as a percentage at the report boundary', () => {
+  const metrics = calculateMetrics([
+    {signalTime: 1, fillTime: 1, exitTime: 2, side: 'long', netR: -1, netPnlUsdt: -137.28690683362402, grossPnlUsdt: -137.28690683362402, fundingPnlUsdt: 0, modeledCostUsdt: 0, notionalUsdt: 100, riskUsdt: 100},
+  ], {signals: 1, initialEquity: 10_000, periodStart: 0, periodEnd: 86_400_000});
+  assert.ok(Math.abs(metrics.maxDrawdownPct - 0.013728690683362402) < 1e-12);
+  assert.ok(Math.abs(drawdownPercent(metrics.maxDrawdownPct) - 1.3728690683362402) < 1e-12);
 });
 
 test('backtest reports required and observed Alpha coverage separately', () => {
