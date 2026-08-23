@@ -79,5 +79,3 @@
 - V8 unique signal symbols=17 (<20)
 
 No merge and no deployment were performed. The system remains signal-only advisory; trading decisions remain manual.
-
-
