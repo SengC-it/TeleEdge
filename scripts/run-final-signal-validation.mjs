@@ -367,6 +367,7 @@ function modelResult(model) {
 function modelSummary(result) {
   const signalQuality = summarizeObservations(result.observations);
   return {
+    name: result.model.model,
     rawCandidates: result.rawCount,
     rankedSignals: result.rankedCount,
     uniqueAlerts: result.rankedKeys.size,
@@ -440,7 +441,7 @@ function markdown(report) {
   const modelRows = ['v75', 'v8'].map(key => {
     const model = report.models[key];
     const trade = model.trade;
-    return `| ${model.name} | ${model.rankedSignals} | ${model.uniqueSignalSymbols} | ${trade.trades} | ${format(trade.netExpectancyR)} | ${format(trade.profitFactor)} | ${format(trade.maxDrawdownPercent)}% |`;
+    return `| ${model.name} | ${model.rawCandidates} | ${model.rankedSignals} | ${model.uniqueAlerts} | ${model.simulatedAcceptedSignals} | ${trade.trades} | ${model.uniqueSignalSymbols} | ${format(trade.netExpectancyR)} | ${format(trade.profitFactor)} | ${format(trade.maxDrawdownPercent)}% |`;
   }).join('\n');
   const edgeRows = ['v75', 'v8'].map(key => {
     const model = report.models[key];
@@ -458,8 +459,8 @@ function markdown(report) {
     `- Execution layer: ${report.execution.scanCadence}; ${report.execution.decisionLatency}; ${report.execution.fill}; ${report.execution.settlement}`,
     `- Signal-level 1m loading: lazy by symbol after a signal; no minimum-minute-row selection`,
     '',
-    '| Model | Ranked signals | Unique signal symbols | Simulated trades | Expectancy R | PF | DD |',
-    '|---|---:|---:|---:|---:|---:|---:|',
+    '| Model | Raw candidates | Ranked signals | Unique alerts | Sim accepted | Closed trades | Unique signal symbols | Expectancy R | PF | DD |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
     modelRows,
     '',
     '## Required headline metrics',
