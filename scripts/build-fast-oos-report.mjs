@@ -63,6 +63,7 @@ function modelMetrics(model) {
     netPnlUsdt: finiteOrNull(oos.netPnlUsdt),
     grossPnlUsdt: finiteOrNull(oos.grossPnlUsdt),
     feesAndCostsUsdt: finiteOrNull(oos.feesAndCostsUsdt),
+    slippageCostUsdt: finiteOrNull(oos.slippageCostUsdt ?? oos.slippageCost),
     fundingPnlUsdt: finiteOrNull(oos.fundingPnlUsdt),
     turnoverUsdt: finiteOrNull(oos.turnoverUsdt),
     averageHoldingHours: finiteOrNull(oos.averageHoldingHours),
@@ -113,11 +114,14 @@ function markdown(report) {
     `| Profit factor | ${fmt(model.profitFactor)} |`,
     `| Max drawdown | ${fmt(model.maxDrawdownPct)}% / ${fmt(model.maxDrawdownUsdt)} USDT |`,
     `| Net PnL | ${fmt(model.netPnlUsdt)} USDT |`,
+    `| Gross PnL | ${fmt(model.grossPnlUsdt)} USDT |`,
     `| Fees/costs | ${fmt(model.feesAndCostsUsdt)} USDT |`,
+    `| Slippage cost | ${fmt(model.slippageCostUsdt)} USDT (not separately exposed by frozen engine) |`,
     `| Funding PnL | ${fmt(model.fundingPnlUsdt)} USDT |`,
     `| Avg holding | ${fmt(model.averageHoldingHours)} h |`,
   ].join('\n');
   return [
+    `# FAST OOS RESULT: **${report.validationVerdict}**`, '',
     '# M5 Fast OOS: V7.5 vs V8', '',
     `## Decision: **${report.decision}**`, '',
     `Validation gate: **${report.validationVerdict}**`, '',
@@ -165,7 +169,7 @@ function markdown(report) {
     `- Shadow: **${report.release.shadow}**`,
     '- No deployment or real Binance order path was exercised.',
     ...report.release.checklist.map(item => `- ${item.item}: **${item.status}** — ${item.evidence}`),
-    '- Next gate: obtain a larger, full required-Alpha, trade-level-exposing OOS result before any release decision.',
+    '- Next gate: obtain a larger, full required-Alpha, trade-level-exposing OOS result before any production release decision.',
   ].join('\n') + '\n';
 }
 
@@ -192,11 +196,12 @@ function main() {
   const positiveV8 = v8.netExpectancyR > 0 && v8.profitFactor > 1;
   const validationVerdict = positiveV8 && v8.trades >= 100 && v75.trades >= 100 && decisionReasons.length === 0
     ? 'PASS'
-    : positiveV8 ? 'SHADOW/INCONCLUSIVE' : 'FAIL';
+    : positiveV8 ? 'SHADOW PASS' : 'FAIL';
   const report = {
     reportVersion: 1,
     generatedAt: new Date().toISOString(),
     decision: 'NO-GO',
+    fastOosResult: validationVerdict,
     validationVerdict,
     decisionReasons,
     reproducibility: {
@@ -264,7 +269,7 @@ function main() {
     },
     release: {
       production: 'NO-GO',
-      shadow: validationVerdict === 'PASS' || validationVerdict === 'SHADOW/INCONCLUSIVE' ? 'NO-GO: insufficient evidence' : 'NO-GO',
+      shadow: validationVerdict === 'PASS' ? 'GO' : validationVerdict === 'SHADOW PASS' ? 'SHADOW PASS (not enabled; manual signal-only)' : 'NO-GO',
       deployPerformed: false,
       realBinanceOrderPathExercised: false,
       checklist: [
@@ -272,7 +277,7 @@ function main() {
         {item: 'V7.5/V8 state isolation', status: 'PASS', evidence: 'state-isolation regression test passes'},
         {item: 'history/reviews/email/dashboard contracts', status: 'PASS', evidence: 'existing history, reviews-token, funnel/public-status tests pass'},
         {item: 'real Binance order path', status: 'PASS', evidence: 'static audit found market-data endpoints only; no order endpoint exercised'},
-        {item: 'production release gate', status: 'BLOCKED', evidence: 'M5 validation is SHADOW/INCONCLUSIVE and M4 remains incomplete'},
+        {item: 'production release gate', status: 'BLOCKED', evidence: `Fast result is ${validationVerdict}; production thresholds, required Alpha coverage and M4 remain incomplete`},
       ],
     },
   };

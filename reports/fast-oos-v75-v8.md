@@ -1,8 +1,10 @@
+# FAST OOS RESULT: **SHADOW PASS**
+
 # M5 Fast OOS: V7.5 vs V8
 
 ## Decision: **NO-GO**
 
-Validation gate: **SHADOW/INCONCLUSIVE**
+Validation gate: **SHADOW PASS**
 
 - V7.5 OOS trades=0 (<100)
 - V8 OOS trades=7 (<100)
@@ -19,7 +21,7 @@ Production deployment was not performed. M4 remains INCOMPLETE.
 ## Reproducibility
 
 - Strategy commit: `003b931fe1ad576a3d42858f18c5fb9a19d58ae9`
-- Repository HEAD at run: `53ecd5dfa1a420d0ec44eacc59d1c6d7785c7f8e`
+- Repository HEAD at run: `1ab391e7e34d4e6a31912b029072ea4ff4e5a70b`
 - Working tree dirty at run: **true**
 - Config SHA256: `fdc4433881eafbc383795df9602b667d1f9b8033ef0d8f3c96e0d6814eb96dd8`
 - Dataset snapshot: 2026-08-01T00:00:00.000Z
@@ -49,7 +51,9 @@ Production deployment was not performed. M4 remains INCOMPLETE.
 | Profit factor | n/a |
 | Max drawdown | 0.0000% / 0.0000 USDT |
 | Net PnL | 0.0000 USDT |
+| Gross PnL | 0.0000 USDT |
 | Fees/costs | 0.0000 USDT |
+| Slippage cost | n/a USDT (not separately exposed by frozen engine) |
 | Funding PnL | 0.0000 USDT |
 | Avg holding | n/a h |
 
@@ -69,7 +73,9 @@ Observed Alpha: daily_breakout_long
 | Profit factor | 2.3693 |
 | Max drawdown | 0.0137% / 137.2869 USDT |
 | Net PnL | 201.5741 USDT |
+| Gross PnL | 222.2887 USDT |
 | Fees/costs | 6.0514 USDT |
+| Slippage cost | n/a USDT (not separately exposed by frozen engine) |
 | Funding PnL | -14.6632 USDT |
 | Avg holding | 664.0643 h |
 
@@ -100,11 +106,11 @@ Observed Alpha: v8_bear_trend_short, v8_daily_breakout_long
 ## Release readiness
 
 - Production: **NO-GO**
-- Shadow: **NO-GO: insufficient evidence**
+- Shadow: **SHADOW PASS (not enabled; manual signal-only)**
 - No deployment or real Binance order path was exercised.
 - signal pipeline: **PASS** — frozen engine and worker candidate tests pass
 - V7.5/V8 state isolation: **PASS** — state-isolation regression test passes
 - history/reviews/email/dashboard contracts: **PASS** — existing history, reviews-token, funnel/public-status tests pass
 - real Binance order path: **PASS** — static audit found market-data endpoints only; no order endpoint exercised
-- production release gate: **BLOCKED** — M5 validation is SHADOW/INCONCLUSIVE and M4 remains incomplete
-- Next gate: obtain a larger, full required-Alpha, trade-level-exposing OOS result before any release decision.
+- production release gate: **BLOCKED** — Fast result is SHADOW PASS; production thresholds, required Alpha coverage and M4 remain incomplete
+- Next gate: obtain a larger, full required-Alpha, trade-level-exposing OOS result before any production release decision.

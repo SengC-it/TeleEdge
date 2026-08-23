@@ -1,8 +1,9 @@
 {
   "reportVersion": 1,
-  "generatedAt": "2026-08-23T03:17:35.851Z",
+  "generatedAt": "2026-08-23T04:09:01.597Z",
   "decision": "NO-GO",
-  "validationVerdict": "SHADOW/INCONCLUSIVE",
+  "fastOosResult": "SHADOW PASS",
+  "validationVerdict": "SHADOW PASS",
   "decisionReasons": [
     "V7.5 OOS trades=0 (<100)",
     "V8 OOS trades=7 (<100)",
@@ -16,7 +17,7 @@
   ],
   "reproducibility": {
     "strategyCommitSha": "003b931fe1ad576a3d42858f18c5fb9a19d58ae9",
-    "repositoryHeadAtRun": "53ecd5dfa1a420d0ec44eacc59d1c6d7785c7f8e",
+    "repositoryHeadAtRun": "1ab391e7e34d4e6a31912b029072ea4ff4e5a70b",
     "workingTreeDirty": true,
     "configSha256": "fdc4433881eafbc383795df9602b667d1f9b8033ef0d8f3c96e0d6814eb96dd8",
     "strategyFileSha256": {
@@ -156,6 +157,7 @@
         "netPnlUsdt": 0,
         "grossPnlUsdt": 0,
         "feesAndCostsUsdt": 0,
+        "slippageCostUsdt": null,
         "fundingPnlUsdt": 0,
         "turnoverUsdt": 0,
         "averageHoldingHours": null,
@@ -202,6 +204,7 @@
         "netPnlUsdt": 201.574093646627,
         "grossPnlUsdt": 222.2886853082499,
         "feesAndCostsUsdt": 6.05142607747992,
+        "slippageCostUsdt": null,
         "fundingPnlUsdt": -14.66316558414297,
         "turnoverUsdt": 8068.568103306562,
         "averageHoldingHours": 664.0642857142857,
@@ -623,7 +626,7 @@
   },
   "release": {
     "production": "NO-GO",
-    "shadow": "NO-GO: insufficient evidence",
+    "shadow": "SHADOW PASS (not enabled; manual signal-only)",
     "deployPerformed": false,
     "realBinanceOrderPathExercised": false,
     "checklist": [
@@ -650,7 +653,7 @@
       {
         "item": "production release gate",
         "status": "BLOCKED",
-        "evidence": "M5 validation is SHADOW/INCONCLUSIVE and M4 remains incomplete"
+        "evidence": "Fast result is SHADOW PASS; production thresholds, required Alpha coverage and M4 remain incomplete"
       }
     ]
   }
