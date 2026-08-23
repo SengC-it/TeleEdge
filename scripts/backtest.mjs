@@ -627,7 +627,7 @@ function markdownReport(report) {
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, recordEventsFrom = null, recordEventsUntil = null, eventStorage = 'all', dataRoot: requestedDataRoot = null} = {}) {
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, historyStart = null, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, recordEventsFrom = null, recordEventsUntil = null, eventStorage = 'all', dataRoot: requestedDataRoot = null} = {}) {
   const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
   const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
   const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
@@ -646,7 +646,7 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
     const market = marketFor(symbol, exchange);
     const lifecycle = activeWindowForMarket({symbol, market, manifest, startTime: start, endTime: end});
     if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
-    const indicatorWarmupStart = Math.max(lifecycle.eligibleStart, start - 400 * DAY);
+    const indicatorWarmupStart = Math.max(lifecycle.eligibleStart, historyStart ?? start);
     const signalH1 = h1.filter(row => row.t >= indicatorWarmupStart && row.t < lifecycle.eligibleEnd);
     const firstPositiveRow = signalH1.find(row => row.q > 0) || null;
     const signalFunding = funding.filter(row => row.t >= indicatorWarmupStart && row.t < lifecycle.eligibleEnd);

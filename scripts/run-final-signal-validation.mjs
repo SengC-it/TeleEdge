@@ -551,7 +551,8 @@ async function main() {
   const validationStart = OOS_START - INDICATOR_WARMUP_DAYS * 24 * H1;
   const tradeReport = await runBacktest({
     symbols,
-    start: validationStart,
+    start: OOS_START,
+    historyStart: validationStart,
     end: OOS_END,
     scanIntervalHours: 4,
     outputBase: TRADE_REPORT_BASE,
