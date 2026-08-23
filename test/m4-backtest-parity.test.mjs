@@ -366,6 +366,52 @@ test('funding event coverage accepts a delayed first event after active start', 
   }
 });
 
+test('funding coverage uses the first row interval for start and last row interval for end', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-funding-boundaries-'));
+  try {
+    const start = gateStart;
+    const end = gateEnd;
+    const boundaryRows = [
+      {t: start + 7 * H1, rate: 0.0001, fundingIntervalHours: 8, markPrice: null},
+      {t: start + 14 * H1, rate: 0.0001, fundingIntervalHours: 8, markPrice: null},
+      {t: start + 21 * H1, rate: 0.0001, fundingIntervalHours: 4, markPrice: null},
+    ];
+    const artifacts = [
+      ...writeGateMarketArtifacts(root, 'BTCUSDT', {funding: boundaryRows}),
+      ...writeGateMarketArtifacts(root, 'NONCOREUSDT'),
+    ];
+    const result = verifyBacktestManifest(gateManifest({
+      symbols: ['BTCUSDT', 'NONCOREUSDT'],
+      artifacts,
+    }), root);
+    assert.equal(result.coverage.length, 0);
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
+test('funding coverage also handles a four-hour first interval and eight-hour last interval', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-funding-boundaries-reverse-'));
+  try {
+    const boundaryRows = [
+      {t: gateStart + 3 * H1, rate: 0.0001, fundingIntervalHours: 4, markPrice: null},
+      {t: gateStart + 10 * H1, rate: 0.0001, fundingIntervalHours: 4, markPrice: null},
+      {t: gateStart + 17 * H1, rate: 0.0001, fundingIntervalHours: 8, markPrice: null},
+    ];
+    const artifacts = [
+      ...writeGateMarketArtifacts(root, 'BTCUSDT', {funding: boundaryRows}),
+      ...writeGateMarketArtifacts(root, 'NONCOREUSDT'),
+    ];
+    const result = verifyBacktestManifest(gateManifest({
+      symbols: ['BTCUSDT', 'NONCOREUSDT'],
+      artifacts,
+    }), root);
+    assert.equal(result.coverage.length, 0);
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+});
+
 test('funding event artifacts reject duplicate or non-increasing timestamps', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-funding-order-'));
   try {

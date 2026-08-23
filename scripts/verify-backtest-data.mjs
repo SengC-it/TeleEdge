@@ -13,7 +13,7 @@ function readGzipJson(file) {
   return text ? JSON.parse(text) : [];
 }
 
-function readArtifactRows(file, artifact) {
+export function readArtifactRows(file, artifact) {
   if (['price', 'minute', 'funding'].includes(artifact.kind)) return readGzipJson(file);
   const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
   if (artifact.kind === 'universe') return parsed.symbols || [];
@@ -21,7 +21,7 @@ function readArtifactRows(file, artifact) {
   return Array.isArray(parsed) ? parsed : [];
 }
 
-function artifactInterval(artifact) {
+export function artifactInterval(artifact) {
   return artifact.interval && artifact.interval !== 'event'
     ? artifact.interval
     : artifact.kind === 'price' ? '1h' : artifact.kind === 'minute' ? '1m' : null;
@@ -36,8 +36,12 @@ function universeSymbolsFor(manifest) {
   return Array.isArray(manifest.universe?.symbols) ? manifest.universe.symbols : [];
 }
 
-function fundingIntervalInfo(artifact, manifest) {
+export function fundingIntervalInfo(artifact, manifest, row = null) {
   const source = manifest.sources?.funding || {};
+  const rowHours = Number(row?.fundingIntervalHours);
+  if (Number.isFinite(rowHours) && rowHours > 0) {
+    return {hours: rowHours, source: 'row-metadata'};
+  }
   const observedHours = Number(artifact.fundingIntervalHours ?? artifact.intervalHours);
   if (Number.isFinite(observedHours) && observedHours > 0) {
     return {hours: observedHours, source: artifact.fundingIntervalSource || 'artifact-metadata'};
@@ -56,7 +60,7 @@ function fundingIntervalInfo(artifact, manifest) {
   return null;
 }
 
-function eventStreamIssues(rows) {
+export function eventStreamIssues(rows) {
   const issues = [];
   let previous = null;
   for (let index = 0; index < (rows || []).length; index++) {
@@ -78,7 +82,7 @@ function eventStreamIssues(rows) {
   return issues;
 }
 
-function coverageIssues(rows, artifact, manifest) {
+export function coverageIssuesFromSummary(summary, artifact, manifest) {
   const issues = [];
   const activeStart = timestampValue(artifact.activeStart);
   const activeEnd = timestampValue(artifact.activeEnd);
@@ -86,41 +90,48 @@ function coverageIssues(rows, artifact, manifest) {
     issues.push({reason: 'invalid-active-window', activeStart: artifact.activeStart ?? null, activeEnd: artifact.activeEnd ?? null});
     return issues;
   }
-  if (!Array.isArray(rows) || !rows.length) {
+  if (!summary?.hasRows) {
     issues.push({reason: 'empty-artifact'});
     return issues;
   }
-  const first = timestampValue(rows[0]?.t ?? rows[0]?.fundingTime);
-  const last = timestampValue(rows.at(-1)?.t ?? rows.at(-1)?.fundingTime);
+  const first = timestampValue(summary.first);
+  const last = timestampValue(summary.last);
   if (!Number.isFinite(first) || !Number.isFinite(last)) {
     issues.push({reason: 'invalid-artifact-timestamp'});
     return issues;
   }
   const interval = artifactInterval(artifact);
   if (artifact.kind === 'funding') {
-    const fundingInterval = fundingIntervalInfo(artifact, manifest);
-    if (!fundingInterval) {
-      issues.push({reason: 'funding-interval-metadata-missing'});
+    const firstFundingInterval = fundingIntervalInfo(artifact, manifest, {fundingIntervalHours: summary.firstFundingIntervalHours});
+    const lastFundingInterval = fundingIntervalInfo(artifact, manifest, {fundingIntervalHours: summary.lastFundingIntervalHours});
+    if (!firstFundingInterval) {
+      issues.push({reason: 'funding-start-interval-metadata-missing'});
+    }
+    if (!lastFundingInterval) {
+      issues.push({reason: 'funding-end-interval-metadata-missing'});
+    }
+    if (!firstFundingInterval || !lastFundingInterval) {
       return issues;
     }
-    const window = fundingInterval.hours * H1;
-    if (first < activeStart || first > activeStart + window) {
+    const startWindow = firstFundingInterval.hours * H1;
+    const endWindow = lastFundingInterval.hours * H1;
+    if (first < activeStart || first > activeStart + startWindow) {
       issues.push({
         reason: 'funding-first-event-outside-window',
         first,
         activeStart,
-        windowHours: fundingInterval.hours,
-        intervalSource: fundingInterval.source,
+        windowHours: firstFundingInterval.hours,
+        intervalSource: firstFundingInterval.source,
       });
     }
     if (last >= activeEnd) issues.push({reason: 'funding-event-after-active-end', last, activeEnd});
-    if (last < activeEnd - window) {
+    if (last < activeEnd - endWindow) {
       issues.push({
         reason: 'funding-end-window-not-covered',
         last,
         activeEnd,
-        windowHours: fundingInterval.hours,
-        intervalSource: fundingInterval.source,
+        windowHours: lastFundingInterval.hours,
+        intervalSource: lastFundingInterval.source,
       });
     }
     return issues;
@@ -131,6 +142,16 @@ function coverageIssues(rows, artifact, manifest) {
     if (last + step < activeEnd) issues.push({reason: 'active-end-not-covered', last, activeEnd, step});
   }
   return issues;
+}
+
+export function coverageIssues(rows, artifact, manifest) {
+  return coverageIssuesFromSummary({
+    hasRows: Array.isArray(rows) && rows.length > 0,
+    first: rows?.[0]?.t ?? rows?.[0]?.fundingTime,
+    last: rows?.at(-1)?.t ?? rows?.at(-1)?.fundingTime,
+    firstFundingIntervalHours: rows?.[0]?.fundingIntervalHours,
+    lastFundingIntervalHours: rows?.at(-1)?.fundingIntervalHours,
+  }, artifact, manifest);
 }
 
 function requiredArtifactKeys(manifest) {
@@ -183,6 +204,39 @@ export function verifyBacktestManifest(manifest, rootDir = APP_DIR) {
     }
     if (market.symbol && !universeSymbolSet.has(market.symbol)) {
       contract.push({symbol: market.symbol, reason: 'lifecycle-symbol-not-in-universe'});
+    }
+    if (market.historicalDelisted === true) {
+      const requiredEvidence = [
+        ['listingEvidenceTimestamp', market.listingEvidenceTimestamp],
+        ['listingEvidenceSource', market.listingEvidenceSource],
+        ['listingEvidenceSha256', market.listingEvidenceSha256],
+        ['delistEvidenceTimestamp', market.delistEvidenceTimestamp],
+        ['delistEvidenceSource', market.delistEvidenceSource],
+        ['delistEvidenceSha256', market.delistEvidenceSha256],
+      ];
+      const hasListingRef = Boolean(market.listingEvidenceUrl || market.listingEvidencePath);
+      const hasDelistRef = Boolean(market.delistEvidenceUrl || market.delistEvidencePath);
+      if (!hasListingRef) requiredEvidence.push(['listingEvidenceUrl/path', null]);
+      if (!hasDelistRef) requiredEvidence.push(['delistEvidenceUrl/path', null]);
+      for (const [field, value] of requiredEvidence) {
+        if (value == null || value === '') contract.push({symbol: market.symbol ?? null, reason: `historical-${field}-missing`});
+      }
+      for (const field of ['listingEvidenceSha256', 'delistEvidenceSha256']) {
+        if (market[field] != null && !/^[a-f0-9]{64}$/i.test(String(market[field]))) {
+          contract.push({symbol: market.symbol ?? null, reason: `historical-${field}-invalid`});
+        }
+      }
+      const listingEvidenceTimestamp = timestampValue(market.listingEvidenceTimestamp);
+      const firstObserved = timestampValue(market.firstObserved);
+      const delistEvidenceTimestamp = timestampValue(market.delistEvidenceTimestamp);
+      const lastObserved = timestampValue(market.lastObserved);
+      const lifecycleConflicts = [];
+      const hasPositiveTimestamp = value => Number.isFinite(value) && value > 0;
+      if (hasPositiveTimestamp(listingEvidenceTimestamp) && hasPositiveTimestamp(firstObserved) && listingEvidenceTimestamp > firstObserved) lifecycleConflicts.push('listing-after-first-observed');
+      if (hasPositiveTimestamp(delistEvidenceTimestamp) && hasPositiveTimestamp(lastObserved) && lastObserved >= delistEvidenceTimestamp) lifecycleConflicts.push('delist-at-or-before-last-observed');
+      if (hasPositiveTimestamp(listingEvidenceTimestamp) && hasPositiveTimestamp(delistEvidenceTimestamp) && listingEvidenceTimestamp >= delistEvidenceTimestamp) lifecycleConflicts.push('listing-not-before-delist');
+      for (const reason of lifecycleConflicts) contract.push({symbol: market.symbol ?? null, reason: `historical-lifecycle-${reason}`});
+      if (lifecycleConflicts.length || market.lifecycleExact !== true) contract.push({symbol: market.symbol ?? null, reason: 'historical-lifecycle-not-exact'});
     }
   }
   for (const symbol of universeSymbols) {
@@ -243,15 +297,15 @@ export function verifyBacktestManifest(manifest, rootDir = APP_DIR) {
     const interval = artifactInterval(artifact);
     if (interval) {
       const issues = continuityIssues(rows, interval);
-      if (issues.length) continuity.push({path: artifact.path, interval, issueCount: issues.length, firstIssues: issues.slice(0, 3)});
+      if (issues.length) continuity.push({path: artifact.path, symbol: artifact.symbol ?? null, kind: artifact.kind ?? null, interval, issueCount: issues.length, firstIssues: issues.slice(0, 3), issues});
     }
     if (artifact.kind === 'funding') {
       const issues = eventStreamIssues(rows);
-      if (issues.length) continuity.push({path: artifact.path, interval: 'event', issueCount: issues.length, firstIssues: issues.slice(0, 3)});
+      if (issues.length) continuity.push({path: artifact.path, symbol: artifact.symbol ?? null, kind: artifact.kind, interval: 'event', issueCount: issues.length, firstIssues: issues.slice(0, 3), issues});
     }
     if (['price', 'minute', 'funding'].includes(artifact.kind)) {
       const issues = coverageIssues(rows, artifact, manifest);
-      if (issues.length) coverage.push({path: artifact.path, issueCount: issues.length, firstIssues: issues.slice(0, 3)});
+      if (issues.length) coverage.push({path: artifact.path, symbol: artifact.symbol ?? null, kind: artifact.kind, interval: artifact.interval ?? null, issueCount: issues.length, firstIssues: issues.slice(0, 3), issues});
     }
   }
 

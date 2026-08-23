@@ -1,0 +1,3147 @@
+{
+  "generatedAt": "2026-08-23T02:26:48.238Z",
+  "data": {
+    "source": "repository data/backtest artifacts",
+    "mode": "formal",
+    "scopeLabel": "smoke backtest (M4 INCOMPLETE)",
+    "status": "M4-INCOMPLETE",
+    "formalEligible": false,
+    "command": "npm run backtest",
+    "dataRoot": "data/backtest",
+    "manifest": "data/backtest/manifest.json",
+    "snapshotEnd": "2026-07-15T00:00:00.000Z",
+    "snapshotTimestamp": "2026-08-01T00:00:00.000Z",
+    "exchangeInfo": "data/backtest/exchangeInfo.json",
+    "symbols": [
+      "1000BONKUSDT",
+      "AAVEUSDT",
+      "ARXUSDT",
+      "ASTERUSDT",
+      "BNCUSDT",
+      "BOTUSDT",
+      "BSPUSDT",
+      "BTCUSDT",
+      "CAPUSDT",
+      "CIENUSDT",
+      "DATAIPUSDT",
+      "EIGENUSDT",
+      "ENAUSDT",
+      "FARTCOINUSDT",
+      "FLEXUSDT",
+      "FWDIUSDT",
+      "GRAMUSDT",
+      "GRASSUSDT",
+      "HUSDT",
+      "HYPEUSDT",
+      "INTWUSDT",
+      "KAITOUSDT",
+      "KLACUSDT",
+      "KORUUSDT",
+      "KSTRUSDT",
+      "LABUSDT",
+      "LRCXUSDT",
+      "MMTUSDT",
+      "ONDOUSDT",
+      "OUSDT",
+      "PIEVERSEUSDT",
+      "RAVEUSDT",
+      "RENDERUSDT",
+      "REUSDT",
+      "SKHYUSDT",
+      "SMCIUSDT",
+      "SNXXUSDT",
+      "SONYUSDT",
+      "SUSDT",
+      "TAOUSDT",
+      "TRUMPUSDT",
+      "TTWOUSDT",
+      "TXNUSDT",
+      "VIRTUALUSDT",
+      "WENUSDT",
+      "WIFUSDT",
+      "WLDUSDT",
+      "WLFIUSDT",
+      "XBIUSDT",
+      "XPLUSDT"
+    ],
+    "missing": [],
+    "fixedUniverse": false,
+    "pointInTimeUniverse": false,
+    "historicalDelistingsResolved": false,
+    "sampleSize": {
+      "priceRows": 437385,
+      "fundingRows": 93091,
+      "oneMinuteRows": 26241970,
+      "symbolsWithBothFeeds": 50,
+      "symbolsWithOneMinute": 50,
+      "symbolsWithCompleteOneMinute": 50
+    },
+    "executionCoverage": {
+      "1000BONKUSDT": {
+        "eligibleStart": "2023-11-22T14:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "AAVEUSDT": {
+        "eligibleStart": "2021-01-01T00:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "ARXUSDT": {
+        "eligibleStart": "2026-06-23T04:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "ASTERUSDT": {
+        "eligibleStart": "2025-09-19T12:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "BNCUSDT": {
+        "eligibleStart": "2026-07-09T14:25:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "BOTUSDT": {
+        "eligibleStart": "2026-07-09T14:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "BSPUSDT": {
+        "eligibleStart": "2026-07-02T09:50:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "BTCUSDT": {
+        "eligibleStart": "2021-01-01T00:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "CAPUSDT": {
+        "eligibleStart": "2026-06-27T11:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "CIENUSDT": {
+        "eligibleStart": "2026-06-22T13:50:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "DATAIPUSDT": {
+        "eligibleStart": "2026-07-03T06:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "EIGENUSDT": {
+        "eligibleStart": "2024-10-01T06:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "ENAUSDT": {
+        "eligibleStart": "2024-04-02T12:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "FARTCOINUSDT": {
+        "eligibleStart": "2024-12-20T18:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "FLEXUSDT": {
+        "eligibleStart": "2026-07-02T09:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "FWDIUSDT": {
+        "eligibleStart": "2026-07-09T14:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "GRAMUSDT": {
+        "eligibleStart": "2026-07-02T08:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "GRASSUSDT": {
+        "eligibleStart": "2024-11-08T15:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "HUSDT": {
+        "eligibleStart": "2025-06-25T09:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "HYPEUSDT": {
+        "eligibleStart": "2025-05-30T10:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "INTWUSDT": {
+        "eligibleStart": "2026-07-09T14:10:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "KAITOUSDT": {
+        "eligibleStart": "2025-02-20T13:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "KLACUSDT": {
+        "eligibleStart": "2026-06-22T13:35:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "KORUUSDT": {
+        "eligibleStart": "2026-06-22T13:55:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "KSTRUSDT": {
+        "eligibleStart": "2026-07-02T09:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "LABUSDT": {
+        "eligibleStart": "2025-10-17T14:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "LRCXUSDT": {
+        "eligibleStart": "2026-06-22T13:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "MMTUSDT": {
+        "eligibleStart": "2025-11-04T12:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "ONDOUSDT": {
+        "eligibleStart": "2024-01-20T13:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "OUSDT": {
+        "eligibleStart": "2026-06-24T11:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "PIEVERSEUSDT": {
+        "eligibleStart": "2025-11-14T11:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "RAVEUSDT": {
+        "eligibleStart": "2025-12-14T15:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "RENDERUSDT": {
+        "eligibleStart": "2024-07-26T10:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "REUSDT": {
+        "eligibleStart": "2026-06-18T14:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "SKHYUSDT": {
+        "eligibleStart": "2026-07-10T15:50:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "SMCIUSDT": {
+        "eligibleStart": "2026-06-22T13:45:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "SNXXUSDT": {
+        "eligibleStart": "2026-07-09T14:15:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "SONYUSDT": {
+        "eligibleStart": "2026-06-22T14:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "SUSDT": {
+        "eligibleStart": "2025-01-16T10:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "TAOUSDT": {
+        "eligibleStart": "2024-04-11T14:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "TRUMPUSDT": {
+        "eligibleStart": "2025-01-18T13:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "TTWOUSDT": {
+        "eligibleStart": "2026-07-02T09:40:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "TXNUSDT": {
+        "eligibleStart": "2026-07-02T09:25:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "VIRTUALUSDT": {
+        "eligibleStart": "2024-12-10T12:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "WENUSDT": {
+        "eligibleStart": "2026-07-09T14:05:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "WIFUSDT": {
+        "eligibleStart": "2024-01-18T14:15:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "WLDUSDT": {
+        "eligibleStart": "2023-07-24T12:00:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "WLFIUSDT": {
+        "eligibleStart": "2025-08-23T08:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "XBIUSDT": {
+        "eligibleStart": "2026-07-09T14:20:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      },
+      "XPLUSDT": {
+        "eligibleStart": "2025-08-22T09:30:00.000Z",
+        "eligibleEnd": "2026-07-15T00:00:00.000Z",
+        "oneMinuteComplete": true,
+        "oneHourComplete": true,
+        "lifecycleDeclared": true
+      }
+    },
+    "requiredAlphaCoverage": [
+      "daily_breakout_long",
+      "funding_crowding_short",
+      "volume_shock_short",
+      "v8_bear_trend_short"
+    ],
+    "observedAlphaCoverage": [
+      "daily_breakout_long",
+      "v8_bear_trend_short",
+      "v8_daily_breakout_long"
+    ],
+    "executionProxy": false,
+    "executionInterval": "1m",
+    "decisionLatencyMinutes": 20,
+    "m4Reasons": [
+      "point_in_time_universe_required",
+      "historical_delisting_survivorship_handling_required",
+      "expanded_non_core_universe_required",
+      "sufficient_oos_sample_required"
+    ],
+    "survivorshipWarning": "Current snapshot exchangeInfo does not contain historical delistings; this is not a full-universe survivorship-free result."
+  },
+  "methodology": {
+    "scanCadence": "4h UTC windows",
+    "train": [
+      "2021-01-01T00:00:00.000Z",
+      "2024-01-01T00:00:00.000Z"
+    ],
+    "validation": [
+      "2024-01-01T00:00:00.000Z",
+      "2025-01-01T00:00:00.000Z"
+    ],
+    "walkForwardOos": [
+      "2025-01-01T00:00:00.000Z",
+      "2026-07-15T00:00:00.000Z"
+    ],
+    "signalCohort": "signalTime",
+    "executionLatency": "decision_time = signal_time + 20 minutes; fill_time >= decision_time",
+    "fill": "first 1m bar at or after decision time, open price within each symbol active window",
+    "executionInterval": "1m",
+    "executionProxy": false,
+    "settlement": "completed 1m bars; first touch by minute; SL priority when TP and SL occur in the same minute",
+    "funding": "historical funding rows; markPrice fallback to prior completed 1h close",
+    "costRate": 0.0015,
+    "lookaheadGuards": [
+      "completed h1 slice",
+      "next-bar open fill",
+      "completed-bar-only settlement",
+      "no OOS parameter tuning"
+    ],
+    "requiredAlphaCoverage": [
+      "daily_breakout_long",
+      "funding_crowding_short",
+      "volume_shock_short",
+      "v8_bear_trend_short"
+    ],
+    "observedAlphaCoverage": [
+      "daily_breakout_long",
+      "v8_bear_trend_short",
+      "v8_daily_breakout_long"
+    ]
+  },
+  "models": [
+    {
+      "model": "V7.5 Control",
+      "modelVersion": "V7.5-cap10-risk60-same3",
+      "full": {
+        "trades": 0,
+        "signals": 87,
+        "signalsPerMonth": 1.3102733795150916,
+        "winRate": null,
+        "wins": 0,
+        "losses": 0,
+        "avgWinR": null,
+        "avgLossR": null,
+        "expectancyR": null,
+        "netExpectancyR": null,
+        "expectancyR95CI": null,
+        "grossExpectancyR": null,
+        "profitFactor": null,
+        "profitFactorStatus": "no-trades",
+        "maxDrawdownUsdt": 0,
+        "maxDrawdownPct": 0,
+        "endingEquity": 10000,
+        "netPnlUsdt": 0,
+        "grossPnlUsdt": 0,
+        "fundingPnlUsdt": 0,
+        "feesAndCostsUsdt": 0,
+        "turnoverUsdt": 0,
+        "averageHoldingHours": null,
+        "forcedExits": 0,
+        "sharpe": null,
+        "sortino": null,
+        "monthlyObservations": 0,
+        "equityPath": [
+          10000
+        ],
+        "sampleStatus": "insufficient-sample",
+        "confidenceInterval": {
+          "method": "normal-approximation-95%",
+          "parameter": "net expectancy in R"
+        },
+        "bySide": {},
+        "byRegime": {},
+        "byFamily": {},
+        "byAlpha": {},
+        "byYear": {}
+      },
+      "splits": {
+        "train": {
+          "trades": 0,
+          "signals": 22,
+          "signalsPerMonth": 0.6115296803652969,
+          "winRate": null,
+          "wins": 0,
+          "losses": 0,
+          "avgWinR": null,
+          "avgLossR": null,
+          "expectancyR": null,
+          "netExpectancyR": null,
+          "expectancyR95CI": null,
+          "grossExpectancyR": null,
+          "profitFactor": null,
+          "profitFactorStatus": "no-trades",
+          "maxDrawdownUsdt": 0,
+          "maxDrawdownPct": 0,
+          "endingEquity": 10000,
+          "netPnlUsdt": 0,
+          "grossPnlUsdt": 0,
+          "fundingPnlUsdt": 0,
+          "feesAndCostsUsdt": 0,
+          "turnoverUsdt": 0,
+          "averageHoldingHours": null,
+          "forcedExits": 0,
+          "sharpe": null,
+          "sortino": null,
+          "monthlyObservations": 0,
+          "equityPath": [
+            10000
+          ],
+          "sampleStatus": "insufficient-sample",
+          "confidenceInterval": {
+            "method": "normal-approximation-95%",
+            "parameter": "net expectancy in R"
+          },
+          "bySide": {},
+          "byRegime": {},
+          "byFamily": {},
+          "byAlpha": {},
+          "byYear": {}
+        },
+        "validation": {
+          "trades": 0,
+          "signals": 39,
+          "signalsPerMonth": 3.243340163934426,
+          "winRate": null,
+          "wins": 0,
+          "losses": 0,
+          "avgWinR": null,
+          "avgLossR": null,
+          "expectancyR": null,
+          "netExpectancyR": null,
+          "expectancyR95CI": null,
+          "grossExpectancyR": null,
+          "profitFactor": null,
+          "profitFactorStatus": "no-trades",
+          "maxDrawdownUsdt": 0,
+          "maxDrawdownPct": 0,
+          "endingEquity": 10000,
+          "netPnlUsdt": 0,
+          "grossPnlUsdt": 0,
+          "fundingPnlUsdt": 0,
+          "feesAndCostsUsdt": 0,
+          "turnoverUsdt": 0,
+          "averageHoldingHours": null,
+          "forcedExits": 0,
+          "sharpe": null,
+          "sortino": null,
+          "monthlyObservations": 0,
+          "equityPath": [
+            10000
+          ],
+          "sampleStatus": "insufficient-sample",
+          "confidenceInterval": {
+            "method": "normal-approximation-95%",
+            "parameter": "net expectancy in R"
+          },
+          "bySide": {},
+          "byRegime": {},
+          "byFamily": {},
+          "byAlpha": {},
+          "byYear": {}
+        },
+        "oos": {
+          "trades": 0,
+          "signals": 26,
+          "signalsPerMonth": 1.413169642857143,
+          "winRate": null,
+          "wins": 0,
+          "losses": 0,
+          "avgWinR": null,
+          "avgLossR": null,
+          "expectancyR": null,
+          "netExpectancyR": null,
+          "expectancyR95CI": null,
+          "grossExpectancyR": null,
+          "profitFactor": null,
+          "profitFactorStatus": "no-trades",
+          "maxDrawdownUsdt": 0,
+          "maxDrawdownPct": 0,
+          "endingEquity": 10000,
+          "netPnlUsdt": 0,
+          "grossPnlUsdt": 0,
+          "fundingPnlUsdt": 0,
+          "feesAndCostsUsdt": 0,
+          "turnoverUsdt": 0,
+          "averageHoldingHours": null,
+          "forcedExits": 0,
+          "sharpe": null,
+          "sortino": null,
+          "monthlyObservations": 0,
+          "equityPath": [
+            10000
+          ],
+          "sampleStatus": "insufficient-sample",
+          "confidenceInterval": {
+            "method": "normal-approximation-95%",
+            "parameter": "net expectancy in R"
+          },
+          "bySide": {},
+          "byRegime": {},
+          "byFamily": {},
+          "byAlpha": {},
+          "byYear": {}
+        }
+      },
+      "walkForward": {
+        "2025": {
+          "trainingWindow": [
+            1609459200000,
+            1735689600000
+          ],
+          "oos": {
+            "trades": 0,
+            "signals": 26,
+            "signalsPerMonth": 2.168150684931507,
+            "winRate": null,
+            "wins": 0,
+            "losses": 0,
+            "avgWinR": null,
+            "avgLossR": null,
+            "expectancyR": null,
+            "netExpectancyR": null,
+            "expectancyR95CI": null,
+            "grossExpectancyR": null,
+            "profitFactor": null,
+            "profitFactorStatus": "no-trades",
+            "maxDrawdownUsdt": 0,
+            "maxDrawdownPct": 0,
+            "endingEquity": 10000,
+            "netPnlUsdt": 0,
+            "grossPnlUsdt": 0,
+            "fundingPnlUsdt": 0,
+            "feesAndCostsUsdt": 0,
+            "turnoverUsdt": 0,
+            "averageHoldingHours": null,
+            "forcedExits": 0,
+            "sharpe": null,
+            "sortino": null,
+            "monthlyObservations": 0,
+            "equityPath": [
+              10000
+            ],
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            },
+            "bySide": {},
+            "byRegime": {},
+            "byFamily": {},
+            "byAlpha": {},
+            "byYear": {}
+          }
+        },
+        "2026-H1": {
+          "trainingWindow": [
+            1609459200000,
+            1767225600000
+          ],
+          "oos": {
+            "trades": 0,
+            "signals": 0,
+            "signalsPerMonth": 0,
+            "winRate": null,
+            "wins": 0,
+            "losses": 0,
+            "avgWinR": null,
+            "avgLossR": null,
+            "expectancyR": null,
+            "netExpectancyR": null,
+            "expectancyR95CI": null,
+            "grossExpectancyR": null,
+            "profitFactor": null,
+            "profitFactorStatus": "no-trades",
+            "maxDrawdownUsdt": 0,
+            "maxDrawdownPct": 0,
+            "endingEquity": 10000,
+            "netPnlUsdt": 0,
+            "grossPnlUsdt": 0,
+            "fundingPnlUsdt": 0,
+            "feesAndCostsUsdt": 0,
+            "turnoverUsdt": 0,
+            "averageHoldingHours": null,
+            "forcedExits": 0,
+            "sharpe": null,
+            "sortino": null,
+            "monthlyObservations": 0,
+            "equityPath": [
+              10000
+            ],
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            },
+            "bySide": {},
+            "byRegime": {},
+            "byFamily": {},
+            "byAlpha": {},
+            "byYear": {}
+          }
+        }
+      },
+      "acceptedSignals": 0,
+      "rejectionReasons": {
+        "invalid-market-tick": 35
+      },
+      "openAtEnd": 0,
+      "observedAlphaCoverage": [
+        "daily_breakout_long"
+      ]
+    },
+    {
+      "model": "V8 Shadow",
+      "modelVersion": "V8-shadow-research-20260819",
+      "full": {
+        "trades": 21,
+        "signals": 47,
+        "signalsPerMonth": 0.7078488372093023,
+        "winRate": 0.42857142857142855,
+        "wins": 9,
+        "losses": 12,
+        "avgWinR": 1.8722628488899429,
+        "avgLossR": -1.059896522048035,
+        "expectancyR": 0.19674320835395556,
+        "netExpectancyR": 0.19674320835395556,
+        "expectancyR95CI": [
+          -0.4403177254433277,
+          0.8338041421512388
+        ],
+        "grossExpectancyR": 0.2820692361704549,
+        "profitFactor": 1.3248436120482132,
+        "profitFactorStatus": "defined",
+        "maxDrawdownUsdt": 182.37349715866003,
+        "maxDrawdownPct": 0.018237349715866002,
+        "endingEquity": 10165.611321782962,
+        "netPnlUsdt": 165.61132178296347,
+        "grossPnlUsdt": 245.18112748257727,
+        "fundingPnlUsdt": -63.52006522544755,
+        "feesAndCostsUsdt": 16.049740474166217,
+        "turnoverUsdt": 21399.653965554953,
+        "averageHoldingHours": 505.4634920634921,
+        "forcedExits": 0,
+        "sharpe": 0.42088604065869567,
+        "sortino": 0.5966466075927688,
+        "monthlyObservations": 19,
+        "equityPath": [
+          10000,
+          9959.831589745865,
+          9902.909707830586,
+          9977.829622223839,
+          9946.594771312799,
+          9907.30734839533,
+          9857.768447525908,
+          9817.62650284134,
+          9884.49162483741,
+          9967.433318783122,
+          9930.20573262936,
+          9870.385701678757,
+          9833.035758106224,
+          9877.443687224617,
+          9964.037228136334,
+          10104.520424247772,
+          10055.045573121255,
+          10014.079420372696,
+          9967.233517414148,
+          10007.581775760093,
+          10072.14464266508,
+          10165.611321782962
+        ],
+        "sampleStatus": "insufficient-sample",
+        "confidenceInterval": {
+          "method": "normal-approximation-95%",
+          "parameter": "net expectancy in R"
+        },
+        "bySide": {
+          "long": {
+            "trades": 15,
+            "signals": 15,
+            "signalsPerMonth": 0.22590920336467094,
+            "winRate": 0.3333333333333333,
+            "wins": 5,
+            "losses": 10,
+            "avgWinR": 1.8122573065156982,
+            "avgLossR": -1.070768860736378,
+            "expectancyR": -0.10976013831901917,
+            "netExpectancyR": -0.10976013831901917,
+            "expectancyR95CI": [
+              -0.8227078503663512,
+              0.6031875737283128
+            ],
+            "grossExpectancyR": 0.05616337236191963,
+            "profitFactor": 0.8462411324090018,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 186.77113772340454,
+            "maxDrawdownPct": 0.018677113772340454,
+            "endingEquity": 9962.835876849404,
+            "netPnlUsdt": -37.1641231505956,
+            "grossPnlUsdt": 37.06700193338548,
+            "fundingPnlUsdt": -61.7986623535751,
+            "feesAndCostsUsdt": 12.432462730405963,
+            "turnoverUsdt": 16576.616973874618,
+            "averageHoldingHours": 561.5844444444444,
+            "forcedExits": 0,
+            "sharpe": -0.12895077394583682,
+            "sortino": -0.17224337722056798,
+            "monthlyObservations": 14,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "short": {
+            "trades": 6,
+            "signals": 6,
+            "signalsPerMonth": 0.09036368134586838,
+            "winRate": 0.6666666666666666,
+            "wins": 4,
+            "losses": 2,
+            "avgWinR": 1.9472697768577492,
+            "avgLossR": -1.0055348286063204,
+            "expectancyR": 0.9630015750363926,
+            "netExpectancyR": 0.9630015750363926,
+            "expectancyR95CI": [
+              -0.2585642382231067,
+              2.184567388295892
+            ],
+            "grossExpectancyR": 0.9946292952891386,
+            "profitFactor": 3.873102594679254,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 70.52227382850833,
+            "maxDrawdownPct": 0.007052227382850833,
+            "endingEquity": 10202.775444933559,
+            "netPnlUsdt": 202.77544493355907,
+            "grossPnlUsdt": 208.1141255491918,
+            "fundingPnlUsdt": -1.7214028718724688,
+            "feesAndCostsUsdt": 3.6172777437602535,
+            "turnoverUsdt": 4823.036991680337,
+            "averageHoldingHours": 365.1611111111111,
+            "forcedExits": 0,
+            "sharpe": 2.00435555322796,
+            "sortino": 3.9584646061741955,
+            "monthlyObservations": 5,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byRegime": {
+          "bull": {
+            "trades": 15,
+            "signals": 15,
+            "signalsPerMonth": 0.22590920336467094,
+            "winRate": 0.3333333333333333,
+            "wins": 5,
+            "losses": 10,
+            "avgWinR": 1.8122573065156982,
+            "avgLossR": -1.070768860736378,
+            "expectancyR": -0.10976013831901917,
+            "netExpectancyR": -0.10976013831901917,
+            "expectancyR95CI": [
+              -0.8227078503663512,
+              0.6031875737283128
+            ],
+            "grossExpectancyR": 0.05616337236191963,
+            "profitFactor": 0.8462411324090018,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 186.77113772340454,
+            "maxDrawdownPct": 0.018677113772340454,
+            "endingEquity": 9962.835876849404,
+            "netPnlUsdt": -37.1641231505956,
+            "grossPnlUsdt": 37.06700193338548,
+            "fundingPnlUsdt": -61.7986623535751,
+            "feesAndCostsUsdt": 12.432462730405963,
+            "turnoverUsdt": 16576.616973874618,
+            "averageHoldingHours": 561.5844444444444,
+            "forcedExits": 0,
+            "sharpe": -0.12895077394583682,
+            "sortino": -0.17224337722056798,
+            "monthlyObservations": 14,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "bear": {
+            "trades": 6,
+            "signals": 6,
+            "signalsPerMonth": 0.09036368134586838,
+            "winRate": 0.6666666666666666,
+            "wins": 4,
+            "losses": 2,
+            "avgWinR": 1.9472697768577492,
+            "avgLossR": -1.0055348286063204,
+            "expectancyR": 0.9630015750363926,
+            "netExpectancyR": 0.9630015750363926,
+            "expectancyR95CI": [
+              -0.2585642382231067,
+              2.184567388295892
+            ],
+            "grossExpectancyR": 0.9946292952891386,
+            "profitFactor": 3.873102594679254,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 70.52227382850833,
+            "maxDrawdownPct": 0.007052227382850833,
+            "endingEquity": 10202.775444933559,
+            "netPnlUsdt": 202.77544493355907,
+            "grossPnlUsdt": 208.1141255491918,
+            "fundingPnlUsdt": -1.7214028718724688,
+            "feesAndCostsUsdt": 3.6172777437602535,
+            "turnoverUsdt": 4823.036991680337,
+            "averageHoldingHours": 365.1611111111111,
+            "forcedExits": 0,
+            "sharpe": 2.00435555322796,
+            "sortino": 3.9584646061741955,
+            "monthlyObservations": 5,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byFamily": {
+          "v8BullTrendBreakout": {
+            "trades": 15,
+            "signals": 15,
+            "signalsPerMonth": 0.22590920336467094,
+            "winRate": 0.3333333333333333,
+            "wins": 5,
+            "losses": 10,
+            "avgWinR": 1.8122573065156982,
+            "avgLossR": -1.070768860736378,
+            "expectancyR": -0.10976013831901917,
+            "netExpectancyR": -0.10976013831901917,
+            "expectancyR95CI": [
+              -0.8227078503663512,
+              0.6031875737283128
+            ],
+            "grossExpectancyR": 0.05616337236191963,
+            "profitFactor": 0.8462411324090018,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 186.77113772340454,
+            "maxDrawdownPct": 0.018677113772340454,
+            "endingEquity": 9962.835876849404,
+            "netPnlUsdt": -37.1641231505956,
+            "grossPnlUsdt": 37.06700193338548,
+            "fundingPnlUsdt": -61.7986623535751,
+            "feesAndCostsUsdt": 12.432462730405963,
+            "turnoverUsdt": 16576.616973874618,
+            "averageHoldingHours": 561.5844444444444,
+            "forcedExits": 0,
+            "sharpe": -0.12895077394583682,
+            "sortino": -0.17224337722056798,
+            "monthlyObservations": 14,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "v8BearCoreTrendShort": {
+            "trades": 6,
+            "signals": 6,
+            "signalsPerMonth": 0.09036368134586838,
+            "winRate": 0.6666666666666666,
+            "wins": 4,
+            "losses": 2,
+            "avgWinR": 1.9472697768577492,
+            "avgLossR": -1.0055348286063204,
+            "expectancyR": 0.9630015750363926,
+            "netExpectancyR": 0.9630015750363926,
+            "expectancyR95CI": [
+              -0.2585642382231067,
+              2.184567388295892
+            ],
+            "grossExpectancyR": 0.9946292952891386,
+            "profitFactor": 3.873102594679254,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 70.52227382850833,
+            "maxDrawdownPct": 0.007052227382850833,
+            "endingEquity": 10202.775444933559,
+            "netPnlUsdt": 202.77544493355907,
+            "grossPnlUsdt": 208.1141255491918,
+            "fundingPnlUsdt": -1.7214028718724688,
+            "feesAndCostsUsdt": 3.6172777437602535,
+            "turnoverUsdt": 4823.036991680337,
+            "averageHoldingHours": 365.1611111111111,
+            "forcedExits": 0,
+            "sharpe": 2.00435555322796,
+            "sortino": 3.9584646061741955,
+            "monthlyObservations": 5,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byAlpha": {
+          "v8_daily_breakout_long": {
+            "trades": 15,
+            "signals": 15,
+            "signalsPerMonth": 0.22590920336467094,
+            "winRate": 0.3333333333333333,
+            "wins": 5,
+            "losses": 10,
+            "avgWinR": 1.8122573065156982,
+            "avgLossR": -1.070768860736378,
+            "expectancyR": -0.10976013831901917,
+            "netExpectancyR": -0.10976013831901917,
+            "expectancyR95CI": [
+              -0.8227078503663512,
+              0.6031875737283128
+            ],
+            "grossExpectancyR": 0.05616337236191963,
+            "profitFactor": 0.8462411324090018,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 186.77113772340454,
+            "maxDrawdownPct": 0.018677113772340454,
+            "endingEquity": 9962.835876849404,
+            "netPnlUsdt": -37.1641231505956,
+            "grossPnlUsdt": 37.06700193338548,
+            "fundingPnlUsdt": -61.7986623535751,
+            "feesAndCostsUsdt": 12.432462730405963,
+            "turnoverUsdt": 16576.616973874618,
+            "averageHoldingHours": 561.5844444444444,
+            "forcedExits": 0,
+            "sharpe": -0.12895077394583682,
+            "sortino": -0.17224337722056798,
+            "monthlyObservations": 14,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "v8_bear_trend_short": {
+            "trades": 6,
+            "signals": 6,
+            "signalsPerMonth": 0.09036368134586838,
+            "winRate": 0.6666666666666666,
+            "wins": 4,
+            "losses": 2,
+            "avgWinR": 1.9472697768577492,
+            "avgLossR": -1.0055348286063204,
+            "expectancyR": 0.9630015750363926,
+            "netExpectancyR": 0.9630015750363926,
+            "expectancyR95CI": [
+              -0.2585642382231067,
+              2.184567388295892
+            ],
+            "grossExpectancyR": 0.9946292952891386,
+            "profitFactor": 3.873102594679254,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 70.52227382850833,
+            "maxDrawdownPct": 0.007052227382850833,
+            "endingEquity": 10202.775444933559,
+            "netPnlUsdt": 202.77544493355907,
+            "grossPnlUsdt": 208.1141255491918,
+            "fundingPnlUsdt": -1.7214028718724688,
+            "feesAndCostsUsdt": 3.6172777437602535,
+            "turnoverUsdt": 4823.036991680337,
+            "averageHoldingHours": 365.1611111111111,
+            "forcedExits": 0,
+            "sharpe": 2.00435555322796,
+            "sortino": 3.9584646061741955,
+            "monthlyObservations": 5,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byYear": {
+          "2021": {
+            "trades": 2,
+            "signals": 2,
+            "signalsPerMonth": 0.03012122711528946,
+            "winRate": 0,
+            "wins": 0,
+            "losses": 2,
+            "avgWinR": null,
+            "avgLossR": -1.1014870334488112,
+            "expectancyR": -1.1014870334488112,
+            "netExpectancyR": -1.1014870334488112,
+            "expectancyR95CI": [
+              -1.2695676066119619,
+              -0.9334064602856605
+            ],
+            "grossExpectancyR": -1,
+            "profitFactor": 0,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 97.09029216941417,
+            "maxDrawdownPct": 0.009709029216941417,
+            "endingEquity": 9902.909707830586,
+            "netPnlUsdt": -97.09029216941404,
+            "grossPnlUsdt": -87.49089808755016,
+            "fundingPnlUsdt": -8.155088167599372,
+            "feesAndCostsUsdt": 1.4443059142644983,
+            "turnoverUsdt": 1925.7412190193309,
+            "averageHoldingHours": 194.88333333333335,
+            "forcedExits": 0,
+            "sharpe": -14.195366763556578,
+            "sortino": -3.4136529051963778,
+            "monthlyObservations": 2,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "2022": {
+            "trades": 3,
+            "signals": 3,
+            "signalsPerMonth": 0.04518184067293419,
+            "winRate": 0.3333333333333333,
+            "wins": 1,
+            "losses": 2,
+            "avgWinR": 2.0019226955219627,
+            "avgLossR": -1.0055348286063204,
+            "expectancyR": -0.0030489872302260266,
+            "netExpectancyR": -0.0030489872302260266,
+            "expectancyR95CI": [
+              -1.9679222083887284,
+              1.9618242339282765
+            ],
+            "grossExpectancyR": 0.04395774109245885,
+            "profitFactor": 0.9954516932529548,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 70.52227382850833,
+            "maxDrawdownPct": 0.007052227382850833,
+            "endingEquity": 10004.397640564745,
+            "netPnlUsdt": 4.397640564745629,
+            "grossPnlUsdt": 4.727414378561626,
+            "fundingPnlUsdt": 1.224331143807985,
+            "feesAndCostsUsdt": 1.5541049576239738,
+            "turnoverUsdt": 2072.139943498632,
+            "averageHoldingHours": 262.4611111111111,
+            "forcedExits": 0,
+            "sharpe": 0.07966630015121959,
+            "sortino": 0.14308031339729294,
+            "monthlyObservations": 3,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "2023": {
+            "trades": 4,
+            "signals": 4,
+            "signalsPerMonth": 0.06024245423057892,
+            "winRate": 0.5,
+            "wins": 2,
+            "losses": 2,
+            "avgWinR": 1.759308513680986,
+            "avgLossR": -1.0392171268448371,
+            "expectancyR": 0.36004569341807446,
+            "netExpectancyR": 0.36004569341807446,
+            "expectancyR95CI": [
+              -1.2237814079714622,
+              1.943872794807611
+            ],
+            "grossExpectancyR": 0.4928276826388339,
+            "profitFactor": 1.6929171664274005,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 89.68084555399037,
+            "maxDrawdownPct": 0.008968084555399037,
+            "endingEquity": 10060.125970387791,
+            "netPnlUsdt": 60.12597038779124,
+            "grossPnlUsdt": 84.61926217730017,
+            "fundingPnlUsdt": -20.942850080632184,
+            "feesAndCostsUsdt": 3.550441708876754,
+            "turnoverUsdt": 4733.922278502338,
+            "averageHoldingHours": 499.82500000000005,
+            "forcedExits": 0,
+            "sharpe": 0.7486696957609817,
+            "sortino": 1.1549199887706108,
+            "monthlyObservations": 4,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "2024": {
+            "trades": 5,
+            "signals": 5,
+            "signalsPerMonth": 0.07530306778822365,
+            "winRate": 0.4,
+            "wins": 2,
+            "losses": 3,
+            "avgWinR": 1.8071574082169866,
+            "avgLossR": -1.0566233302712496,
+            "expectancyR": 0.0888889651240449,
+            "netExpectancyR": 0.0888889651240449,
+            "expectancyR95CI": [
+              -1.28751529589879,
+              1.46529322614688
+            ],
+            "grossExpectancyR": 0.10458669864596616,
+            "profitFactor": 1.1402091653311401,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 134.39756067689814,
+            "maxDrawdownPct": 0.013439756067689814,
+            "endingEquity": 9996.603909353213,
+            "netPnlUsdt": -3.3960906467863765,
+            "grossPnlUsdt": 21.03666370601573,
+            "fundingPnlUsdt": -20.98329253688102,
+            "feesAndCostsUsdt": 3.449461815921069,
+            "turnoverUsdt": 4599.282421228092,
+            "averageHoldingHours": 557.9666666666666,
+            "forcedExits": 0,
+            "sharpe": -0.0374044342901994,
+            "sortino": -0.051103922888333486,
+            "monthlyObservations": 5,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "2025": {
+            "trades": 5,
+            "signals": 5,
+            "signalsPerMonth": 0.07530306778822365,
+            "winRate": 0.4,
+            "wins": 2,
+            "losses": 3,
+            "avgWinR": 1.865812119658922,
+            "avgLossR": -1.0854700986542445,
+            "expectancyR": 0.09504278867102198,
+            "netExpectancyR": 0.09504278867102198,
+            "expectancyR95CI": [
+              -1.323418017180484,
+              1.5135035945225277
+            ],
+            "grossExpectancyR": 0.2866861691210035,
+            "profitFactor": 1.1459318391003357,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 137.28690683362402,
+            "maxDrawdownPct": 0.013728690683362401,
+            "endingEquity": 10043.544547623758,
+            "netPnlUsdt": 43.544547623757374,
+            "grossPnlUsdt": 63.65208743484309,
+            "fundingPnlUsdt": -15.80723445793261,
+            "feesAndCostsUsdt": 4.300305353153094,
+            "turnoverUsdt": 5733.740470870794,
+            "averageHoldingHours": 873.1466666666668,
+            "forcedExits": 0,
+            "sharpe": 0.3694074104470659,
+            "sortino": 0.5236051490065234,
+            "monthlyObservations": 4,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "2026": {
+            "trades": 2,
+            "signals": 2,
+            "signalsPerMonth": 0.03012122711528946,
+            "winRate": 1,
+            "wins": 2,
+            "losses": 0,
+            "avgWinR": 1.9919434306868677,
+            "avgLossR": null,
+            "expectancyR": 1.9919434306868677,
+            "netExpectancyR": 1.9919434306868677,
+            "expectancyR95CI": [
+              1.987597047437535,
+              1.9962898139362004
+            ],
+            "grossExpectancyR": 2,
+            "profitFactor": null,
+            "profitFactorStatus": "no-losses",
+            "maxDrawdownUsdt": 0,
+            "maxDrawdownPct": 0,
+            "endingEquity": 10158.02954602287,
+            "netPnlUsdt": 158.02954602286962,
+            "grossPnlUsdt": 158.6365978734068,
+            "fundingPnlUsdt": 1.144068873789641,
+            "feesAndCostsUsdt": 1.751120724326826,
+            "turnoverUsdt": 2334.8276324357685,
+            "averageHoldingHours": 141.35833333333335,
+            "forcedExits": 0,
+            "sharpe": 13.39241167180772,
+            "sortino": null,
+            "monthlyObservations": 2,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        }
+      },
+      "splits": {
+        "train": {
+          "trades": 9,
+          "signals": 16,
+          "signalsPerMonth": 0.4447488584474886,
+          "winRate": 0.3333333333333333,
+          "wins": 3,
+          "losses": 6,
+          "avgWinR": 1.8401799076279783,
+          "avgLossR": -1.0487463296333228,
+          "expectancyR": -0.08577091721288917,
+          "netExpectancyR": -0.08577091721288917,
+          "expectancyR95CI": [
+            -1.031393382808754,
+            0.8598515483829756
+          ],
+          "grossExpectancyR": 0.005060244146212399,
+          "profitFactor": 0.8773236461630181,
+          "profitFactorStatus": "defined",
+          "maxDrawdownUsdt": 182.37349715866003,
+          "maxDrawdownPct": 0.018237349715866002,
+          "endingEquity": 9967.433318783122,
+          "netPnlUsdt": -32.56668121687717,
+          "grossPnlUsdt": 1.8557784683116267,
+          "fundingPnlUsdt": -27.87360710442357,
+          "feesAndCostsUsdt": 6.548852580765226,
+          "turnoverUsdt": 8731.803441020302,
+          "averageHoldingHours": 352.93888888888887,
+          "forcedExits": 0,
+          "sharpe": -0.21081384735256167,
+          "sortino": -0.28709024861702936,
+          "monthlyObservations": 9,
+          "equityPath": [
+            10000,
+            9959.831589745865,
+            9902.909707830586,
+            9977.829622223839,
+            9946.594771312799,
+            9907.30734839533,
+            9857.768447525908,
+            9817.62650284134,
+            9884.49162483741,
+            9967.433318783122
+          ],
+          "sampleStatus": "insufficient-sample",
+          "confidenceInterval": {
+            "method": "normal-approximation-95%",
+            "parameter": "net expectancy in R"
+          },
+          "bySide": {
+            "long": {
+              "trades": 6,
+              "signals": 6,
+              "signalsPerMonth": 0.16678082191780824,
+              "winRate": 0.3333333333333333,
+              "wins": 2,
+              "losses": 4,
+              "avgWinR": 1.759308513680986,
+              "avgLossR": -1.070352080146824,
+              "expectancyR": -0.12713188220422067,
+              "netExpectancyR": -0.12713188220422067,
+              "expectancyR95CI": [
+                -1.297600128639983,
+                1.0433363642315416
+              ],
+              "grossExpectancyR": -0.011079166327895401,
+              "profitFactor": 0.8218363594153315,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 186.77113772340454,
+              "maxDrawdownPct": 0.018677113772340454,
+              "endingEquity": 9963.035678218377,
+              "netPnlUsdt": -36.964321781622786,
+              "grossPnlUsdt": -2.871635910249978,
+              "fundingPnlUsdt": -29.097938248231557,
+              "feesAndCostsUsdt": 4.994747623141252,
+              "turnoverUsdt": 6659.663497521668,
+              "averageHoldingHours": 398.17777777777775,
+              "forcedExits": 0,
+              "sharpe": -0.3370859707234372,
+              "sortino": -0.45195175259185916,
+              "monthlyObservations": 6,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "short": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.08339041095890412,
+              "winRate": 0.3333333333333333,
+              "wins": 1,
+              "losses": 2,
+              "avgWinR": 2.0019226955219627,
+              "avgLossR": -1.0055348286063204,
+              "expectancyR": -0.0030489872302260266,
+              "netExpectancyR": -0.0030489872302260266,
+              "expectancyR95CI": [
+                -1.9679222083887284,
+                1.9618242339282765
+              ],
+              "grossExpectancyR": 0.04395774109245885,
+              "profitFactor": 0.9954516932529548,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 70.52227382850833,
+              "maxDrawdownPct": 0.007052227382850833,
+              "endingEquity": 10004.397640564745,
+              "netPnlUsdt": 4.397640564745629,
+              "grossPnlUsdt": 4.727414378561626,
+              "fundingPnlUsdt": 1.224331143807985,
+              "feesAndCostsUsdt": 1.5541049576239738,
+              "turnoverUsdt": 2072.139943498632,
+              "averageHoldingHours": 262.4611111111111,
+              "forcedExits": 0,
+              "sharpe": 0.07966630015121959,
+              "sortino": 0.14308031339729294,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byRegime": {
+            "bull": {
+              "trades": 6,
+              "signals": 6,
+              "signalsPerMonth": 0.16678082191780824,
+              "winRate": 0.3333333333333333,
+              "wins": 2,
+              "losses": 4,
+              "avgWinR": 1.759308513680986,
+              "avgLossR": -1.070352080146824,
+              "expectancyR": -0.12713188220422067,
+              "netExpectancyR": -0.12713188220422067,
+              "expectancyR95CI": [
+                -1.297600128639983,
+                1.0433363642315416
+              ],
+              "grossExpectancyR": -0.011079166327895401,
+              "profitFactor": 0.8218363594153315,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 186.77113772340454,
+              "maxDrawdownPct": 0.018677113772340454,
+              "endingEquity": 9963.035678218377,
+              "netPnlUsdt": -36.964321781622786,
+              "grossPnlUsdt": -2.871635910249978,
+              "fundingPnlUsdt": -29.097938248231557,
+              "feesAndCostsUsdt": 4.994747623141252,
+              "turnoverUsdt": 6659.663497521668,
+              "averageHoldingHours": 398.17777777777775,
+              "forcedExits": 0,
+              "sharpe": -0.3370859707234372,
+              "sortino": -0.45195175259185916,
+              "monthlyObservations": 6,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "bear": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.08339041095890412,
+              "winRate": 0.3333333333333333,
+              "wins": 1,
+              "losses": 2,
+              "avgWinR": 2.0019226955219627,
+              "avgLossR": -1.0055348286063204,
+              "expectancyR": -0.0030489872302260266,
+              "netExpectancyR": -0.0030489872302260266,
+              "expectancyR95CI": [
+                -1.9679222083887284,
+                1.9618242339282765
+              ],
+              "grossExpectancyR": 0.04395774109245885,
+              "profitFactor": 0.9954516932529548,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 70.52227382850833,
+              "maxDrawdownPct": 0.007052227382850833,
+              "endingEquity": 10004.397640564745,
+              "netPnlUsdt": 4.397640564745629,
+              "grossPnlUsdt": 4.727414378561626,
+              "fundingPnlUsdt": 1.224331143807985,
+              "feesAndCostsUsdt": 1.5541049576239738,
+              "turnoverUsdt": 2072.139943498632,
+              "averageHoldingHours": 262.4611111111111,
+              "forcedExits": 0,
+              "sharpe": 0.07966630015121959,
+              "sortino": 0.14308031339729294,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byFamily": {
+            "v8BullTrendBreakout": {
+              "trades": 6,
+              "signals": 6,
+              "signalsPerMonth": 0.16678082191780824,
+              "winRate": 0.3333333333333333,
+              "wins": 2,
+              "losses": 4,
+              "avgWinR": 1.759308513680986,
+              "avgLossR": -1.070352080146824,
+              "expectancyR": -0.12713188220422067,
+              "netExpectancyR": -0.12713188220422067,
+              "expectancyR95CI": [
+                -1.297600128639983,
+                1.0433363642315416
+              ],
+              "grossExpectancyR": -0.011079166327895401,
+              "profitFactor": 0.8218363594153315,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 186.77113772340454,
+              "maxDrawdownPct": 0.018677113772340454,
+              "endingEquity": 9963.035678218377,
+              "netPnlUsdt": -36.964321781622786,
+              "grossPnlUsdt": -2.871635910249978,
+              "fundingPnlUsdt": -29.097938248231557,
+              "feesAndCostsUsdt": 4.994747623141252,
+              "turnoverUsdt": 6659.663497521668,
+              "averageHoldingHours": 398.17777777777775,
+              "forcedExits": 0,
+              "sharpe": -0.3370859707234372,
+              "sortino": -0.45195175259185916,
+              "monthlyObservations": 6,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "v8BearCoreTrendShort": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.08339041095890412,
+              "winRate": 0.3333333333333333,
+              "wins": 1,
+              "losses": 2,
+              "avgWinR": 2.0019226955219627,
+              "avgLossR": -1.0055348286063204,
+              "expectancyR": -0.0030489872302260266,
+              "netExpectancyR": -0.0030489872302260266,
+              "expectancyR95CI": [
+                -1.9679222083887284,
+                1.9618242339282765
+              ],
+              "grossExpectancyR": 0.04395774109245885,
+              "profitFactor": 0.9954516932529548,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 70.52227382850833,
+              "maxDrawdownPct": 0.007052227382850833,
+              "endingEquity": 10004.397640564745,
+              "netPnlUsdt": 4.397640564745629,
+              "grossPnlUsdt": 4.727414378561626,
+              "fundingPnlUsdt": 1.224331143807985,
+              "feesAndCostsUsdt": 1.5541049576239738,
+              "turnoverUsdt": 2072.139943498632,
+              "averageHoldingHours": 262.4611111111111,
+              "forcedExits": 0,
+              "sharpe": 0.07966630015121959,
+              "sortino": 0.14308031339729294,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byAlpha": {
+            "v8_daily_breakout_long": {
+              "trades": 6,
+              "signals": 6,
+              "signalsPerMonth": 0.16678082191780824,
+              "winRate": 0.3333333333333333,
+              "wins": 2,
+              "losses": 4,
+              "avgWinR": 1.759308513680986,
+              "avgLossR": -1.070352080146824,
+              "expectancyR": -0.12713188220422067,
+              "netExpectancyR": -0.12713188220422067,
+              "expectancyR95CI": [
+                -1.297600128639983,
+                1.0433363642315416
+              ],
+              "grossExpectancyR": -0.011079166327895401,
+              "profitFactor": 0.8218363594153315,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 186.77113772340454,
+              "maxDrawdownPct": 0.018677113772340454,
+              "endingEquity": 9963.035678218377,
+              "netPnlUsdt": -36.964321781622786,
+              "grossPnlUsdt": -2.871635910249978,
+              "fundingPnlUsdt": -29.097938248231557,
+              "feesAndCostsUsdt": 4.994747623141252,
+              "turnoverUsdt": 6659.663497521668,
+              "averageHoldingHours": 398.17777777777775,
+              "forcedExits": 0,
+              "sharpe": -0.3370859707234372,
+              "sortino": -0.45195175259185916,
+              "monthlyObservations": 6,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "v8_bear_trend_short": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.08339041095890412,
+              "winRate": 0.3333333333333333,
+              "wins": 1,
+              "losses": 2,
+              "avgWinR": 2.0019226955219627,
+              "avgLossR": -1.0055348286063204,
+              "expectancyR": -0.0030489872302260266,
+              "netExpectancyR": -0.0030489872302260266,
+              "expectancyR95CI": [
+                -1.9679222083887284,
+                1.9618242339282765
+              ],
+              "grossExpectancyR": 0.04395774109245885,
+              "profitFactor": 0.9954516932529548,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 70.52227382850833,
+              "maxDrawdownPct": 0.007052227382850833,
+              "endingEquity": 10004.397640564745,
+              "netPnlUsdt": 4.397640564745629,
+              "grossPnlUsdt": 4.727414378561626,
+              "fundingPnlUsdt": 1.224331143807985,
+              "feesAndCostsUsdt": 1.5541049576239738,
+              "turnoverUsdt": 2072.139943498632,
+              "averageHoldingHours": 262.4611111111111,
+              "forcedExits": 0,
+              "sharpe": 0.07966630015121959,
+              "sortino": 0.14308031339729294,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byYear": {
+            "2021": {
+              "trades": 2,
+              "signals": 2,
+              "signalsPerMonth": 0.05559360730593608,
+              "winRate": 0,
+              "wins": 0,
+              "losses": 2,
+              "avgWinR": null,
+              "avgLossR": -1.1014870334488112,
+              "expectancyR": -1.1014870334488112,
+              "netExpectancyR": -1.1014870334488112,
+              "expectancyR95CI": [
+                -1.2695676066119619,
+                -0.9334064602856605
+              ],
+              "grossExpectancyR": -1,
+              "profitFactor": 0,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 97.09029216941417,
+              "maxDrawdownPct": 0.009709029216941417,
+              "endingEquity": 9902.909707830586,
+              "netPnlUsdt": -97.09029216941404,
+              "grossPnlUsdt": -87.49089808755016,
+              "fundingPnlUsdt": -8.155088167599372,
+              "feesAndCostsUsdt": 1.4443059142644983,
+              "turnoverUsdt": 1925.7412190193309,
+              "averageHoldingHours": 194.88333333333335,
+              "forcedExits": 0,
+              "sharpe": -14.195366763556578,
+              "sortino": -3.4136529051963778,
+              "monthlyObservations": 2,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "2022": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.08339041095890412,
+              "winRate": 0.3333333333333333,
+              "wins": 1,
+              "losses": 2,
+              "avgWinR": 2.0019226955219627,
+              "avgLossR": -1.0055348286063204,
+              "expectancyR": -0.0030489872302260266,
+              "netExpectancyR": -0.0030489872302260266,
+              "expectancyR95CI": [
+                -1.9679222083887284,
+                1.9618242339282765
+              ],
+              "grossExpectancyR": 0.04395774109245885,
+              "profitFactor": 0.9954516932529548,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 70.52227382850833,
+              "maxDrawdownPct": 0.007052227382850833,
+              "endingEquity": 10004.397640564745,
+              "netPnlUsdt": 4.397640564745629,
+              "grossPnlUsdt": 4.727414378561626,
+              "fundingPnlUsdt": 1.224331143807985,
+              "feesAndCostsUsdt": 1.5541049576239738,
+              "turnoverUsdt": 2072.139943498632,
+              "averageHoldingHours": 262.4611111111111,
+              "forcedExits": 0,
+              "sharpe": 0.07966630015121959,
+              "sortino": 0.14308031339729294,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "2023": {
+              "trades": 4,
+              "signals": 4,
+              "signalsPerMonth": 0.11118721461187216,
+              "winRate": 0.5,
+              "wins": 2,
+              "losses": 2,
+              "avgWinR": 1.759308513680986,
+              "avgLossR": -1.0392171268448371,
+              "expectancyR": 0.36004569341807446,
+              "netExpectancyR": 0.36004569341807446,
+              "expectancyR95CI": [
+                -1.2237814079714622,
+                1.943872794807611
+              ],
+              "grossExpectancyR": 0.4928276826388339,
+              "profitFactor": 1.6929171664274005,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 89.68084555399037,
+              "maxDrawdownPct": 0.008968084555399037,
+              "endingEquity": 10060.125970387791,
+              "netPnlUsdt": 60.12597038779124,
+              "grossPnlUsdt": 84.61926217730017,
+              "fundingPnlUsdt": -20.942850080632184,
+              "feesAndCostsUsdt": 3.550441708876754,
+              "turnoverUsdt": 4733.922278502338,
+              "averageHoldingHours": 499.82500000000005,
+              "forcedExits": 0,
+              "sharpe": 0.7486696957609817,
+              "sortino": 1.1549199887706108,
+              "monthlyObservations": 4,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          }
+        },
+        "validation": {
+          "trades": 5,
+          "signals": 15,
+          "signalsPerMonth": 1.2474385245901638,
+          "winRate": 0.4,
+          "wins": 2,
+          "losses": 3,
+          "avgWinR": 1.8071574082169866,
+          "avgLossR": -1.0566233302712496,
+          "expectancyR": 0.0888889651240449,
+          "netExpectancyR": 0.0888889651240449,
+          "expectancyR95CI": [
+            -1.28751529589879,
+            1.46529322614688
+          ],
+          "grossExpectancyR": 0.10458669864596616,
+          "profitFactor": 1.1402091653311401,
+          "profitFactorStatus": "defined",
+          "maxDrawdownUsdt": 134.39756067689814,
+          "maxDrawdownPct": 0.013439756067689814,
+          "endingEquity": 9996.603909353213,
+          "netPnlUsdt": -3.3960906467863765,
+          "grossPnlUsdt": 21.03666370601573,
+          "fundingPnlUsdt": -20.98329253688102,
+          "feesAndCostsUsdt": 3.449461815921069,
+          "turnoverUsdt": 4599.282421228092,
+          "averageHoldingHours": 557.9666666666666,
+          "forcedExits": 0,
+          "sharpe": -0.0374044342901994,
+          "sortino": -0.051103922888333486,
+          "monthlyObservations": 5,
+          "equityPath": [
+            10000,
+            9962.772413846238,
+            9902.952382895635,
+            9865.602439323102,
+            9910.010368441495,
+            9996.603909353213
+          ],
+          "sampleStatus": "insufficient-sample",
+          "confidenceInterval": {
+            "method": "normal-approximation-95%",
+            "parameter": "net expectancy in R"
+          },
+          "bySide": {
+            "long": {
+              "trades": 5,
+              "signals": 5,
+              "signalsPerMonth": 0.4158128415300546,
+              "winRate": 0.4,
+              "wins": 2,
+              "losses": 3,
+              "avgWinR": 1.8071574082169866,
+              "avgLossR": -1.0566233302712496,
+              "expectancyR": 0.0888889651240449,
+              "netExpectancyR": 0.0888889651240449,
+              "expectancyR95CI": [
+                -1.28751529589879,
+                1.46529322614688
+              ],
+              "grossExpectancyR": 0.10458669864596616,
+              "profitFactor": 1.1402091653311401,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 134.39756067689814,
+              "maxDrawdownPct": 0.013439756067689814,
+              "endingEquity": 9996.603909353213,
+              "netPnlUsdt": -3.3960906467863765,
+              "grossPnlUsdt": 21.03666370601573,
+              "fundingPnlUsdt": -20.98329253688102,
+              "feesAndCostsUsdt": 3.449461815921069,
+              "turnoverUsdt": 4599.282421228092,
+              "averageHoldingHours": 557.9666666666666,
+              "forcedExits": 0,
+              "sharpe": -0.0374044342901994,
+              "sortino": -0.051103922888333486,
+              "monthlyObservations": 5,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byRegime": {
+            "bull": {
+              "trades": 5,
+              "signals": 5,
+              "signalsPerMonth": 0.4158128415300546,
+              "winRate": 0.4,
+              "wins": 2,
+              "losses": 3,
+              "avgWinR": 1.8071574082169866,
+              "avgLossR": -1.0566233302712496,
+              "expectancyR": 0.0888889651240449,
+              "netExpectancyR": 0.0888889651240449,
+              "expectancyR95CI": [
+                -1.28751529589879,
+                1.46529322614688
+              ],
+              "grossExpectancyR": 0.10458669864596616,
+              "profitFactor": 1.1402091653311401,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 134.39756067689814,
+              "maxDrawdownPct": 0.013439756067689814,
+              "endingEquity": 9996.603909353213,
+              "netPnlUsdt": -3.3960906467863765,
+              "grossPnlUsdt": 21.03666370601573,
+              "fundingPnlUsdt": -20.98329253688102,
+              "feesAndCostsUsdt": 3.449461815921069,
+              "turnoverUsdt": 4599.282421228092,
+              "averageHoldingHours": 557.9666666666666,
+              "forcedExits": 0,
+              "sharpe": -0.0374044342901994,
+              "sortino": -0.051103922888333486,
+              "monthlyObservations": 5,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byFamily": {
+            "v8BullTrendBreakout": {
+              "trades": 5,
+              "signals": 5,
+              "signalsPerMonth": 0.4158128415300546,
+              "winRate": 0.4,
+              "wins": 2,
+              "losses": 3,
+              "avgWinR": 1.8071574082169866,
+              "avgLossR": -1.0566233302712496,
+              "expectancyR": 0.0888889651240449,
+              "netExpectancyR": 0.0888889651240449,
+              "expectancyR95CI": [
+                -1.28751529589879,
+                1.46529322614688
+              ],
+              "grossExpectancyR": 0.10458669864596616,
+              "profitFactor": 1.1402091653311401,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 134.39756067689814,
+              "maxDrawdownPct": 0.013439756067689814,
+              "endingEquity": 9996.603909353213,
+              "netPnlUsdt": -3.3960906467863765,
+              "grossPnlUsdt": 21.03666370601573,
+              "fundingPnlUsdt": -20.98329253688102,
+              "feesAndCostsUsdt": 3.449461815921069,
+              "turnoverUsdt": 4599.282421228092,
+              "averageHoldingHours": 557.9666666666666,
+              "forcedExits": 0,
+              "sharpe": -0.0374044342901994,
+              "sortino": -0.051103922888333486,
+              "monthlyObservations": 5,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byAlpha": {
+            "v8_daily_breakout_long": {
+              "trades": 5,
+              "signals": 5,
+              "signalsPerMonth": 0.4158128415300546,
+              "winRate": 0.4,
+              "wins": 2,
+              "losses": 3,
+              "avgWinR": 1.8071574082169866,
+              "avgLossR": -1.0566233302712496,
+              "expectancyR": 0.0888889651240449,
+              "netExpectancyR": 0.0888889651240449,
+              "expectancyR95CI": [
+                -1.28751529589879,
+                1.46529322614688
+              ],
+              "grossExpectancyR": 0.10458669864596616,
+              "profitFactor": 1.1402091653311401,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 134.39756067689814,
+              "maxDrawdownPct": 0.013439756067689814,
+              "endingEquity": 9996.603909353213,
+              "netPnlUsdt": -3.3960906467863765,
+              "grossPnlUsdt": 21.03666370601573,
+              "fundingPnlUsdt": -20.98329253688102,
+              "feesAndCostsUsdt": 3.449461815921069,
+              "turnoverUsdt": 4599.282421228092,
+              "averageHoldingHours": 557.9666666666666,
+              "forcedExits": 0,
+              "sharpe": -0.0374044342901994,
+              "sortino": -0.051103922888333486,
+              "monthlyObservations": 5,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byYear": {
+            "2024": {
+              "trades": 5,
+              "signals": 5,
+              "signalsPerMonth": 0.4158128415300546,
+              "winRate": 0.4,
+              "wins": 2,
+              "losses": 3,
+              "avgWinR": 1.8071574082169866,
+              "avgLossR": -1.0566233302712496,
+              "expectancyR": 0.0888889651240449,
+              "netExpectancyR": 0.0888889651240449,
+              "expectancyR95CI": [
+                -1.28751529589879,
+                1.46529322614688
+              ],
+              "grossExpectancyR": 0.10458669864596616,
+              "profitFactor": 1.1402091653311401,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 134.39756067689814,
+              "maxDrawdownPct": 0.013439756067689814,
+              "endingEquity": 9996.603909353213,
+              "netPnlUsdt": -3.3960906467863765,
+              "grossPnlUsdt": 21.03666370601573,
+              "fundingPnlUsdt": -20.98329253688102,
+              "feesAndCostsUsdt": 3.449461815921069,
+              "turnoverUsdt": 4599.282421228092,
+              "averageHoldingHours": 557.9666666666666,
+              "forcedExits": 0,
+              "sharpe": -0.0374044342901994,
+              "sortino": -0.051103922888333486,
+              "monthlyObservations": 5,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          }
+        },
+        "oos": {
+          "trades": 7,
+          "signals": 16,
+          "signalsPerMonth": 0.8696428571428572,
+          "winRate": 0.5714285714285714,
+          "wins": 4,
+          "losses": 3,
+          "avgWinR": 1.9288777751728947,
+          "avgLossR": -1.0854700986542445,
+          "expectancyR": 0.6370144006755493,
+          "netExpectancyR": 0.6370144006755493,
+          "expectancyR95CI": [
+            -0.5580922532970783,
+            1.832121054648177
+          ],
+          "grossExpectancyR": 0.7376542505089028,
+          "profitFactor": 2.3693301517493652,
+          "profitFactorStatus": "defined",
+          "maxDrawdownUsdt": 137.28690683362402,
+          "maxDrawdownPct": 0.013728690683362401,
+          "endingEquity": 10201.574093646628,
+          "netPnlUsdt": 201.574093646627,
+          "grossPnlUsdt": 222.2886853082499,
+          "fundingPnlUsdt": -14.66316558414297,
+          "feesAndCostsUsdt": 6.05142607747992,
+          "turnoverUsdt": 8068.568103306562,
+          "averageHoldingHours": 664.0642857142857,
+          "forcedExits": 0,
+          "sharpe": 1.3673639350542541,
+          "sortino": 1.9390759872239498,
+          "monthlyObservations": 5,
+          "equityPath": [
+            10000,
+            10140.483196111438,
+            10091.00834498492,
+            10050.042192236362,
+            10003.196289277814,
+            10043.544547623758,
+            10108.107414528746,
+            10201.574093646628
+          ],
+          "sampleStatus": "insufficient-sample",
+          "confidenceInterval": {
+            "method": "normal-approximation-95%",
+            "parameter": "net expectancy in R"
+          },
+          "bySide": {
+            "long": {
+              "trades": 4,
+              "signals": 4,
+              "signalsPerMonth": 0.2174107142857143,
+              "winRate": 0.25,
+              "wins": 1,
+              "losses": 3,
+              "avgWinR": 1.9283546887825458,
+              "avgLossR": -1.0854700986542445,
+              "expectancyR": -0.332013901795047,
+              "netExpectancyR": -0.332013901795047,
+              "expectancyR95CI": [
+                -1.8104195594107513,
+                1.1463917558206573
+              ],
+              "grossExpectancyR": 0.09467460264234415,
+              "profitFactor": 0.59217190511076,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 137.28690683362402,
+              "maxDrawdownPct": 0.013728690683362401,
+              "endingEquity": 10003.196289277814,
+              "netPnlUsdt": 3.1962892778135483,
+              "grossPnlUsdt": 18.901974137619717,
+              "fundingPnlUsdt": -11.717431568462516,
+              "feesAndCostsUsdt": 3.988253291343641,
+              "turnoverUsdt": 5317.671055124856,
+              "averageHoldingHours": 811.2166666666667,
+              "forcedExits": 0,
+              "sharpe": 0.030081688351736476,
+              "sortino": 0.051245406215202904,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "short": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.16305803571428573,
+              "winRate": 1,
+              "wins": 3,
+              "losses": 0,
+              "avgWinR": 1.929052137303011,
+              "avgLossR": null,
+              "expectancyR": 1.929052137303011,
+              "netExpectancyR": 1.929052137303011,
+              "expectancyR95CI": [
+                1.8057596627230303,
+                2.0523446118829916
+              ],
+              "grossExpectancyR": 2,
+              "profitFactor": null,
+              "profitFactorStatus": "no-losses",
+              "maxDrawdownUsdt": 0,
+              "maxDrawdownPct": 0,
+              "endingEquity": 10198.377804368814,
+              "netPnlUsdt": 198.37780436881346,
+              "grossPnlUsdt": 203.38671117063018,
+              "fundingPnlUsdt": -2.9457340156804537,
+              "feesAndCostsUsdt": 2.0631727861362794,
+              "turnoverUsdt": 2750.897048181706,
+              "averageHoldingHours": 467.8611111111111,
+              "forcedExits": 0,
+              "sharpe": 42.45940706505525,
+              "sortino": null,
+              "monthlyObservations": 2,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byRegime": {
+            "bull": {
+              "trades": 4,
+              "signals": 4,
+              "signalsPerMonth": 0.2174107142857143,
+              "winRate": 0.25,
+              "wins": 1,
+              "losses": 3,
+              "avgWinR": 1.9283546887825458,
+              "avgLossR": -1.0854700986542445,
+              "expectancyR": -0.332013901795047,
+              "netExpectancyR": -0.332013901795047,
+              "expectancyR95CI": [
+                -1.8104195594107513,
+                1.1463917558206573
+              ],
+              "grossExpectancyR": 0.09467460264234415,
+              "profitFactor": 0.59217190511076,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 137.28690683362402,
+              "maxDrawdownPct": 0.013728690683362401,
+              "endingEquity": 10003.196289277814,
+              "netPnlUsdt": 3.1962892778135483,
+              "grossPnlUsdt": 18.901974137619717,
+              "fundingPnlUsdt": -11.717431568462516,
+              "feesAndCostsUsdt": 3.988253291343641,
+              "turnoverUsdt": 5317.671055124856,
+              "averageHoldingHours": 811.2166666666667,
+              "forcedExits": 0,
+              "sharpe": 0.030081688351736476,
+              "sortino": 0.051245406215202904,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "bear": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.16305803571428573,
+              "winRate": 1,
+              "wins": 3,
+              "losses": 0,
+              "avgWinR": 1.929052137303011,
+              "avgLossR": null,
+              "expectancyR": 1.929052137303011,
+              "netExpectancyR": 1.929052137303011,
+              "expectancyR95CI": [
+                1.8057596627230303,
+                2.0523446118829916
+              ],
+              "grossExpectancyR": 2,
+              "profitFactor": null,
+              "profitFactorStatus": "no-losses",
+              "maxDrawdownUsdt": 0,
+              "maxDrawdownPct": 0,
+              "endingEquity": 10198.377804368814,
+              "netPnlUsdt": 198.37780436881346,
+              "grossPnlUsdt": 203.38671117063018,
+              "fundingPnlUsdt": -2.9457340156804537,
+              "feesAndCostsUsdt": 2.0631727861362794,
+              "turnoverUsdt": 2750.897048181706,
+              "averageHoldingHours": 467.8611111111111,
+              "forcedExits": 0,
+              "sharpe": 42.45940706505525,
+              "sortino": null,
+              "monthlyObservations": 2,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byFamily": {
+            "v8BullTrendBreakout": {
+              "trades": 4,
+              "signals": 4,
+              "signalsPerMonth": 0.2174107142857143,
+              "winRate": 0.25,
+              "wins": 1,
+              "losses": 3,
+              "avgWinR": 1.9283546887825458,
+              "avgLossR": -1.0854700986542445,
+              "expectancyR": -0.332013901795047,
+              "netExpectancyR": -0.332013901795047,
+              "expectancyR95CI": [
+                -1.8104195594107513,
+                1.1463917558206573
+              ],
+              "grossExpectancyR": 0.09467460264234415,
+              "profitFactor": 0.59217190511076,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 137.28690683362402,
+              "maxDrawdownPct": 0.013728690683362401,
+              "endingEquity": 10003.196289277814,
+              "netPnlUsdt": 3.1962892778135483,
+              "grossPnlUsdt": 18.901974137619717,
+              "fundingPnlUsdt": -11.717431568462516,
+              "feesAndCostsUsdt": 3.988253291343641,
+              "turnoverUsdt": 5317.671055124856,
+              "averageHoldingHours": 811.2166666666667,
+              "forcedExits": 0,
+              "sharpe": 0.030081688351736476,
+              "sortino": 0.051245406215202904,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "v8BearCoreTrendShort": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.16305803571428573,
+              "winRate": 1,
+              "wins": 3,
+              "losses": 0,
+              "avgWinR": 1.929052137303011,
+              "avgLossR": null,
+              "expectancyR": 1.929052137303011,
+              "netExpectancyR": 1.929052137303011,
+              "expectancyR95CI": [
+                1.8057596627230303,
+                2.0523446118829916
+              ],
+              "grossExpectancyR": 2,
+              "profitFactor": null,
+              "profitFactorStatus": "no-losses",
+              "maxDrawdownUsdt": 0,
+              "maxDrawdownPct": 0,
+              "endingEquity": 10198.377804368814,
+              "netPnlUsdt": 198.37780436881346,
+              "grossPnlUsdt": 203.38671117063018,
+              "fundingPnlUsdt": -2.9457340156804537,
+              "feesAndCostsUsdt": 2.0631727861362794,
+              "turnoverUsdt": 2750.897048181706,
+              "averageHoldingHours": 467.8611111111111,
+              "forcedExits": 0,
+              "sharpe": 42.45940706505525,
+              "sortino": null,
+              "monthlyObservations": 2,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byAlpha": {
+            "v8_daily_breakout_long": {
+              "trades": 4,
+              "signals": 4,
+              "signalsPerMonth": 0.2174107142857143,
+              "winRate": 0.25,
+              "wins": 1,
+              "losses": 3,
+              "avgWinR": 1.9283546887825458,
+              "avgLossR": -1.0854700986542445,
+              "expectancyR": -0.332013901795047,
+              "netExpectancyR": -0.332013901795047,
+              "expectancyR95CI": [
+                -1.8104195594107513,
+                1.1463917558206573
+              ],
+              "grossExpectancyR": 0.09467460264234415,
+              "profitFactor": 0.59217190511076,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 137.28690683362402,
+              "maxDrawdownPct": 0.013728690683362401,
+              "endingEquity": 10003.196289277814,
+              "netPnlUsdt": 3.1962892778135483,
+              "grossPnlUsdt": 18.901974137619717,
+              "fundingPnlUsdt": -11.717431568462516,
+              "feesAndCostsUsdt": 3.988253291343641,
+              "turnoverUsdt": 5317.671055124856,
+              "averageHoldingHours": 811.2166666666667,
+              "forcedExits": 0,
+              "sharpe": 0.030081688351736476,
+              "sortino": 0.051245406215202904,
+              "monthlyObservations": 3,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "v8_bear_trend_short": {
+              "trades": 3,
+              "signals": 3,
+              "signalsPerMonth": 0.16305803571428573,
+              "winRate": 1,
+              "wins": 3,
+              "losses": 0,
+              "avgWinR": 1.929052137303011,
+              "avgLossR": null,
+              "expectancyR": 1.929052137303011,
+              "netExpectancyR": 1.929052137303011,
+              "expectancyR95CI": [
+                1.8057596627230303,
+                2.0523446118829916
+              ],
+              "grossExpectancyR": 2,
+              "profitFactor": null,
+              "profitFactorStatus": "no-losses",
+              "maxDrawdownUsdt": 0,
+              "maxDrawdownPct": 0,
+              "endingEquity": 10198.377804368814,
+              "netPnlUsdt": 198.37780436881346,
+              "grossPnlUsdt": 203.38671117063018,
+              "fundingPnlUsdt": -2.9457340156804537,
+              "feesAndCostsUsdt": 2.0631727861362794,
+              "turnoverUsdt": 2750.897048181706,
+              "averageHoldingHours": 467.8611111111111,
+              "forcedExits": 0,
+              "sharpe": 42.45940706505525,
+              "sortino": null,
+              "monthlyObservations": 2,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          },
+          "byYear": {
+            "2025": {
+              "trades": 5,
+              "signals": 5,
+              "signalsPerMonth": 0.27176339285714285,
+              "winRate": 0.4,
+              "wins": 2,
+              "losses": 3,
+              "avgWinR": 1.865812119658922,
+              "avgLossR": -1.0854700986542445,
+              "expectancyR": 0.09504278867102198,
+              "netExpectancyR": 0.09504278867102198,
+              "expectancyR95CI": [
+                -1.323418017180484,
+                1.5135035945225277
+              ],
+              "grossExpectancyR": 0.2866861691210035,
+              "profitFactor": 1.1459318391003357,
+              "profitFactorStatus": "defined",
+              "maxDrawdownUsdt": 137.28690683362402,
+              "maxDrawdownPct": 0.013728690683362401,
+              "endingEquity": 10043.544547623758,
+              "netPnlUsdt": 43.544547623757374,
+              "grossPnlUsdt": 63.65208743484309,
+              "fundingPnlUsdt": -15.80723445793261,
+              "feesAndCostsUsdt": 4.300305353153094,
+              "turnoverUsdt": 5733.740470870794,
+              "averageHoldingHours": 873.1466666666668,
+              "forcedExits": 0,
+              "sharpe": 0.3694074104470659,
+              "sortino": 0.5236051490065234,
+              "monthlyObservations": 4,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            },
+            "2026": {
+              "trades": 2,
+              "signals": 2,
+              "signalsPerMonth": 0.10870535714285715,
+              "winRate": 1,
+              "wins": 2,
+              "losses": 0,
+              "avgWinR": 1.9919434306868677,
+              "avgLossR": null,
+              "expectancyR": 1.9919434306868677,
+              "netExpectancyR": 1.9919434306868677,
+              "expectancyR95CI": [
+                1.987597047437535,
+                1.9962898139362004
+              ],
+              "grossExpectancyR": 2,
+              "profitFactor": null,
+              "profitFactorStatus": "no-losses",
+              "maxDrawdownUsdt": 0,
+              "maxDrawdownPct": 0,
+              "endingEquity": 10158.02954602287,
+              "netPnlUsdt": 158.02954602286962,
+              "grossPnlUsdt": 158.6365978734068,
+              "fundingPnlUsdt": 1.144068873789641,
+              "feesAndCostsUsdt": 1.751120724326826,
+              "turnoverUsdt": 2334.8276324357685,
+              "averageHoldingHours": 141.35833333333335,
+              "forcedExits": 0,
+              "sharpe": 13.39241167180772,
+              "sortino": null,
+              "monthlyObservations": 2,
+              "sampleStatus": "insufficient-sample",
+              "confidenceInterval": {
+                "method": "normal-approximation-95%",
+                "parameter": "net expectancy in R"
+              }
+            }
+          }
+        }
+      },
+      "walkForward": {
+        "2025": {
+          "trainingWindow": [
+            1609459200000,
+            1735689600000
+          ],
+          "oos": {
+            "trades": 5,
+            "signals": 11,
+            "signalsPerMonth": 0.9172945205479452,
+            "winRate": 0.4,
+            "wins": 2,
+            "losses": 3,
+            "avgWinR": 1.865812119658922,
+            "avgLossR": -1.0854700986542445,
+            "expectancyR": 0.09504278867102198,
+            "netExpectancyR": 0.09504278867102198,
+            "expectancyR95CI": [
+              -1.323418017180484,
+              1.5135035945225277
+            ],
+            "grossExpectancyR": 0.2866861691210035,
+            "profitFactor": 1.1459318391003357,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 137.28690683362402,
+            "maxDrawdownPct": 0.013728690683362401,
+            "endingEquity": 10043.544547623758,
+            "netPnlUsdt": 43.544547623757374,
+            "grossPnlUsdt": 63.65208743484309,
+            "fundingPnlUsdt": -15.80723445793261,
+            "feesAndCostsUsdt": 4.300305353153094,
+            "turnoverUsdt": 5733.740470870794,
+            "averageHoldingHours": 873.1466666666668,
+            "forcedExits": 0,
+            "sharpe": 0.3694074104470659,
+            "sortino": 0.5236051490065234,
+            "monthlyObservations": 4,
+            "equityPath": [
+              10000,
+              10140.483196111438,
+              10091.00834498492,
+              10050.042192236362,
+              10003.196289277814,
+              10043.544547623758
+            ],
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            },
+            "bySide": {
+              "long": {
+                "trades": 4,
+                "signals": 4,
+                "signalsPerMonth": 0.3335616438356165,
+                "winRate": 0.25,
+                "wins": 1,
+                "losses": 3,
+                "avgWinR": 1.9283546887825458,
+                "avgLossR": -1.0854700986542445,
+                "expectancyR": -0.332013901795047,
+                "netExpectancyR": -0.332013901795047,
+                "expectancyR95CI": [
+                  -1.8104195594107513,
+                  1.1463917558206573
+                ],
+                "grossExpectancyR": 0.09467460264234415,
+                "profitFactor": 0.59217190511076,
+                "profitFactorStatus": "defined",
+                "maxDrawdownUsdt": 137.28690683362402,
+                "maxDrawdownPct": 0.013728690683362401,
+                "endingEquity": 10003.196289277814,
+                "netPnlUsdt": 3.1962892778135483,
+                "grossPnlUsdt": 18.901974137619717,
+                "fundingPnlUsdt": -11.717431568462516,
+                "feesAndCostsUsdt": 3.988253291343641,
+                "turnoverUsdt": 5317.671055124856,
+                "averageHoldingHours": 811.2166666666667,
+                "forcedExits": 0,
+                "sharpe": 0.030081688351736476,
+                "sortino": 0.051245406215202904,
+                "monthlyObservations": 3,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              },
+              "short": {
+                "trades": 1,
+                "signals": 1,
+                "signalsPerMonth": 0.08339041095890412,
+                "winRate": 1,
+                "wins": 1,
+                "losses": 0,
+                "avgWinR": 1.8032695505352978,
+                "avgLossR": null,
+                "expectancyR": 1.8032695505352978,
+                "netExpectancyR": 1.8032695505352978,
+                "expectancyR95CI": null,
+                "grossExpectancyR": 1.9999999999999998,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10040.348258345944,
+                "netPnlUsdt": 40.348258345943826,
+                "grossPnlUsdt": 44.75011329722337,
+                "fundingPnlUsdt": -4.089802889470095,
+                "feesAndCostsUsdt": 0.3120520618094532,
+                "turnoverUsdt": 416.06941574593765,
+                "averageHoldingHours": 1120.8666666666666,
+                "forcedExits": 0,
+                "sharpe": null,
+                "sortino": null,
+                "monthlyObservations": 1,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byRegime": {
+              "bull": {
+                "trades": 4,
+                "signals": 4,
+                "signalsPerMonth": 0.3335616438356165,
+                "winRate": 0.25,
+                "wins": 1,
+                "losses": 3,
+                "avgWinR": 1.9283546887825458,
+                "avgLossR": -1.0854700986542445,
+                "expectancyR": -0.332013901795047,
+                "netExpectancyR": -0.332013901795047,
+                "expectancyR95CI": [
+                  -1.8104195594107513,
+                  1.1463917558206573
+                ],
+                "grossExpectancyR": 0.09467460264234415,
+                "profitFactor": 0.59217190511076,
+                "profitFactorStatus": "defined",
+                "maxDrawdownUsdt": 137.28690683362402,
+                "maxDrawdownPct": 0.013728690683362401,
+                "endingEquity": 10003.196289277814,
+                "netPnlUsdt": 3.1962892778135483,
+                "grossPnlUsdt": 18.901974137619717,
+                "fundingPnlUsdt": -11.717431568462516,
+                "feesAndCostsUsdt": 3.988253291343641,
+                "turnoverUsdt": 5317.671055124856,
+                "averageHoldingHours": 811.2166666666667,
+                "forcedExits": 0,
+                "sharpe": 0.030081688351736476,
+                "sortino": 0.051245406215202904,
+                "monthlyObservations": 3,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              },
+              "bear": {
+                "trades": 1,
+                "signals": 1,
+                "signalsPerMonth": 0.08339041095890412,
+                "winRate": 1,
+                "wins": 1,
+                "losses": 0,
+                "avgWinR": 1.8032695505352978,
+                "avgLossR": null,
+                "expectancyR": 1.8032695505352978,
+                "netExpectancyR": 1.8032695505352978,
+                "expectancyR95CI": null,
+                "grossExpectancyR": 1.9999999999999998,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10040.348258345944,
+                "netPnlUsdt": 40.348258345943826,
+                "grossPnlUsdt": 44.75011329722337,
+                "fundingPnlUsdt": -4.089802889470095,
+                "feesAndCostsUsdt": 0.3120520618094532,
+                "turnoverUsdt": 416.06941574593765,
+                "averageHoldingHours": 1120.8666666666666,
+                "forcedExits": 0,
+                "sharpe": null,
+                "sortino": null,
+                "monthlyObservations": 1,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byFamily": {
+              "v8BullTrendBreakout": {
+                "trades": 4,
+                "signals": 4,
+                "signalsPerMonth": 0.3335616438356165,
+                "winRate": 0.25,
+                "wins": 1,
+                "losses": 3,
+                "avgWinR": 1.9283546887825458,
+                "avgLossR": -1.0854700986542445,
+                "expectancyR": -0.332013901795047,
+                "netExpectancyR": -0.332013901795047,
+                "expectancyR95CI": [
+                  -1.8104195594107513,
+                  1.1463917558206573
+                ],
+                "grossExpectancyR": 0.09467460264234415,
+                "profitFactor": 0.59217190511076,
+                "profitFactorStatus": "defined",
+                "maxDrawdownUsdt": 137.28690683362402,
+                "maxDrawdownPct": 0.013728690683362401,
+                "endingEquity": 10003.196289277814,
+                "netPnlUsdt": 3.1962892778135483,
+                "grossPnlUsdt": 18.901974137619717,
+                "fundingPnlUsdt": -11.717431568462516,
+                "feesAndCostsUsdt": 3.988253291343641,
+                "turnoverUsdt": 5317.671055124856,
+                "averageHoldingHours": 811.2166666666667,
+                "forcedExits": 0,
+                "sharpe": 0.030081688351736476,
+                "sortino": 0.051245406215202904,
+                "monthlyObservations": 3,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              },
+              "v8BearCoreTrendShort": {
+                "trades": 1,
+                "signals": 1,
+                "signalsPerMonth": 0.08339041095890412,
+                "winRate": 1,
+                "wins": 1,
+                "losses": 0,
+                "avgWinR": 1.8032695505352978,
+                "avgLossR": null,
+                "expectancyR": 1.8032695505352978,
+                "netExpectancyR": 1.8032695505352978,
+                "expectancyR95CI": null,
+                "grossExpectancyR": 1.9999999999999998,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10040.348258345944,
+                "netPnlUsdt": 40.348258345943826,
+                "grossPnlUsdt": 44.75011329722337,
+                "fundingPnlUsdt": -4.089802889470095,
+                "feesAndCostsUsdt": 0.3120520618094532,
+                "turnoverUsdt": 416.06941574593765,
+                "averageHoldingHours": 1120.8666666666666,
+                "forcedExits": 0,
+                "sharpe": null,
+                "sortino": null,
+                "monthlyObservations": 1,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byAlpha": {
+              "v8_daily_breakout_long": {
+                "trades": 4,
+                "signals": 4,
+                "signalsPerMonth": 0.3335616438356165,
+                "winRate": 0.25,
+                "wins": 1,
+                "losses": 3,
+                "avgWinR": 1.9283546887825458,
+                "avgLossR": -1.0854700986542445,
+                "expectancyR": -0.332013901795047,
+                "netExpectancyR": -0.332013901795047,
+                "expectancyR95CI": [
+                  -1.8104195594107513,
+                  1.1463917558206573
+                ],
+                "grossExpectancyR": 0.09467460264234415,
+                "profitFactor": 0.59217190511076,
+                "profitFactorStatus": "defined",
+                "maxDrawdownUsdt": 137.28690683362402,
+                "maxDrawdownPct": 0.013728690683362401,
+                "endingEquity": 10003.196289277814,
+                "netPnlUsdt": 3.1962892778135483,
+                "grossPnlUsdt": 18.901974137619717,
+                "fundingPnlUsdt": -11.717431568462516,
+                "feesAndCostsUsdt": 3.988253291343641,
+                "turnoverUsdt": 5317.671055124856,
+                "averageHoldingHours": 811.2166666666667,
+                "forcedExits": 0,
+                "sharpe": 0.030081688351736476,
+                "sortino": 0.051245406215202904,
+                "monthlyObservations": 3,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              },
+              "v8_bear_trend_short": {
+                "trades": 1,
+                "signals": 1,
+                "signalsPerMonth": 0.08339041095890412,
+                "winRate": 1,
+                "wins": 1,
+                "losses": 0,
+                "avgWinR": 1.8032695505352978,
+                "avgLossR": null,
+                "expectancyR": 1.8032695505352978,
+                "netExpectancyR": 1.8032695505352978,
+                "expectancyR95CI": null,
+                "grossExpectancyR": 1.9999999999999998,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10040.348258345944,
+                "netPnlUsdt": 40.348258345943826,
+                "grossPnlUsdt": 44.75011329722337,
+                "fundingPnlUsdt": -4.089802889470095,
+                "feesAndCostsUsdt": 0.3120520618094532,
+                "turnoverUsdt": 416.06941574593765,
+                "averageHoldingHours": 1120.8666666666666,
+                "forcedExits": 0,
+                "sharpe": null,
+                "sortino": null,
+                "monthlyObservations": 1,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byYear": {
+              "2025": {
+                "trades": 5,
+                "signals": 5,
+                "signalsPerMonth": 0.4169520547945206,
+                "winRate": 0.4,
+                "wins": 2,
+                "losses": 3,
+                "avgWinR": 1.865812119658922,
+                "avgLossR": -1.0854700986542445,
+                "expectancyR": 0.09504278867102198,
+                "netExpectancyR": 0.09504278867102198,
+                "expectancyR95CI": [
+                  -1.323418017180484,
+                  1.5135035945225277
+                ],
+                "grossExpectancyR": 0.2866861691210035,
+                "profitFactor": 1.1459318391003357,
+                "profitFactorStatus": "defined",
+                "maxDrawdownUsdt": 137.28690683362402,
+                "maxDrawdownPct": 0.013728690683362401,
+                "endingEquity": 10043.544547623758,
+                "netPnlUsdt": 43.544547623757374,
+                "grossPnlUsdt": 63.65208743484309,
+                "fundingPnlUsdt": -15.80723445793261,
+                "feesAndCostsUsdt": 4.300305353153094,
+                "turnoverUsdt": 5733.740470870794,
+                "averageHoldingHours": 873.1466666666668,
+                "forcedExits": 0,
+                "sharpe": 0.3694074104470659,
+                "sortino": 0.5236051490065234,
+                "monthlyObservations": 4,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            }
+          }
+        },
+        "2026-H1": {
+          "trainingWindow": [
+            1609459200000,
+            1767225600000
+          ],
+          "oos": {
+            "trades": 2,
+            "signals": 5,
+            "signalsPerMonth": 0.780448717948718,
+            "winRate": 1,
+            "wins": 2,
+            "losses": 0,
+            "avgWinR": 1.9919434306868677,
+            "avgLossR": null,
+            "expectancyR": 1.9919434306868677,
+            "netExpectancyR": 1.9919434306868677,
+            "expectancyR95CI": [
+              1.987597047437535,
+              1.9962898139362004
+            ],
+            "grossExpectancyR": 2,
+            "profitFactor": null,
+            "profitFactorStatus": "no-losses",
+            "maxDrawdownUsdt": 0,
+            "maxDrawdownPct": 0,
+            "endingEquity": 10158.02954602287,
+            "netPnlUsdt": 158.02954602286962,
+            "grossPnlUsdt": 158.6365978734068,
+            "fundingPnlUsdt": 1.144068873789641,
+            "feesAndCostsUsdt": 1.751120724326826,
+            "turnoverUsdt": 2334.8276324357685,
+            "averageHoldingHours": 141.35833333333335,
+            "forcedExits": 0,
+            "sharpe": 13.39241167180772,
+            "sortino": null,
+            "monthlyObservations": 2,
+            "equityPath": [
+              10000,
+              10064.562866904987,
+              10158.02954602287
+            ],
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            },
+            "bySide": {
+              "short": {
+                "trades": 2,
+                "signals": 2,
+                "signalsPerMonth": 0.3121794871794872,
+                "winRate": 1,
+                "wins": 2,
+                "losses": 0,
+                "avgWinR": 1.9919434306868677,
+                "avgLossR": null,
+                "expectancyR": 1.9919434306868677,
+                "netExpectancyR": 1.9919434306868677,
+                "expectancyR95CI": [
+                  1.987597047437535,
+                  1.9962898139362004
+                ],
+                "grossExpectancyR": 2,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10158.02954602287,
+                "netPnlUsdt": 158.02954602286962,
+                "grossPnlUsdt": 158.6365978734068,
+                "fundingPnlUsdt": 1.144068873789641,
+                "feesAndCostsUsdt": 1.751120724326826,
+                "turnoverUsdt": 2334.8276324357685,
+                "averageHoldingHours": 141.35833333333335,
+                "forcedExits": 0,
+                "sharpe": 13.39241167180772,
+                "sortino": null,
+                "monthlyObservations": 2,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byRegime": {
+              "bear": {
+                "trades": 2,
+                "signals": 2,
+                "signalsPerMonth": 0.3121794871794872,
+                "winRate": 1,
+                "wins": 2,
+                "losses": 0,
+                "avgWinR": 1.9919434306868677,
+                "avgLossR": null,
+                "expectancyR": 1.9919434306868677,
+                "netExpectancyR": 1.9919434306868677,
+                "expectancyR95CI": [
+                  1.987597047437535,
+                  1.9962898139362004
+                ],
+                "grossExpectancyR": 2,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10158.02954602287,
+                "netPnlUsdt": 158.02954602286962,
+                "grossPnlUsdt": 158.6365978734068,
+                "fundingPnlUsdt": 1.144068873789641,
+                "feesAndCostsUsdt": 1.751120724326826,
+                "turnoverUsdt": 2334.8276324357685,
+                "averageHoldingHours": 141.35833333333335,
+                "forcedExits": 0,
+                "sharpe": 13.39241167180772,
+                "sortino": null,
+                "monthlyObservations": 2,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byFamily": {
+              "v8BearCoreTrendShort": {
+                "trades": 2,
+                "signals": 2,
+                "signalsPerMonth": 0.3121794871794872,
+                "winRate": 1,
+                "wins": 2,
+                "losses": 0,
+                "avgWinR": 1.9919434306868677,
+                "avgLossR": null,
+                "expectancyR": 1.9919434306868677,
+                "netExpectancyR": 1.9919434306868677,
+                "expectancyR95CI": [
+                  1.987597047437535,
+                  1.9962898139362004
+                ],
+                "grossExpectancyR": 2,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10158.02954602287,
+                "netPnlUsdt": 158.02954602286962,
+                "grossPnlUsdt": 158.6365978734068,
+                "fundingPnlUsdt": 1.144068873789641,
+                "feesAndCostsUsdt": 1.751120724326826,
+                "turnoverUsdt": 2334.8276324357685,
+                "averageHoldingHours": 141.35833333333335,
+                "forcedExits": 0,
+                "sharpe": 13.39241167180772,
+                "sortino": null,
+                "monthlyObservations": 2,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byAlpha": {
+              "v8_bear_trend_short": {
+                "trades": 2,
+                "signals": 2,
+                "signalsPerMonth": 0.3121794871794872,
+                "winRate": 1,
+                "wins": 2,
+                "losses": 0,
+                "avgWinR": 1.9919434306868677,
+                "avgLossR": null,
+                "expectancyR": 1.9919434306868677,
+                "netExpectancyR": 1.9919434306868677,
+                "expectancyR95CI": [
+                  1.987597047437535,
+                  1.9962898139362004
+                ],
+                "grossExpectancyR": 2,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10158.02954602287,
+                "netPnlUsdt": 158.02954602286962,
+                "grossPnlUsdt": 158.6365978734068,
+                "fundingPnlUsdt": 1.144068873789641,
+                "feesAndCostsUsdt": 1.751120724326826,
+                "turnoverUsdt": 2334.8276324357685,
+                "averageHoldingHours": 141.35833333333335,
+                "forcedExits": 0,
+                "sharpe": 13.39241167180772,
+                "sortino": null,
+                "monthlyObservations": 2,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            },
+            "byYear": {
+              "2026": {
+                "trades": 2,
+                "signals": 2,
+                "signalsPerMonth": 0.3121794871794872,
+                "winRate": 1,
+                "wins": 2,
+                "losses": 0,
+                "avgWinR": 1.9919434306868677,
+                "avgLossR": null,
+                "expectancyR": 1.9919434306868677,
+                "netExpectancyR": 1.9919434306868677,
+                "expectancyR95CI": [
+                  1.987597047437535,
+                  1.9962898139362004
+                ],
+                "grossExpectancyR": 2,
+                "profitFactor": null,
+                "profitFactorStatus": "no-losses",
+                "maxDrawdownUsdt": 0,
+                "maxDrawdownPct": 0,
+                "endingEquity": 10158.02954602287,
+                "netPnlUsdt": 158.02954602286962,
+                "grossPnlUsdt": 158.6365978734068,
+                "fundingPnlUsdt": 1.144068873789641,
+                "feesAndCostsUsdt": 1.751120724326826,
+                "turnoverUsdt": 2334.8276324357685,
+                "averageHoldingHours": 141.35833333333335,
+                "forcedExits": 0,
+                "sharpe": 13.39241167180772,
+                "sortino": null,
+                "monthlyObservations": 2,
+                "sampleStatus": "insufficient-sample",
+                "confidenceInterval": {
+                  "method": "normal-approximation-95%",
+                  "parameter": "net expectancy in R"
+                }
+              }
+            }
+          }
+        }
+      },
+      "acceptedSignals": 21,
+      "rejectionReasons": {
+        "symbol-already-open": 25,
+        "fill-stop-risk-out-of-bounds": 1
+      },
+      "openAtEnd": 0,
+      "observedAlphaCoverage": [
+        "v8_bear_trend_short",
+        "v8_daily_breakout_long"
+      ]
+    }
+  ],
+  "comparison": {
+    "netExpectancyRDelta": 0.6370144006755493,
+    "profitFactorDelta": 2.3693301517493652,
+    "maxDrawdownPctDelta": 0.013728690683362401,
+    "netPnlUsdtDelta": 201.574093646627
+  },
+  "conclusion": "M4 INCOMPLETE：OOS 样本量不足（任一模型少于 30 笔），因此不报告统计显著的盈利或 V8 优越性结论。"
+}

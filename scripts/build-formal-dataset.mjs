@@ -95,16 +95,19 @@ export function monthKeys(start, end) {
 export function parseArchiveKey(key) {
   const parts = String(key).split('/');
   const root = parts.slice(0, 5).join('/');
-  if (root === 'data/futures/um/monthly/klines' && parts.length >= 8) {
+  const cadence = parts[3];
+  if ((root === 'data/futures/um/monthly/klines' || root === 'data/futures/um/daily/klines') && parts.length >= 8) {
     const symbol = parts[5];
     const interval = parts[6];
-    const match = parts[7].match(new RegExp(`^${symbol}-(1m|1h)-(\\d{4}-\\d{2})\\.zip$`));
-    if (match) return {key, symbol, kind: interval === '1m' ? 'minute' : interval === '1h' ? 'price' : null, interval, month: match[2]};
+    const datePattern = cadence === 'daily' ? '(\\d{4}-\\d{2}-\\d{2})' : '(\\d{4}-\\d{2})';
+    const match = parts[7].match(new RegExp(`^${symbol}-(1m|1h)-${datePattern}\\.zip$`));
+    if (match) return {key, symbol, kind: interval === '1m' ? 'minute' : interval === '1h' ? 'price' : null, interval, ...(cadence === 'daily' ? {day: match[2]} : {month: match[2]}), cadence};
   }
-  if (root === 'data/futures/um/monthly/fundingRate' && parts.length >= 7) {
+  if ((root === 'data/futures/um/monthly/fundingRate' || root === 'data/futures/um/daily/fundingRate') && parts.length >= 7) {
     const symbol = parts[5];
-    const match = parts[6].match(new RegExp(`^${symbol}-fundingRate-(\\d{4}-\\d{2})\\.zip$`));
-    if (match) return {key, symbol, kind: 'funding', interval: 'event', month: match[1]};
+    const datePattern = cadence === 'daily' ? '(\\d{4}-\\d{2}-\\d{2})' : '(\\d{4}-\\d{2})';
+    const match = parts[6].match(new RegExp(`^${symbol}-fundingRate-${datePattern}\\.zip$`));
+    if (match) return {key, symbol, kind: 'funding', interval: 'event', ...(cadence === 'daily' ? {day: match[1]} : {month: match[1]}), cadence};
   }
   return null;
 }
@@ -533,7 +536,7 @@ export function archivesBySymbolFromKeys(keysBySymbol, symbols, start, end) {
 
 function currentPerpetualSymbols(exchangeInfo) {
   return new Map((exchangeInfo.symbols || [])
-    .filter(item => item.quoteAsset === 'USDT' && item.contractType === 'PERPETUAL')
+    .filter(item => item.quoteAsset === 'USDT' && ['PERPETUAL', 'TRADIFI_PERPETUAL'].includes(item.contractType))
     .map(item => [item.symbol, item]));
 }
 
@@ -549,50 +552,80 @@ function archiveWindow(archives, start, end) {
   };
 }
 
-export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceSummary, archiveWindowValue, lifecycleEvidence}) {
+function lifecycleEvidenceDetails(record, prefix, fallback = {}) {
+  const timestamp = timeValue(record?.[`${prefix}EvidenceTimestamp`] ?? (
+    prefix === 'listing'
+      ? record?.onboardTime ?? record?.listingTime
+      : record?.delistTime ?? record?.deliveryTime
+  ));
+  const source = record?.[`${prefix}EvidenceSource`] || record?.source || fallback.source || null;
+  const url = record?.[`${prefix}EvidenceUrl`] || fallback.url || null;
+  const evidencePath = record?.[`${prefix}EvidencePath`] || fallback.path || null;
+  const sha256 = record?.[`${prefix}EvidenceSha256`] || fallback.sha256 || null;
+  const timestampExact = record?.[`${prefix}EvidenceExact`] !== false;
+  const complete = Number.isFinite(timestamp)
+    && timestamp > 0
+    && Boolean(source)
+    && Boolean(url || evidencePath)
+    && /^[a-f0-9]{64}$/i.test(String(sha256 || ''))
+    && timestampExact;
+  return {timestamp, source, url, path: evidencePath, sha256, timestampExact, complete};
+}
+
+export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceSummary, archiveWindowValue, lifecycleEvidence, exchangeInfoEvidence = null}) {
   const external = lifecycleEvidence?.[symbol] || {};
-  const firstObserved = timeValue(priceSummary?.firstTimestamp);
-  const lastObserved = timeValue(priceSummary?.lastTimestamp);
-  const externalListingTime = timeValue(external.onboardTime ?? external.listingTime);
-  const externalDeliveryTime = timeValue(external.deliveryTime);
-  const externalDelistTime = timeValue(external.delistTime ?? externalDeliveryTime);
-  const exchangeListingTime = timeValue(currentMarket?.onboardDate);
+  const firstObservedValue = timeValue(priceSummary?.firstObservedTimestamp ?? priceSummary?.firstTimestamp);
+  const lastObservedValue = timeValue(priceSummary?.lastObservedTimestamp ?? priceSummary?.lastTimestamp);
+  const firstObserved = firstObservedValue > 0 ? firstObservedValue : NaN;
+  const lastObserved = lastObservedValue > 0 ? lastObservedValue : NaN;
+  const currentEvidence = currentMarket && exchangeInfoEvidence
+    ? {
+      source: exchangeInfoEvidence.source || 'Binance USD-M exchangeInfo snapshot',
+      url: exchangeInfoEvidence.url || 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+      path: exchangeInfoEvidence.path || null,
+      sha256: exchangeInfoEvidence.sha256 || null,
+    }
+    : {};
+  const listingEvidence = lifecycleEvidenceDetails(
+    currentMarket && !Number.isFinite(timeValue(external.listingEvidenceTimestamp ?? external.onboardTime ?? external.listingTime))
+      ? {...external, listingEvidenceTimestamp: currentMarket.onboardDate, listingEvidenceExact: true}
+      : external,
+    'listing',
+    currentEvidence,
+  );
   const exchangeDeliveryTime = timeValue(currentMarket?.deliveryDate);
-  const listingEvidenceTimestamp = Number.isFinite(externalListingTime)
-    ? externalListingTime
-    : exchangeListingTime;
-  const hasListingEvidence = Number.isFinite(listingEvidenceTimestamp) && listingEvidenceTimestamp > 0;
-  const listingEvidenceSource = hasListingEvidence
-    ? (external.listingEvidenceSource || external.source || (currentMarket ? 'current-exchangeInfo.onboardDate' : 'historical-lifecycle-evidence-file'))
-    : null;
-  const delistEvidenceTimestamp = Number.isFinite(externalDelistTime)
-    ? externalDelistTime
+  const externalDeliveryTime = timeValue(external.deliveryTime);
+  const externalDelistTime = currentMarket
+    ? NaN
+    : timeValue(external.delistEvidenceTimestamp ?? external.delistTime ?? externalDeliveryTime);
+  const currentDelistEvidence = Number.isFinite(externalDelistTime)
+    ? lifecycleEvidenceDetails(external, 'delist', currentEvidence)
     : Number.isFinite(exchangeDeliveryTime) && exchangeDeliveryTime > 0 && exchangeDeliveryTime < end
-      ? exchangeDeliveryTime
-      : null;
-  const hasDelistEvidence = Number.isFinite(delistEvidenceTimestamp) && delistEvidenceTimestamp > 0;
-  const delistEvidenceSource = hasDelistEvidence
-    ? (external.delistEvidenceSource || external.source || (currentMarket ? 'current-exchangeInfo.deliveryDate' : 'historical-lifecycle-evidence-file'))
-    : currentMarket
-      ? 'snapshot-active-through-end'
-      : null;
-  const inferredListing = Number.isFinite(firstObserved) ? firstObserved : archiveWindowValue.firstMonthStart;
-  const inferredDelist = Number.isFinite(lastObserved)
-    ? lastObserved + 3_600_000
-    : archiveWindowValue.lastMonthEnd;
-  const listingTime = Number.isFinite(listingEvidenceTimestamp) && listingEvidenceTimestamp > 0
-    ? listingEvidenceTimestamp
+      ? lifecycleEvidenceDetails({...external, delistEvidenceTimestamp: exchangeDeliveryTime, delistEvidenceExact: true}, 'delist', currentEvidence)
+      : {timestamp: NaN, source: currentMarket ? 'snapshot-active-through-end' : null, url: currentMarket ? currentEvidence.url : null, path: currentMarket ? currentEvidence.path : null, sha256: currentMarket ? currentEvidence.sha256 : null, complete: false};
+  const historicalDelisted = !currentMarket || (Number.isFinite(exchangeDeliveryTime) && exchangeDeliveryTime > 0 && exchangeDeliveryTime < end);
+  const lifecycleConflicts = [];
+  if (Number.isFinite(listingEvidence.timestamp) && Number.isFinite(firstObserved) && listingEvidence.timestamp > firstObserved) lifecycleConflicts.push('listing-after-first-observed');
+  if (historicalDelisted && Number.isFinite(currentDelistEvidence.timestamp) && Number.isFinite(lastObserved) && lastObserved >= currentDelistEvidence.timestamp) lifecycleConflicts.push('delist-at-or-before-last-observed');
+  if (Number.isFinite(listingEvidence.timestamp) && Number.isFinite(currentDelistEvidence.timestamp) && listingEvidence.timestamp >= currentDelistEvidence.timestamp) lifecycleConflicts.push('listing-not-before-delist');
+  const inferredListing = Number.isFinite(archiveWindowValue.firstMonthStart)
+    ? archiveWindowValue.firstMonthStart
+    : Number.isFinite(firstObserved) ? firstObserved : start;
+  const inferredDelist = Number.isFinite(archiveWindowValue.lastMonthEnd)
+    ? archiveWindowValue.lastMonthEnd
+    : Number.isFinite(lastObserved) ? lastObserved + 3_600_000 : end;
+  const listingTime = listingEvidence.complete && !lifecycleConflicts.includes('listing-after-first-observed')
+    ? listingEvidence.timestamp
     : inferredListing;
-  const delistTime = Number.isFinite(delistEvidenceTimestamp) && delistEvidenceTimestamp > 0
-    ? delistEvidenceTimestamp
-    : !currentMarket ? inferredDelist : NaN;
-  const historicalDelisted = !currentMarket || (Number.isFinite(delistEvidenceTimestamp) && delistEvidenceTimestamp < end);
-  const listingExact = hasListingEvidence && Boolean(listingEvidenceSource);
-  const delistExact = currentMarket
-    ? !historicalDelisted || (Number.isFinite(delistEvidenceTimestamp) && Boolean(delistEvidenceSource))
-    : hasDelistEvidence && Boolean(delistEvidenceSource);
-  const lifecycleExact = listingExact && delistExact;
-  const resolvedEnd = Number.isFinite(delistTime) && delistTime > 0 ? Math.min(end, delistTime) : end;
+  const delistTime = historicalDelisted && currentDelistEvidence.complete && !lifecycleConflicts.some(reason => reason.startsWith('delist-') || reason === 'listing-not-before-delist')
+    ? currentDelistEvidence.timestamp
+    : historicalDelisted ? inferredDelist : NaN;
+  const listingExact = listingEvidence.complete && !lifecycleConflicts.includes('listing-after-first-observed');
+  const delistExact = historicalDelisted
+    ? currentDelistEvidence.complete && !lifecycleConflicts.some(reason => reason.startsWith('delist-') || reason === 'listing-not-before-delist')
+    : true;
+  const lifecycleExact = listingExact && delistExact && lifecycleConflicts.length === 0;
+  const resolvedEnd = historicalDelisted && Number.isFinite(delistTime) && delistTime > 0 ? Math.min(end, delistTime) : end;
   const eligibleStart = Math.max(start, listingTime || start);
   return {
     symbol,
@@ -608,17 +641,29 @@ export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceS
     core: CORE_MARKETS.has(symbol),
     lifecycleExact,
     lifecycleSource: external.source || (currentMarket ? 'current-exchangeInfo-cross-check' : 'archive-observation-unresolved'),
-    historicalDelistEvidence: !currentMarket && hasDelistEvidence && Boolean(delistEvidenceSource),
-    inferredDelistFromLastKline: Boolean(!currentMarket && !Number.isFinite(externalDelistTime) && Number.isFinite(lastObserved)),
-    inferredDelistFromArchiveWindow: Boolean(!currentMarket && !Number.isFinite(externalDelistTime) && !Number.isFinite(lastObserved) && archiveWindowValue.lastMonthEnd),
+    historicalDelisted,
+    historicalDelistEvidence: historicalDelisted && currentDelistEvidence.complete,
+    inferredDelistFromLastKline: Boolean(historicalDelisted && !currentDelistEvidence.complete && Number.isFinite(lastObserved)),
+    inferredDelistFromArchiveWindow: Boolean(historicalDelisted && !currentDelistEvidence.complete && archiveWindowValue.lastMonthEnd),
     actualFirstArchiveMonth: archiveWindowValue.firstMonth,
     actualLastArchiveMonth: archiveWindowValue.lastMonth,
     firstObserved: Number.isFinite(firstObserved) ? new Date(firstObserved).toISOString() : null,
     lastObserved: Number.isFinite(lastObserved) ? new Date(lastObserved).toISOString() : null,
-    listingEvidenceSource,
-    listingEvidenceTimestamp: hasListingEvidence ? new Date(listingEvidenceTimestamp).toISOString() : null,
-    delistEvidenceSource,
-    delistEvidenceTimestamp: hasDelistEvidence ? new Date(delistEvidenceTimestamp).toISOString() : null,
+    rawFirstObserved: priceSummary?.rawFirstObservedTimestamp || null,
+    rawLastObserved: priceSummary?.rawLastObservedTimestamp || null,
+    postLifecycleRowsExcluded: Number(priceSummary?.postLifecycleRowsExcluded || 0),
+    postLifecycleObservationPolicy: priceSummary?.postLifecycleObservationPolicy || null,
+    listingEvidenceSource: listingEvidence.source,
+    listingEvidenceTimestamp: Number.isFinite(listingEvidence.timestamp) ? new Date(listingEvidence.timestamp).toISOString() : null,
+    listingEvidenceUrl: listingEvidence.url,
+    listingEvidencePath: listingEvidence.path,
+    listingEvidenceSha256: listingEvidence.sha256,
+    delistEvidenceSource: currentDelistEvidence.source,
+    delistEvidenceTimestamp: Number.isFinite(currentDelistEvidence.timestamp) ? new Date(currentDelistEvidence.timestamp).toISOString() : null,
+    delistEvidenceUrl: currentDelistEvidence.url,
+    delistEvidencePath: currentDelistEvidence.path,
+    delistEvidenceSha256: currentDelistEvidence.sha256,
+    lifecycleConflictReasons: lifecycleConflicts,
     archiveFirstMonth: archiveWindowValue.firstMonth,
     archiveLastMonth: archiveWindowValue.lastMonth,
     firstObservedPriceTimestamp: Number.isFinite(firstObserved) ? new Date(firstObserved).toISOString() : null,
@@ -691,6 +736,8 @@ async function writeArtifactFromArchives(archives, {root, symbol, kind, start, e
   let rows = 0;
   let firstTimestamp = null;
   let lastTimestamp = null;
+  let firstObservedTimestamp = null;
+  let lastObservedTimestamp = null;
   let previousTimestamp = null;
   const fundingDeltas = [];
   const fundingIntervals = [];
@@ -710,6 +757,10 @@ async function writeArtifactFromArchives(archives, {root, symbol, kind, start, e
       rows++;
       firstTimestamp ??= row.t;
       lastTimestamp = row.t;
+      if (kind === 'funding' || Number(row.q) > 0) {
+        firstObservedTimestamp ??= row.t;
+        lastObservedTimestamp = row.t;
+      }
       previousTimestamp = row.t;
     }
   }
@@ -727,6 +778,8 @@ async function writeArtifactFromArchives(archives, {root, symbol, kind, start, e
     sha256: sha256File(file),
     firstTimestamp: firstTimestamp == null ? null : new Date(firstTimestamp).toISOString(),
     lastTimestamp: lastTimestamp == null ? null : new Date(lastTimestamp).toISOString(),
+    firstObservedTimestamp: firstObservedTimestamp == null ? null : new Date(firstObservedTimestamp).toISOString(),
+    lastObservedTimestamp: lastObservedTimestamp == null ? null : new Date(lastObservedTimestamp).toISOString(),
   };
   if (kind === 'funding') {
     const ordered = [...fundingIntervals].sort((a, b) => a - b);
@@ -946,7 +999,25 @@ export async function buildFormalDataset(options = {}) {
       rateLimitMs: args.rateLimitMs ?? DEFAULT_RATE_LIMIT_MS,
     });
   const bySymbol = archivesBySymbolFromKeys(actualArchiveKeysBySymbol, requestedSymbols, args.start, args.end);
+  const excludedMarkets = requestedSymbols.filter(symbol => {
+    const market = currentSymbols.get(symbol);
+    const archives = bySymbol.get(symbol);
+    return market?.status === 'PENDING_TRADING'
+      && !(archives?.price?.length)
+      && !(archives?.minute?.length);
+  }).map(symbol => ({
+    symbol,
+    reason: 'pending-trading-without-price-or-minute-artifact',
+    evidencePath: path.relative(APP_DIR, exchangeInfoEvidence.path).replaceAll('\\', '/'),
+    evidenceUrl: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+    evidenceSha256: exchangeInfoEvidence.sha256,
+    status: currentSymbols.get(symbol)?.status || null,
+    contractType: currentSymbols.get(symbol)?.contractType || null,
+    archiveKeys: actualArchiveKeysBySymbol[symbol] || {klines: [], funding: []},
+  }));
+  const excludedSymbolSet = new Set(excludedMarkets.map(item => item.symbol));
   let symbols = requestedSymbols.filter(symbol => {
+    if (excludedSymbolSet.has(symbol)) return false;
     const archives = bySymbol.get(symbol);
     return archives && Object.values(archives).some(rows => rows.length > 0);
   }).sort();
@@ -968,6 +1039,7 @@ export async function buildFormalDataset(options = {}) {
     symbolPrefixes: {klines: symbolPrefixes, funding: fundingPrefixes},
     actualArchiveKeysBySymbol,
     symbolsWithActualArchives: symbols,
+    excludedMarkets,
     symbolsWithoutActualArchives: requestedSymbols.filter(symbol => !symbols.includes(symbol)),
     keyCounts: {
       klineSymbolPrefixes: symbolPrefixes.length,
@@ -977,6 +1049,7 @@ export async function buildFormalDataset(options = {}) {
       symbolsWithActualArchives: symbols.length,
       actualKlineArchives: Object.values(actualArchiveKeysBySymbol).reduce((sum, item) => sum + item.klines.length, 0),
       actualFundingArchives: Object.values(actualArchiveKeysBySymbol).reduce((sum, item) => sum + item.funding.length, 0),
+      excludedMarkets: excludedMarkets.length,
     },
   };
   const archiveIndexEvidence = path.join(root, 'source', 'archive-index.json');
@@ -986,6 +1059,7 @@ export async function buildFormalDataset(options = {}) {
   const archivesBySymbol = Object.fromEntries(symbols.map(symbol => [symbol, bySymbol.get(symbol)]));
   const artifacts = [];
   const summaries = new Map();
+  const observedSummaries = new Map();
   const progressFile = path.join(root, 'progress.json');
   const progress = fs.existsSync(progressFile) ? JSON.parse(fs.readFileSync(progressFile, 'utf8')) : {};
   const progressWriter = createSerializedProgressWriter(progressFile, progress);
@@ -1002,6 +1076,7 @@ export async function buildFormalDataset(options = {}) {
           if (savedFile && fs.existsSync(savedFile) && saved.sha256 === sha256File(savedFile)) {
             artifacts.push(saved);
             if (kind === 'price') summaries.set(symbol, saved);
+            if (kind === 'minute' && (saved.firstObservedTimestamp || saved.lastObservedTimestamp)) observedSummaries.set(symbol, saved);
             continue;
           }
           const records = [];
@@ -1015,6 +1090,7 @@ export async function buildFormalDataset(options = {}) {
           artifact.sourceArchiveSha256 = records.map(record => record.sourceSha256);
           artifacts.push(artifact);
           if (kind === 'price') summaries.set(symbol, artifact);
+          if (kind === 'minute') observedSummaries.set(symbol, artifact);
           await progressWriter.update({[`${symbol}|${kind}`]: {...artifact, completedAt: new Date().toISOString()}});
         }
       });
@@ -1026,7 +1102,7 @@ export async function buildFormalDataset(options = {}) {
   artifacts.sort((a, b) => `${a.symbol}|${a.kind}`.localeCompare(`${b.symbol}|${b.kind}`));
 
   const marketRecords = symbols.map(symbol => {
-    const priceSummary = summaries.get(symbol);
+    const priceSummary = observedSummaries.get(symbol) || summaries.get(symbol);
     const archiveRows = Object.values(archivesBySymbol[symbol]).flat();
     const window = archiveWindow(archiveRows, args.start, args.end);
     return lifecycleFromEvidence(symbol, {
@@ -1036,6 +1112,12 @@ export async function buildFormalDataset(options = {}) {
       priceSummary,
       archiveWindowValue: window,
       lifecycleEvidence,
+      exchangeInfoEvidence: {
+        ...exchangeInfoEvidence,
+        path: path.relative(APP_DIR, exchangeInfoEvidence.path).replaceAll('\\', '/'),
+        url: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+        source: 'Binance USD-M exchangeInfo snapshot',
+      },
     });
   });
   const marketBySymbol = new Map(marketRecords.map(market => [market.symbol, market]));
@@ -1074,6 +1156,7 @@ export async function buildFormalDataset(options = {}) {
       expandedNonCoreCovered: nonCoreComplete,
       backtestStart: new Date(args.start).toISOString(),
       symbols,
+      excludedMarkets,
       markets: marketRecords,
       note: lifecycleGate
         ? 'All lifecycle records have timestamped listing and delist evidence, cross-checked against actual archive observations.'

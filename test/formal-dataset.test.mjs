@@ -41,13 +41,17 @@ test('formal dataset accepts only bare USDT perpetual archive symbols', () => {
 test('formal dataset parses kline and funding archive keys without current exchangeInfo', () => {
   assert.deepEqual(
     parseArchiveKey('data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-04.zip'),
-    {key: 'data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-04.zip', symbol: 'ETHUSDT', kind: 'price', interval: '1h', month: '2022-04'},
+    {key: 'data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-04.zip', symbol: 'ETHUSDT', kind: 'price', interval: '1h', month: '2022-04', cadence: 'monthly'},
   );
   assert.deepEqual(
     parseArchiveKey('data/futures/um/monthly/fundingRate/ETHUSDT/ETHUSDT-fundingRate-2022-04.zip'),
-    {key: 'data/futures/um/monthly/fundingRate/ETHUSDT/ETHUSDT-fundingRate-2022-04.zip', symbol: 'ETHUSDT', kind: 'funding', interval: 'event', month: '2022-04'},
+    {key: 'data/futures/um/monthly/fundingRate/ETHUSDT/ETHUSDT-fundingRate-2022-04.zip', symbol: 'ETHUSDT', kind: 'funding', interval: 'event', month: '2022-04', cadence: 'monthly'},
   );
   assert.equal(parseArchiveKey('data/futures/um/monthly/klines/ETHUSDT/1h/ETHUSDT-1h-2022-04.zip.CHECKSUM'), null);
+  assert.deepEqual(
+    parseArchiveKey('data/futures/um/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2022-04-03.zip'),
+    {key: 'data/futures/um/daily/klines/ETHUSDT/1m/ETHUSDT-1m-2022-04-03.zip', symbol: 'ETHUSDT', kind: 'minute', interval: '1m', day: '2022-04-03', cadence: 'daily'},
+  );
 });
 
 test('formal dataset month window is deterministic and excludes snapshot month', () => {
@@ -118,14 +122,51 @@ test('formal dataset lifecycle release requires timestamped listing and delist e
       OLDUSDT: {
         onboardTime: '2021-01-20T00:00:00Z',
         delistTime: '2021-12-01T00:00:00Z',
-        source: 'binance-historical-lifecycle-evidence.json',
+        listingEvidenceSource: 'Binance delisting archive',
+        listingEvidenceUrl: 'https://www.binance.com/en/support/announcement/listing-oldusdt',
+        listingEvidenceSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        delistEvidenceSource: 'Binance delisting archive',
+        delistEvidenceUrl: 'https://www.binance.com/en/support/announcement/delist-oldusdt',
+        delistEvidenceSha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       },
     },
   });
   assert.equal(lifecycle.lifecycleExact, true);
-  assert.equal(lifecycle.listingEvidenceSource, 'binance-historical-lifecycle-evidence.json');
-  assert.equal(lifecycle.delistEvidenceSource, 'binance-historical-lifecycle-evidence.json');
+  assert.equal(lifecycle.listingEvidenceSource, 'Binance delisting archive');
+  assert.equal(lifecycle.delistEvidenceSource, 'Binance delisting archive');
   assert.equal(lifecycle.historicalDelistEvidence, true);
+});
+
+test('formal dataset lifecycle evidence conflicts never become exact', () => {
+  const base = {
+    listingEvidenceSource: 'Binance lifecycle evidence',
+    listingEvidenceUrl: 'https://example.invalid/listing',
+    listingEvidenceSha256: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    delistEvidenceSource: 'Binance lifecycle evidence',
+    delistEvidenceUrl: 'https://example.invalid/delist',
+    delistEvidenceSha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+  };
+  const listingConflict = lifecycleFromEvidence('CONFLICT1USDT', {
+    start: Date.parse('2021-01-01T00:00:00Z'),
+    end: Date.parse('2022-01-01T00:00:00Z'),
+    currentMarket: null,
+    priceSummary: {firstTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastTimestamp: Date.parse('2021-11-30T23:00:00Z')},
+    archiveWindowValue: {firstMonth: '2021-02', lastMonth: '2021-11', firstMonthStart: Date.parse('2021-02-01T00:00:00Z'), lastMonthEnd: Date.parse('2021-12-01T00:00:00Z')},
+    lifecycleEvidence: {CONFLICT1USDT: {...base, listingEvidenceTimestamp: '2021-03-01T00:00:00Z', delistEvidenceTimestamp: '2021-12-01T00:00:00Z'}},
+  });
+  assert.equal(listingConflict.lifecycleExact, false);
+  assert.ok(listingConflict.lifecycleConflictReasons.includes('listing-after-first-observed'));
+
+  const delistConflict = lifecycleFromEvidence('CONFLICT2USDT', {
+    start: Date.parse('2021-01-01T00:00:00Z'),
+    end: Date.parse('2022-01-01T00:00:00Z'),
+    currentMarket: null,
+    priceSummary: {firstTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastTimestamp: Date.parse('2021-11-30T23:00:00Z')},
+    archiveWindowValue: {firstMonth: '2021-02', lastMonth: '2021-11', firstMonthStart: Date.parse('2021-02-01T00:00:00Z'), lastMonthEnd: Date.parse('2021-12-01T00:00:00Z')},
+    lifecycleEvidence: {CONFLICT2USDT: {...base, listingEvidenceTimestamp: '2021-01-20T00:00:00Z', delistEvidenceTimestamp: '2021-11-30T23:00:00Z'}},
+  });
+  assert.equal(delistConflict.lifecycleExact, false);
+  assert.ok(delistConflict.lifecycleConflictReasons.includes('delist-at-or-before-last-observed'));
 });
 
 test('formal dataset progress writes are serialized and resume-safe under concurrent updates', async () => {
