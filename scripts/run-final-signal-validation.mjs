@@ -338,16 +338,25 @@ function modelResult(model) {
   const accepted = oosEvents(model.acceptedSignalEvents);
   const trades = (model.trades || []).filter(trade => timestamp(trade.signalTime) >= OOS_START && timestamp(trade.signalTime) < OOS_END).map(compactTrade);
   const observations = [];
-  return {model, raw, ranked, accepted, trades, observations};
+  return {
+    model,
+    raw,
+    rawCount: Number(model.rawCandidateCount ?? raw.length),
+    ranked,
+    accepted,
+    acceptedCount: Number(model.acceptedSignalCount ?? accepted.length),
+    trades,
+    observations,
+  };
 }
 
 function modelSummary(result) {
   const signalQuality = summarizeObservations(result.observations);
   return {
-    rawCandidates: result.raw.length,
+    rawCandidates: result.rawCount,
     rankedSignals: result.ranked.length,
     uniqueAlerts: new Set(result.ranked.map(alertKey)).size,
-    simulatedAcceptedSignals: result.accepted.length,
+    simulatedAcceptedSignals: result.acceptedCount,
     closedSimulatedTrades: result.trades.length,
     uniqueSignalSymbols: signalQuality.uniqueSymbols,
     observedAlphaCoverage: result.model.observedAlphaCoverage || [],
@@ -538,6 +547,7 @@ async function main() {
     lazyPrice: true,
     recordEventsFrom: OOS_START,
     recordEventsUntil: OOS_END,
+    eventStorage: 'ranked-only',
     dataRoot: path.join(APP_DIR, 'data', 'backtest'),
   });
   if (tradeReport.data.executionProxy !== false || tradeReport.data.executionInterval !== '1m') {

@@ -178,6 +178,9 @@ function createModel(name, v8 = false) {
     signalEvents: [],
     allocations: [],
     rawCandidateEvents: [],
+    rawCandidateCount: 0,
+    rankedSignalCount: 0,
+    acceptedSignalCount: 0,
     knownSignalIds: new Set(),
     acceptedSignalEvents: [],
     cooldowns: {},
@@ -214,19 +217,25 @@ function signalCohortMetrics(model, start, end, periodStart, periodEnd) {
   const raw = eventsInWindow(model.rawCandidateEvents, start, end);
   const ranked = eventsInWindow(model.signalEvents, start, end);
   const accepted = eventsInWindow(model.acceptedSignalEvents, start, end);
+  const isRecordedWindow = model.recordEventWindow
+    && Number(model.recordEventWindow.start) === Number(start)
+    && Number(model.recordEventWindow.end) === Number(end);
+  const rawCount = isRecordedWindow ? model.rawCandidateCount : raw.length;
+  const rankedCount = isRecordedWindow ? model.rankedSignalCount : ranked.length;
+  const acceptedCount = isRecordedWindow ? model.acceptedSignalCount : accepted.length;
   const trades = (model.trades || []).filter(trade => eventTime({signalTime: trade.signalTime ?? trade.signal_time}) >= start
     && eventTime({signalTime: trade.signalTime ?? trade.signal_time}) < end);
   return {
     ...calculateMetrics(trades, {
-      signals: ranked.length,
+      signals: rankedCount,
       initialEquity: INITIAL_EQUITY,
       periodStart,
       periodEnd,
     }),
-    rawCandidates: raw.length,
-    rankedSignals: ranked.length,
+    rawCandidates: rawCount,
+    rankedSignals: rankedCount,
     uniqueAlerts: new Set(ranked.map(alertKey)).size,
-    acceptedSignals: accepted.length,
+    acceptedSignals: acceptedCount,
   };
 }
 
@@ -438,6 +447,7 @@ export function processCandidates(model, candidates, dataBySymbol, {
   minuteExecutionAvailable = true,
   rankedCandidates = null,
   eventWindow = null,
+  eventStorage = 'all',
 } = {}) {
   model.cooldowns ||= {};
   model.rawCandidateEvents ||= [];
@@ -449,8 +459,12 @@ export function processCandidates(model, candidates, dataBySymbol, {
     : rankCandidates(unseen);
   const shouldRecord = candidate => !eventWindow
     || (Number(candidate.t) >= Number(eventWindow.start) && Number(candidate.t) < Number(eventWindow.end));
-  model.rawCandidateEvents.push(...unseen.filter(shouldRecord).map(candidate => signalEvent(candidate, model.name)));
-  model.signalEvents.push(...ranked.filter(shouldRecord).map(candidate => signalEvent(candidate, model.name)));
+  const recordedUnseen = unseen.filter(shouldRecord);
+  const recordedRanked = ranked.filter(shouldRecord);
+  model.rawCandidateCount += recordedUnseen.length;
+  model.rankedSignalCount += recordedRanked.length;
+  if (eventStorage === 'all') model.rawCandidateEvents.push(...recordedUnseen.map(candidate => signalEvent(candidate, model.name)));
+  model.signalEvents.push(...recordedRanked.map(candidate => signalEvent(candidate, model.name)));
   const cap = model.v8 ? v8ShadowConfig.positionCap : modelConfig.cap;
   const maxPerSide = model.v8 ? v8ShadowConfig.maxPerSide : modelConfig.maxPerSide;
   for (const candidate of ranked) {
@@ -498,7 +512,10 @@ export function processCandidates(model, candidates, dataBySymbol, {
     }
     model.open.push(created.position);
     model.allocations.push(created.allocation);
-    if (shouldRecord(candidate)) model.acceptedSignalEvents.push(signalEvent(candidate, model.name));
+    if (shouldRecord(candidate)) {
+      model.acceptedSignalCount++;
+      if (eventStorage === 'all') model.acceptedSignalEvents.push(signalEvent(candidate, model.name));
+    }
     model.acceptedSignals++;
   }
   for (const candidate of unseen) {
@@ -549,6 +566,9 @@ function modelReport(model, start, end) {
     rawCandidateEvents: model.rawCandidateEvents,
     signalEvents: model.signalEvents,
     acceptedSignalEvents: model.acceptedSignalEvents,
+    rawCandidateCount: model.rawCandidateCount,
+    rankedSignalCount: model.rankedSignalCount,
+    acceptedSignalCount: model.acceptedSignalCount,
     trades: model.trades,
   };
 }
@@ -589,7 +609,7 @@ function markdownReport(report) {
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, recordEventsFrom = null, recordEventsUntil = null, dataRoot: requestedDataRoot = null} = {}) {
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, recordEventsFrom = null, recordEventsUntil = null, eventStorage = 'all', dataRoot: requestedDataRoot = null} = {}) {
   const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
   const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
   const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
@@ -660,6 +680,9 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const scanTimes = makeScanTimes(start, end, scanIntervalHours);
   const control = createModel('V7.5 Control');
   const shadow = createModel('V8 Shadow', true);
+  const eventWindow = recordEventsFrom == null ? null : {start: recordEventsFrom, end: recordEventsUntil ?? end};
+  control.recordEventWindow = eventWindow;
+  shadow.recordEventWindow = eventWindow;
   const symbolsWithOneMinute = available.filter(([, data]) => lazyMinute ? data.minuteArtifactRows > 0 : data.m1.length > 0).length;
   const symbolsWithCompleteOneMinute = available.filter(([, data]) => data.execution.oneMinuteComplete).length;
   const oneMinuteRows = available.reduce((sum, [, data]) => sum + (lazyMinute ? data.minuteArtifactRows : data.m1.length), 0);
@@ -692,13 +715,15 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       executionProxy,
       endTime: end,
       rankedCandidates: controlRanked,
-      eventWindow: recordEventsFrom == null ? null : {start: recordEventsFrom, end: recordEventsUntil ?? end},
+      eventWindow,
+      eventStorage,
     });
     processCandidates(shadow, shadowCandidates, dataBySymbol, {
       executionProxy,
       endTime: end,
       rankedCandidates: shadowRanked,
-      eventWindow: recordEventsFrom == null ? null : {start: recordEventsFrom, end: recordEventsUntil ?? end},
+      eventWindow,
+      eventStorage,
     });
   }
   closeAtEnd(control, dataBySymbol, end, modelConfig.stressRoundTripCost, {preferMinute: true});
