@@ -332,9 +332,15 @@ function tradeBreakdown(trades, oosMetrics) {
   };
 }
 
+function symbolSignalEvents(result, symbol) {
+  const file = result.rankedFileDir ? path.join(APP_DIR, result.rankedFileDir, `${symbol}.ndjson`) : null;
+  if (!file || !fs.existsSync(file)) return result.ranked.filter(event => event.marketId === symbol);
+  return fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
+}
+
 function modelResult(model) {
   const raw = oosEvents(model.rawCandidateEvents);
-  const ranked = oosEvents(model.signalEvents);
+  const ranked = model.rankedSignalArtifactDir ? [] : oosEvents(model.signalEvents);
   const accepted = oosEvents(model.acceptedSignalEvents);
   const trades = (model.trades || []).filter(trade => timestamp(trade.signalTime) >= OOS_START && timestamp(trade.signalTime) < OOS_END).map(compactTrade);
   const observations = [];
@@ -343,6 +349,10 @@ function modelResult(model) {
     raw,
     rawCount: Number(model.rawCandidateCount ?? raw.length),
     ranked,
+    rankedCount: Number(model.rankedSignalCount ?? ranked.length),
+    rankedFileDir: model.rankedSignalArtifactDir || null,
+    rankedSignalSymbols: new Set(model.rankedSignalSymbols || ranked.map(event => event.marketId)),
+    rankedKeys: new Set(ranked.map(alertKey)),
     accepted,
     acceptedCount: Number(model.acceptedSignalCount ?? accepted.length),
     trades,
@@ -354,8 +364,8 @@ function modelSummary(result) {
   const signalQuality = summarizeObservations(result.observations);
   return {
     rawCandidates: result.rawCount,
-    rankedSignals: result.ranked.length,
-    uniqueAlerts: new Set(result.ranked.map(alertKey)).size,
+    rankedSignals: result.rankedCount,
+    uniqueAlerts: result.rankedKeys.size,
     simulatedAcceptedSignals: result.acceptedCount,
     closedSimulatedTrades: result.trades.length,
     uniqueSignalSymbols: signalQuality.uniqueSymbols,
@@ -375,8 +385,8 @@ function modelSummary(result) {
 }
 
 function increment(v75, v8) {
-  const v75Keys = new Set(v75.ranked.map(alertKey));
-  const v8Keys = new Set(v8.ranked.map(alertKey));
+  const v75Keys = v75.rankedKeys;
+  const v8Keys = v8.rankedKeys;
   const overlap = [...v75Keys].filter(key => v8Keys.has(key));
   const v75Only = [...v75Keys].filter(key => !v8Keys.has(key));
   const v8Only = [...v8Keys].filter(key => !v75Keys.has(key));
@@ -547,7 +557,7 @@ async function main() {
     lazyPrice: true,
     recordEventsFrom: OOS_START,
     recordEventsUntil: OOS_END,
-    eventStorage: 'ranked-only',
+    eventStorage: 'ranked-file',
     dataRoot: path.join(APP_DIR, 'data', 'backtest'),
   });
   if (tradeReport.data.executionProxy !== false || tradeReport.data.executionInterval !== '1m') {
@@ -559,14 +569,16 @@ async function main() {
   for (const model of tradeReport.models) {
     models[model.model === 'V7.5 Control' ? 'v75' : 'v8'] = modelResult(model);
   }
-  const allSignalSymbols = new Set([...models.v75.ranked, ...models.v8.ranked].map(event => event.marketId));
+  const allSignalSymbols = new Set([...models.v75.rankedSignalSymbols, ...models.v8.rankedSignalSymbols]);
   for (const symbol of allSignalSymbols) {
     const h1 = loadRows(priceDir, symbol);
     const minute = loadRows(minuteDir, symbol);
     const lifecycle = marketRecord(manifest, symbol);
     const lifecycleEnd = Math.min(OOS_END, timestamp(lifecycle.eligibleEnd || OOS_END));
     for (const result of Object.values(models)) {
-      for (const signal of result.ranked.filter(event => event.marketId === symbol)) {
+      for (const signal of symbolSignalEvents(result, symbol)) {
+        result.rankedKeys.add(alertKey(signal));
+        result.rankedSignalSymbols.add(symbol);
         result.observations.push(buildObservation(signal, h1, minute, lifecycleEnd));
       }
     }

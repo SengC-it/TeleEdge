@@ -464,7 +464,23 @@ export function processCandidates(model, candidates, dataBySymbol, {
   model.rawCandidateCount += recordedUnseen.length;
   model.rankedSignalCount += recordedRanked.length;
   if (eventStorage === 'all') model.rawCandidateEvents.push(...recordedUnseen.map(candidate => signalEvent(candidate, model.name)));
-  model.signalEvents.push(...recordedRanked.map(candidate => signalEvent(candidate, model.name)));
+  const rankedEvents = recordedRanked.map(candidate => signalEvent(candidate, model.name));
+  if (eventStorage === 'ranked-file') {
+    const bySymbol = new Map();
+    for (const event of rankedEvents) {
+      if (!bySymbol.has(event.marketId)) bySymbol.set(event.marketId, []);
+      bySymbol.get(event.marketId).push(event);
+    }
+    for (const [symbol, events] of bySymbol) {
+      const file = model.rankedEventFiles?.get(symbol);
+      if (file != null) {
+        fs.writeSync(file, `${events.map(event => JSON.stringify(event)).join('\n')}\n`);
+        model.rankedSignalSymbols.add(symbol);
+      }
+    }
+  } else {
+    model.signalEvents.push(...rankedEvents);
+  }
   const cap = model.v8 ? v8ShadowConfig.positionCap : modelConfig.cap;
   const maxPerSide = model.v8 ? v8ShadowConfig.maxPerSide : modelConfig.maxPerSide;
   for (const candidate of ranked) {
@@ -569,6 +585,8 @@ function modelReport(model, start, end) {
     rawCandidateCount: model.rawCandidateCount,
     rankedSignalCount: model.rankedSignalCount,
     acceptedSignalCount: model.acceptedSignalCount,
+    rankedSignalArtifactDir: model.rankedEventDir ? path.relative(APP_DIR, model.rankedEventDir).replaceAll('\\', '/') : null,
+    rankedSignalSymbols: [...(model.rankedSignalSymbols || [])].sort(),
     trades: model.trades,
   };
 }
@@ -683,6 +701,20 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const eventWindow = recordEventsFrom == null ? null : {start: recordEventsFrom, end: recordEventsUntil ?? end};
   control.recordEventWindow = eventWindow;
   shadow.recordEventWindow = eventWindow;
+  if (eventStorage === 'ranked-file') {
+    fs.mkdirSync(path.dirname(outputBase), {recursive: true});
+    for (const model of [control, shadow]) {
+      model.rankedEventDir = `${outputBase}.${model.v8 ? 'v8' : 'v75'}.ranked-signals`;
+      fs.mkdirSync(model.rankedEventDir, {recursive: true});
+      model.rankedEventFiles = new Map();
+      model.rankedSignalSymbols = new Set();
+      for (const symbol of symbols) {
+        const file = path.join(model.rankedEventDir, `${symbol}.ndjson`);
+        fs.writeFileSync(file, '');
+        model.rankedEventFiles.set(symbol, fs.openSync(file, 'a'));
+      }
+    }
+  }
   const symbolsWithOneMinute = available.filter(([, data]) => lazyMinute ? data.minuteArtifactRows > 0 : data.m1.length > 0).length;
   const symbolsWithCompleteOneMinute = available.filter(([, data]) => data.execution.oneMinuteComplete).length;
   const oneMinuteRows = available.reduce((sum, [, data]) => sum + (lazyMinute ? data.minuteArtifactRows : data.m1.length), 0);
@@ -725,6 +757,10 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       eventWindow,
       eventStorage,
     });
+  }
+  for (const model of [control, shadow]) {
+    for (const file of model.rankedEventFiles?.values() || []) fs.closeSync(file);
+    model.rankedEventFiles = null;
   }
   closeAtEnd(control, dataBySymbol, end, modelConfig.stressRoundTripCost, {preferMinute: true});
   closeAtEnd(shadow, dataBySymbol, end, modelConfig.stressRoundTripCost, {preferMinute: true});
