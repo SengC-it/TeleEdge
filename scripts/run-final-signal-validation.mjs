@@ -75,6 +75,52 @@ function marketRecord(manifest, symbol) {
   return (manifest.universe?.markets || []).find(item => item.symbol === symbol) || {};
 }
 
+function representativeSymbols(eligibleSymbols, manifest, limit = 120) {
+  const records = eligibleSymbols.map(symbol => {
+    const market = marketRecord(manifest, symbol);
+    const start = Math.max(OOS_START, timestamp(market.eligibleStart || OOS_START));
+    const end = Math.min(OOS_END, timestamp(market.eligibleEnd || OOS_END));
+    const duration = Math.max(0, end - start);
+    const oosDuration = OOS_END - OOS_START;
+    const durationBand = duration >= oosDuration * 0.66 ? 'long-history' : duration >= oosDuration * 0.33 ? 'medium-history' : 'recent-listing';
+    return {symbol, tier: CORE_MARKETS.has(symbol) ? 'core' : 'expanded', duration, durationBand};
+  });
+  if (records.length <= limit) return {symbols: records.map(record => record.symbol).sort(), reason: 'all clean eligible symbols; no fallback required', bands: records};
+  const buckets = new Map();
+  for (const record of records) {
+    const key = `${record.tier}|${record.durationBand}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(record);
+  }
+  for (const rows of buckets.values()) rows.sort((a, b) => a.symbol.localeCompare(b.symbol));
+  const quota = Math.floor(limit / 6);
+  const chosen = new Map();
+  for (const key of [...buckets.keys()].sort()) {
+    const rows = buckets.get(key);
+    const take = Math.min(quota, rows.length);
+    for (let index = 0; index < take; index++) {
+      const row = rows[Math.min(rows.length - 1, Math.floor(index * rows.length / take))];
+      chosen.set(row.symbol, row);
+    }
+  }
+  const remaining = records.filter(record => !chosen.has(record.symbol)).sort((a, b) => b.duration - a.duration || a.symbol.localeCompare(b.symbol));
+  for (const row of remaining) {
+    if (chosen.size >= limit) break;
+    chosen.set(row.symbol, row);
+  }
+  const btc = records.find(record => record.symbol === 'BTCUSDT');
+  if (btc && !chosen.has(btc.symbol)) {
+    const replace = [...chosen.values()].sort((a, b) => a.duration - b.duration || b.symbol.localeCompare(a.symbol))[0];
+    chosen.delete(replace.symbol);
+    chosen.set(btc.symbol, btc);
+  }
+  return {
+    symbols: [...chosen.keys()].sort(),
+    reason: `deterministic ${chosen.size}-symbol active-duration stratified fallback after full-universe memory bound; long-history/medium-history/recent-listing × core/expanded; no minuteRows sorting`,
+    bands: [...chosen.values()],
+  };
+}
+
 function oosEvents(events) {
   return (events || []).filter(event => timestamp(event.signalTime) >= OOS_START && timestamp(event.signalTime) < OOS_END);
 }
@@ -385,7 +431,7 @@ function markdown(report) {
     `**${report.result}**`,
     '',
     `- OOS window: ${report.execution.oosStart} → ${report.execution.oosEnd}`,
-    `- Universe: ${report.execution.symbols} clean eligible symbols; candidate generation used all symbols`,
+    `- Universe: ${report.universe.cleanEligibleSymbols} clean eligible symbols; validation used ${report.execution.symbols} deterministic active-duration-stratified symbols`,
     `- Execution layer: ${report.execution.scanCadence}; ${report.execution.decisionLatency}; ${report.execution.fill}; ${report.execution.settlement}`,
     `- Signal-level 1m loading: lazy by symbol after a signal; no minimum-minute-row selection`,
     '',
@@ -476,7 +522,9 @@ async function main() {
   }
   const manifest = readJson(MANIFEST_FILE);
   const strict = readJson(STRICT_FILE);
-  const symbols = [...new Set(universe.eligibleSymbols)].sort();
+  const eligibleSymbols = [...new Set(universe.eligibleSymbols)].sort();
+  const selection = representativeSymbols(eligibleSymbols, manifest, Number(process.env.SIGNAL_VALIDATION_SYMBOL_LIMIT || 120));
+  const symbols = selection.symbols;
   const tradeReport = await runBacktest({
     symbols,
     start: Date.parse('2021-01-01T00:00:00.000Z'),
@@ -531,11 +579,19 @@ async function main() {
       candidateData: 'all eligible symbols use 1h + funding; 1m is loaded lazily only for symbols with ranked signals',
     },
     universe: {
-      eligible: symbols.length,
+      cleanEligibleSymbols: eligibleSymbols.length,
+      validationSymbols: symbols.length,
       core: universe.coreCount,
       expanded: universe.expandedCount,
+      validationCore: symbols.filter(symbol => CORE_MARKETS.has(symbol)).length,
+      validationExpanded: symbols.filter(symbol => !CORE_MARKETS.has(symbol)).length,
       selectionBiasAvoided: true,
-      selection: 'all clean eligible symbols; no minuteRows sorting or representative minimum-row subset',
+      selection: selection.reason,
+      activeDurationBands: selection.bands.reduce((summary, row) => {
+        const key = `${row.tier}|${row.durationBand}`;
+        summary[key] = (summary[key] || 0) + 1;
+        return summary;
+      }, {}),
     },
     signalIncrement,
     models: {v75: v75Summary, v8: v8Summary},
