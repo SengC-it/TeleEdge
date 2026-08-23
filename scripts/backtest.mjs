@@ -646,9 +646,10 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
     const market = marketFor(symbol, exchange);
     const lifecycle = activeWindowForMarket({symbol, market, manifest, startTime: start, endTime: end});
     if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
-    const signalH1 = h1.filter(row => row.t >= lifecycle.eligibleStart && row.t < lifecycle.eligibleEnd);
+    const indicatorWarmupStart = Math.max(lifecycle.eligibleStart, start - 400 * DAY);
+    const signalH1 = h1.filter(row => row.t >= indicatorWarmupStart && row.t < lifecycle.eligibleEnd);
     const firstPositiveRow = signalH1.find(row => row.q > 0) || null;
-    const signalFunding = funding.filter(row => row.t >= lifecycle.eligibleStart && row.t < lifecycle.eligibleEnd);
+    const signalFunding = funding.filter(row => row.t >= indicatorWarmupStart && row.t < lifecycle.eligibleEnd);
     const daily = aggregate(signalH1.filter(row => row.t + H1 <= end), DAY, end);
     const bars4h = aggregate(signalH1.filter(row => row.t + H1 <= end), H4, end);
     const minuteArtifact = declaredMinuteArtifact(manifest, symbol);
