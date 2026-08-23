@@ -11,12 +11,15 @@ const OOS_END = Date.parse('2026-07-15T00:00:00.000Z');
 const DECISION_LATENCY_MS = 20 * 60_000;
 const INDICATOR_WARMUP_DAYS = 400;
 const HORIZONS = Object.freeze([1, 4, 12, 24, 72]);
-const TRADE_REPORT_BASE = path.join(APP_DIR, 'reports', '.final-signal-trade-backtest');
+const OUTPUT_DIR = process.env.SIGNAL_VALIDATION_OUTPUT_DIR
+  ? path.resolve(process.env.SIGNAL_VALIDATION_OUTPUT_DIR)
+  : path.join(APP_DIR, 'reports');
+const TRADE_REPORT_BASE = path.join(OUTPUT_DIR, '.final-signal-trade-backtest');
 const UNIVERSE_FILE = path.join(APP_DIR, 'reports', 'fast-oos-universe.json');
 const MANIFEST_FILE = path.join(APP_DIR, 'data', 'backtest', 'manifest.json');
 const STRICT_FILE = path.join(APP_DIR, 'reports', 'formal-dataset-strict-failures.json');
-const FINAL_JSON = path.join(APP_DIR, 'reports', 'final-signal-validation.json');
-const FINAL_MARKDOWN = path.join(APP_DIR, 'reports', 'final-signal-validation.md');
+const FINAL_JSON = path.join(OUTPUT_DIR, 'final-signal-validation.json');
+const FINAL_MARKDOWN = path.join(OUTPUT_DIR, 'final-signal-validation.md');
 const RUNNER_FILE = path.join(APP_DIR, 'scripts', 'run-final-signal-validation.mjs');
 const STRATEGY_FILES = [
   'src/config.mjs',
