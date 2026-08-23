@@ -535,6 +535,7 @@ async function main() {
     executionProxy: false,
     allowExternalCache: false,
     lazyMinute: true,
+    lazyPrice: true,
     dataRoot: path.join(APP_DIR, 'data', 'backtest'),
   });
   if (tradeReport.data.executionProxy !== false || tradeReport.data.executionInterval !== '1m') {

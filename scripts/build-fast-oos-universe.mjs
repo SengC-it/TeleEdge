@@ -12,6 +12,7 @@ const JSON_FILE = path.join(APP_DIR, 'reports', 'fast-oos-universe.json');
 const MARKDOWN_FILE = path.join(APP_DIR, 'reports', 'fast-oos-universe.md');
 const OOS_START = Date.parse('2025-01-01T00:00:00Z');
 const ENGINE_SNAPSHOT_END = Date.parse('2026-07-15T00:00:00Z');
+const OOS_DURATION = ENGINE_SNAPSHOT_END - OOS_START;
 
 function timestamp(value) {
   if (Number.isFinite(Number(value))) return Number(value);
@@ -25,6 +26,47 @@ function sha256(file) {
 
 function artifactMap(manifest) {
   return new Map((manifest.artifacts || []).map(item => [`${item.symbol}|${item.kind}`, item]));
+}
+
+function activeDurationBand(durationMs) {
+  if (durationMs >= OOS_DURATION * 0.66) return 'long-history';
+  if (durationMs >= OOS_DURATION * 0.33) return 'medium-history';
+  return 'recent-listing';
+}
+
+function selectExecutionRecords(records, maxSymbols) {
+  if (!Number.isFinite(maxSymbols) || records.length <= maxSymbols) return records;
+  const buckets = new Map();
+  for (const record of records) {
+    const key = `${record.tier}|${record.durationBand}`;
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(record);
+  }
+  for (const rows of buckets.values()) rows.sort((a, b) => a.symbol.localeCompare(b.symbol));
+  const quota = Math.floor(maxSymbols / 6);
+  const chosen = new Map();
+  for (const key of [...buckets.keys()].sort()) {
+    const rows = buckets.get(key);
+    const take = Math.min(quota, rows.length);
+    for (let index = 0; index < take; index++) {
+      const row = rows[Math.min(rows.length - 1, Math.floor(index * rows.length / take))];
+      chosen.set(row.symbol, row);
+    }
+  }
+  const remaining = records
+    .filter(record => !chosen.has(record.symbol))
+    .sort((a, b) => b.durationMs - a.durationMs || a.tier.localeCompare(b.tier) || a.symbol.localeCompare(b.symbol));
+  for (const row of remaining) {
+    if (chosen.size >= maxSymbols) break;
+    chosen.set(row.symbol, row);
+  }
+  const btc = records.find(record => record.symbol === 'BTCUSDT');
+  if (btc && !chosen.has(btc.symbol)) {
+    const replace = [...chosen.values()].sort((a, b) => a.durationMs - b.durationMs || b.symbol.localeCompare(a.symbol))[0];
+    if (replace) chosen.delete(replace.symbol);
+    chosen.set(btc.symbol, btc);
+  }
+  return [...chosen.values()].slice(0, maxSymbols);
 }
 
 function main() {
@@ -63,10 +105,14 @@ function main() {
       && eligibleStart < ENGINE_SNAPSHOT_END
       && eligibleEnd > Math.max(eligibleStart, OOS_START);
     if (!overlapsOos) reasons.push({reason: 'no-oos-window', artifactKind: null, path: null});
+    const durationMs = overlapsOos
+      ? Math.max(0, Math.min(eligibleEnd, ENGINE_SNAPSHOT_END) - Math.max(eligibleStart, OOS_START))
+      : 0;
     records.push({
       symbol,
       tier: CORE_MARKETS.has(symbol) ? 'core' : 'expanded',
-      minuteRows: Number(artifacts.get(`${symbol}|minute`)?.rows || 0),
+      durationMs,
+      durationBand: activeDurationBand(durationMs),
       eligibleStart: Number.isFinite(eligibleStart) ? new Date(eligibleStart).toISOString() : null,
       eligibleEnd: Number.isFinite(eligibleEnd) ? new Date(eligibleEnd).toISOString() : null,
       lifecycleExact: market?.lifecycleExact === true,
@@ -75,17 +121,7 @@ function main() {
   }
   const eligible = records.filter(item => item.reasons.length === 0);
   const excluded = records.filter(item => item.reasons.length > 0);
-  const leanSort = (a, b) => a.minuteRows - b.minuteRows || a.symbol.localeCompare(b.symbol);
-  let executionSelectionRecords = eligible;
-  if (Number.isFinite(maxSymbols) && eligible.length > maxSymbols) {
-    const coreBudget = Math.ceil(maxSymbols / 2);
-    const expandedBudget = Math.floor(maxSymbols / 2);
-    const corePool = eligible.filter(item => item.tier === 'core').sort(leanSort);
-    const expandedPool = eligible.filter(item => item.tier === 'expanded').sort(leanSort);
-    const btc = corePool.find(item => item.symbol === 'BTCUSDT');
-    const leanCore = corePool.filter(item => item.symbol !== 'BTCUSDT').slice(0, Math.max(0, coreBudget - (btc ? 1 : 0)));
-    executionSelectionRecords = [...(btc ? [btc] : []), ...leanCore, ...expandedPool.slice(0, expandedBudget)];
-  }
+  const executionSelectionRecords = selectExecutionRecords(eligible, maxSymbols);
   const executionSymbols = executionSelectionRecords.map(item => item.symbol);
   const yearCoverage = {};
   for (const item of eligible) {
@@ -114,7 +150,7 @@ function main() {
     eligibleSymbols: eligible.map(item => item.symbol),
     executionSymbols,
     executionSelection: Number.isFinite(maxSymbols) && eligible.length > maxSymbols
-      ? `deterministic lowest 1m-row ${maxSymbols}: balanced core/expanded subset with BTCUSDT context anchor; ties by symbol; clean-universe eligibility remains complete`
+      ? `deterministic ${maxSymbols}-symbol active-duration stratified subset: long-history/medium-history/recent-listing × core/expanded with BTCUSDT context anchor; ties by duration/tier/symbol; no minuteRows selection`
       : 'all eligible symbols',
     excludedSymbols: excluded,
     coreCount: eligible.filter(item => item.tier === 'core').length,

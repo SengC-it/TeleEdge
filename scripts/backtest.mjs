@@ -162,6 +162,11 @@ function ensureMinuteData(data) {
   return data.m1;
 }
 
+function ensurePriceData(data) {
+  if (typeof data.loadPrice === 'function') data.loadPrice();
+  return data.h1;
+}
+
 function createModel(name, v8 = false) {
   return {
     name,
@@ -264,6 +269,7 @@ function settleOpen(model, dataBySymbol, now, costRate, {preferMinute = false} =
       continue;
     }
     const useMinute = preferMinute && data.execution?.oneMinuteComplete === true;
+    if (!useMinute) ensurePriceData(data);
     const bars = useMinute ? data.m1 : data.h1;
     const interval = useMinute ? 60_000 : H1;
     const lifecycleEnd = Math.min(now, data.lifecycle?.eligibleEnd ?? now);
@@ -453,6 +459,7 @@ export function processCandidates(model, candidates, dataBySymbol, {
     const symbolEndTime = Math.min(endTime, data?.lifecycle?.eligibleEnd ?? endTime);
     const symbolMinuteAvailable = data?.execution?.oneMinuteComplete ?? minuteExecutionAvailable;
     if (!reason && data && symbolMinuteAvailable) ensureMinuteData(data);
+    if (!reason && data && executionProxy && !symbolMinuteAvailable) ensurePriceData(data);
     const execution = !reason && data
       ? resolveExecution(data, candidate, executionProxy, symbolEndTime, symbolMinuteAvailable)
       : null;
@@ -500,6 +507,7 @@ function closeAtEnd(model, dataBySymbol, endTime, costRate, {preferMinute = fals
     if (!data) continue;
     if (preferMinute) ensureMinuteData(data);
     const useMinute = preferMinute && data.execution?.oneMinuteComplete === true;
+    if (!useMinute) ensurePriceData(data);
     const symbolEnd = Math.min(endTime, data.lifecycle?.eligibleEnd ?? endTime);
     recordClosedTrade(model, closePositionAtEnd(position, data, symbolEnd, costRate, useMinute), position.marketId);
   }
@@ -576,7 +584,7 @@ function markdownReport(report) {
     `训练集：2021-01-01—2023-12-31；验证集：2024；walk-forward OOS：2025 及 2026-H1。参数在本次运行中没有用 OOS 调优。\n`;
 }
 
-export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, dataRoot: requestedDataRoot = null} = {}) {
+export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse('2021-01-01T00:00:00Z'), end = SNAPSHOT_END, scanIntervalHours = 4, outputBase = path.join(APP_DIR, 'reports', 'teleedge-oos-backtest'), mode = 'formal', executionProxy = false, allowExternalCache = false, lazyMinute = false, lazyPrice = false, dataRoot: requestedDataRoot = null} = {}) {
   const dataRoot = requestedDataRoot || (allowExternalCache ? WORKSPACE_DIR : path.join(APP_DIR, 'data', 'backtest'));
   const legacyLayout = allowExternalCache || fs.existsSync(path.join(dataRoot, 'v38_price_cache'));
   const priceDir = legacyLayout ? path.join(dataRoot, 'v38_price_cache') : path.join(dataRoot, 'price');
@@ -589,24 +597,28 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   const missing = [];
   for (const symbol of symbols) {
     const h1 = loadRows(priceDir, symbol);
+    const priceRows = h1.length;
     const funding = loadRows(fundingDir, symbol, true);
     const m1 = lazyMinute ? [] : loadRows(minuteDir, symbol);
     const market = marketFor(symbol, exchange);
     const lifecycle = activeWindowForMarket({symbol, market, manifest, startTime: start, endTime: end});
     if (!h1.length || !funding.length) missing.push({symbol, priceRows: h1.length, fundingRows: funding.length});
     const signalH1 = h1.filter(row => row.t >= lifecycle.eligibleStart && row.t < lifecycle.eligibleEnd);
+    const firstPositiveRow = signalH1.find(row => row.q > 0) || null;
     const signalFunding = funding.filter(row => row.t >= lifecycle.eligibleStart && row.t < lifecycle.eligibleEnd);
     const daily = aggregate(signalH1.filter(row => row.t + H1 <= end), DAY, end);
     const bars4h = aggregate(signalH1.filter(row => row.t + H1 <= end), H4, end);
     const minuteArtifact = declaredMinuteArtifact(manifest, symbol);
     const data = {
       market,
-      h1,
+      h1: lazyPrice ? [] : h1,
+      priceLoaded: !lazyPrice,
+      priceRows,
       m1,
       minuteLoaded: !lazyMinute,
       minuteArtifactRows: Number(minuteArtifact?.rows || 0),
       funding,
-      signalH1,
+      signalH1: lazyPrice ? (firstPositiveRow ? [firstPositiveRow] : []) : signalH1,
       signalFunding,
       daily,
       bars4h,
@@ -618,6 +630,12 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
         oneHourComplete: lifecycle.active && hasCompleteSeries(h1, '1h', lifecycle.eligibleStart, lifecycle.eligibleEnd),
       },
     };
+    data.loadPrice = () => {
+      if (data.priceLoaded) return data.h1;
+      data.h1 = loadRows(priceDir, symbol);
+      data.priceLoaded = true;
+      return data.h1;
+    };
     data.loadMinute = () => {
       if (data.minuteLoaded) return data.m1;
       data.m1 = loadRows(minuteDir, symbol);
@@ -627,10 +645,10 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
     };
     dataBySymbol.set(symbol, data);
   }
-  const available = [...dataBySymbol].filter(([, data]) => data.lifecycle.active && data.h1.length && data.funding.length);
+  const available = [...dataBySymbol].filter(([, data]) => data.lifecycle.active && data.priceRows > 0 && data.funding.length);
   if (!available.length) throw new Error(`No backtest data under ${dataRoot}. Run npm run backtest:fetch or explicitly use npm run backtest:smoke for the legacy external cache.`);
   const dailyByMarket = new Map([...dataBySymbol]
-    .filter(([, data]) => data.lifecycle.active && data.h1.length)
+    .filter(([, data]) => data.lifecycle.active && data.priceRows > 0)
     .map(([symbol, data]) => [symbol, data.daily]));
   const breadthByTime = buildCoreBreadth(dailyByMarket);
   const btcEnvironment = buildBtcEnvironment(dailyByMarket.get('BTCUSDT') || []);
@@ -725,7 +743,7 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
       pointInTimeUniverse: Boolean(manifest?.universe?.pointInTime),
       historicalDelistingsResolved: Boolean(manifest?.universe?.historicalDelistingsResolved),
       sampleSize: {
-        priceRows: available.reduce((sum, [, data]) => sum + data.h1.length, 0),
+        priceRows: available.reduce((sum, [, data]) => sum + data.priceRows, 0),
         fundingRows: available.reduce((sum, [, data]) => sum + data.funding.length, 0),
          oneMinuteRows,
          symbolsWithBothFeeds: available.length,
