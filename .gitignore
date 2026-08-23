@@ -11,4 +11,4 @@ data/backtest/price/
 data/backtest/funding/
 data/backtest/
 data/formal-validation/
-reports/.final-signal-trade-backtest/
+reports/.final-signal-trade-backtest*

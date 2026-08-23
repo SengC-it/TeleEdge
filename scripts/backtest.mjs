@@ -585,7 +585,7 @@ function modelReport(model, start, end) {
     rawCandidateCount: model.rawCandidateCount,
     rankedSignalCount: model.rankedSignalCount,
     acceptedSignalCount: model.acceptedSignalCount,
-    rankedSignalArtifactDir: model.rankedEventDir ? path.relative(APP_DIR, model.rankedEventDir).replaceAll('\\', '/') : null,
+    rankedSignalArtifactPrefix: model.rankedEventPrefix ? path.relative(APP_DIR, model.rankedEventPrefix).replaceAll('\\', '/') : null,
     rankedSignalSymbols: [...(model.rankedSignalSymbols || [])].sort(),
     trades: model.trades,
   };
@@ -705,12 +705,11 @@ export async function runBacktest({symbols = DEFAULT_SYMBOLS, start = Date.parse
   if (eventStorage === 'ranked-file') {
     fs.mkdirSync(path.dirname(outputBase), {recursive: true});
     for (const model of [control, shadow]) {
-      model.rankedEventDir = `${outputBase}.${model.v8 ? 'v8' : 'v75'}.ranked-signals`;
-      fs.mkdirSync(model.rankedEventDir, {recursive: true});
+      model.rankedEventPrefix = `${outputBase}.${model.v8 ? 'v8' : 'v75'}`;
       model.rankedEventFiles = new Map();
       model.rankedSignalSymbols = new Set();
       for (const symbol of symbols) {
-        const file = path.join(model.rankedEventDir, `${symbol}.ndjson`);
+        const file = `${model.rankedEventPrefix}.${symbol}.ranked.ndjson`;
         fs.writeFileSync(file, '');
         model.rankedEventFiles.set(symbol, fs.openSync(file, 'a'));
       }

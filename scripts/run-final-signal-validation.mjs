@@ -334,14 +334,14 @@ function tradeBreakdown(trades, oosMetrics) {
 }
 
 function symbolSignalEvents(result, symbol) {
-  const file = result.rankedFileDir ? path.join(APP_DIR, result.rankedFileDir, `${symbol}.ndjson`) : null;
+  const file = result.rankedFilePrefix ? `${path.join(APP_DIR, result.rankedFilePrefix)}.${symbol}.ranked.ndjson` : null;
   if (!file || !fs.existsSync(file)) return result.ranked.filter(event => event.marketId === symbol);
   return fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean).map(line => JSON.parse(line));
 }
 
 function modelResult(model) {
   const raw = oosEvents(model.rawCandidateEvents);
-  const ranked = model.rankedSignalArtifactDir ? [] : oosEvents(model.signalEvents);
+  const ranked = model.rankedSignalArtifactPrefix ? [] : oosEvents(model.signalEvents);
   const accepted = oosEvents(model.acceptedSignalEvents);
   const trades = (model.trades || []).filter(trade => timestamp(trade.signalTime) >= OOS_START && timestamp(trade.signalTime) < OOS_END).map(compactTrade);
   const observations = [];
@@ -351,7 +351,7 @@ function modelResult(model) {
     rawCount: Number(model.rawCandidateCount ?? raw.length),
     ranked,
     rankedCount: Number(model.rankedSignalCount ?? ranked.length),
-    rankedFileDir: model.rankedSignalArtifactDir || null,
+    rankedFilePrefix: model.rankedSignalArtifactPrefix || null,
     rankedSignalSymbols: new Set(model.rankedSignalSymbols || ranked.map(event => event.marketId)),
     rankedKeys: new Set(ranked.map(alertKey)),
     accepted,
