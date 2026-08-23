@@ -532,7 +532,7 @@ async function main() {
   const manifest = readJson(MANIFEST_FILE);
   const strict = readJson(STRICT_FILE);
   const eligibleSymbols = [...new Set(universe.eligibleSymbols)].sort();
-  const selection = representativeSymbols(eligibleSymbols, manifest, Number(process.env.SIGNAL_VALIDATION_SYMBOL_LIMIT || 120));
+  const selection = representativeSymbols(eligibleSymbols, manifest, Number(process.env.SIGNAL_VALIDATION_SYMBOL_LIMIT || 100));
   const symbols = selection.symbols;
   const tradeReport = await runBacktest({
     symbols,
