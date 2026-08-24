@@ -1,6 +1,6 @@
 {
   "reportVersion": 1,
-  "generatedAt": "2026-08-23T11:06:04.929Z",
+  "generatedAt": "2026-08-24T01:30:13.306Z",
   "result": "SHADOW GO",
   "gate": {
     "result": "SHADOW GO",
@@ -56,16 +56,548 @@
     "combinedUniqueAlerts": 32,
     "signalIncreasePct": 33.33333333333333
   },
+  "notifiableAlertIncrement": {
+    "v75Notifiable": 18,
+    "v8OnlyNotifiable": 7,
+    "overlapDeduped": 17,
+    "combinedNotifiable": 25,
+    "actualSignalIncreasePct": 38.88888888888889,
+    "emailSent": null,
+    "alerts": [
+      {
+        "key": "1000CATUSDT|short|1769601600000",
+        "symbol": "1000CATUSDT",
+        "side": "short",
+        "signalTime": 1769601600000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "ACTUSDT|short|1742932800000",
+        "symbol": "ACTUSDT",
+        "side": "short",
+        "signalTime": 1742932800000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "ACTUSDT|short|1754884800000",
+        "symbol": "ACTUSDT",
+        "side": "short",
+        "signalTime": 1754884800000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "ADAUSDT|long|1757808000000",
+        "symbol": "ADAUSDT",
+        "side": "long",
+        "signalTime": 1757808000000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "ADAUSDT|short|1780012800000",
+        "symbol": "ADAUSDT",
+        "side": "short",
+        "signalTime": 1780012800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "AEROUSDT|short|1757088000000",
+        "symbol": "AEROUSDT",
+        "side": "short",
+        "signalTime": 1757088000000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "ALTUSDT|short|1755057600000",
+        "symbol": "ALTUSDT",
+        "side": "short",
+        "signalTime": 1755057600000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "AUCTIONUSDT|short|1753718400000",
+        "symbol": "AUCTIONUSDT",
+        "side": "short",
+        "signalTime": 1753718400000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "BCHUSDT|long|1754697600000",
+        "symbol": "BCHUSDT",
+        "side": "long",
+        "signalTime": 1754697600000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "BIGTIMEUSDT|short|1753084800000",
+        "symbol": "BIGTIMEUSDT",
+        "side": "short",
+        "signalTime": 1753084800000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "BNBUSDT|long|1754611200000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1754611200000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "BNBUSDT|long|1757808000000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1757808000000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BNBUSDT|long|1758067200000",
+        "symbol": "BNBUSDT",
+        "side": "long",
+        "signalTime": 1758067200000,
+        "sources": [
+          "V7.5 CONTROL"
+        ],
+        "sourceLabel": "V7.5 CONTROL"
+      },
+      {
+        "key": "BTCUSDT|long|1755129600000",
+        "symbol": "BTCUSDT",
+        "side": "long",
+        "signalTime": 1755129600000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "BTCUSDT|short|1769385600000",
+        "symbol": "BTCUSDT",
+        "side": "short",
+        "signalTime": 1769385600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "BTCUSDT|short|1780012800000",
+        "symbol": "BTCUSDT",
+        "side": "short",
+        "signalTime": 1780012800000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "CAKEUSDT|long|1757721600000",
+        "symbol": "CAKEUSDT",
+        "side": "long",
+        "signalTime": 1757721600000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "CAKEUSDT|short|1749672000000",
+        "symbol": "CAKEUSDT",
+        "side": "short",
+        "signalTime": 1749672000000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "DOGEUSDT|long|1759795200000",
+        "symbol": "DOGEUSDT",
+        "side": "long",
+        "signalTime": 1759795200000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "DOGEUSDT|short|1767225600000",
+        "symbol": "DOGEUSDT",
+        "side": "short",
+        "signalTime": 1767225600000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "DOGEUSDT|short|1769731200000",
+        "symbol": "DOGEUSDT",
+        "side": "short",
+        "signalTime": 1769731200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "ETCUSDT|short|1769731200000",
+        "symbol": "ETCUSDT",
+        "side": "short",
+        "signalTime": 1769731200000,
+        "sources": [
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
+      },
+      {
+        "key": "HANAUSDT|short|1772884800000",
+        "symbol": "HANAUSDT",
+        "side": "short",
+        "signalTime": 1772884800000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "PARTIUSDT|short|1768363200000",
+        "symbol": "PARTIUSDT",
+        "side": "short",
+        "signalTime": 1768363200000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      },
+      {
+        "key": "SCRUSDT|short|1755028800000",
+        "symbol": "SCRUSDT",
+        "side": "short",
+        "signalTime": 1755028800000,
+        "sources": [
+          "V7.5 CONTROL",
+          "V8 SHADOW"
+        ],
+        "sourceLabel": "V7.5 CONTROL + V8 SHADOW"
+      }
+    ]
+  },
   "models": {
     "v75": {
       "name": "V7.5 Control",
       "rawCandidates": 36,
       "rankedSignals": 24,
       "uniqueAlerts": 24,
-      "simulatedAcceptedSignals": 0,
-      "closedSimulatedTrades": 0,
+      "simulatedAcceptedSignals": 18,
+      "rejectionBreakdown": {
+        "total": 6,
+        "categories": {
+          "fill unavailable": 1,
+          "slippage": 0,
+          "stop-risk": 0,
+          "cooldown": 1,
+          "position cap": 0,
+          "quantity/minQty": 0,
+          "symbol already open": 0,
+          "other": 4
+        },
+        "byReason": {
+          "fill unavailable": 1,
+          "symbol already open": 4,
+          "cooldown": 1
+        },
+        "signals": [
+          {
+            "signalId": "1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000",
+            "symbol": "1MBABYDOGEUSDT",
+            "side": "short",
+            "signalTime": 1753718400000,
+            "stage": "accepted signal",
+            "reason": "fill unavailable",
+            "rawReason": "fill unavailable",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_5d|long|1754697600000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1754697600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "symbol already open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_10d|long|1755043200000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1755043200000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "symbol already open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_5d|long|1755734400000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1755734400000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "symbol already open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_10d|long|1757808000000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1757808000000,
+            "stage": "accepted signal",
+            "reason": "cooldown",
+            "rawReason": "cooldown",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "BNBUSDT|v39_20d|long|1758153600000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1758153600000,
+            "stage": "accepted signal",
+            "reason": "other",
+            "rawReason": "symbol already open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          }
+        ]
+      },
+      "closedSimulatedTrades": 18,
+      "notifiableAlerts": 18,
+      "notifiableAlertRecords": [
+        {
+          "key": "1000CATUSDT|short|1769601600000",
+          "symbol": "1000CATUSDT",
+          "side": "short",
+          "signalTime": 1769601600000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "ACTUSDT|short|1742932800000",
+          "symbol": "ACTUSDT",
+          "side": "short",
+          "signalTime": 1742932800000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "ACTUSDT|short|1754884800000",
+          "symbol": "ACTUSDT",
+          "side": "short",
+          "signalTime": 1754884800000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "ADAUSDT|long|1757808000000",
+          "symbol": "ADAUSDT",
+          "side": "long",
+          "signalTime": 1757808000000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "AEROUSDT|short|1757088000000",
+          "symbol": "AEROUSDT",
+          "side": "short",
+          "signalTime": 1757088000000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "ALTUSDT|short|1755057600000",
+          "symbol": "ALTUSDT",
+          "side": "short",
+          "signalTime": 1755057600000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "AUCTIONUSDT|short|1753718400000",
+          "symbol": "AUCTIONUSDT",
+          "side": "short",
+          "signalTime": 1753718400000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "BCHUSDT|long|1754697600000",
+          "symbol": "BCHUSDT",
+          "side": "long",
+          "signalTime": 1754697600000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "BIGTIMEUSDT|short|1753084800000",
+          "symbol": "BIGTIMEUSDT",
+          "side": "short",
+          "signalTime": 1753084800000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "BNBUSDT|long|1754611200000",
+          "symbol": "BNBUSDT",
+          "side": "long",
+          "signalTime": 1754611200000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "BNBUSDT|long|1758067200000",
+          "symbol": "BNBUSDT",
+          "side": "long",
+          "signalTime": 1758067200000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "BTCUSDT|long|1755129600000",
+          "symbol": "BTCUSDT",
+          "side": "long",
+          "signalTime": 1755129600000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "CAKEUSDT|long|1757721600000",
+          "symbol": "CAKEUSDT",
+          "side": "long",
+          "signalTime": 1757721600000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "CAKEUSDT|short|1749672000000",
+          "symbol": "CAKEUSDT",
+          "side": "short",
+          "signalTime": 1749672000000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "DOGEUSDT|long|1759795200000",
+          "symbol": "DOGEUSDT",
+          "side": "long",
+          "signalTime": 1759795200000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "HANAUSDT|short|1772884800000",
+          "symbol": "HANAUSDT",
+          "side": "short",
+          "signalTime": 1772884800000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "PARTIUSDT|short|1768363200000",
+          "symbol": "PARTIUSDT",
+          "side": "short",
+          "signalTime": 1768363200000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        },
+        {
+          "key": "SCRUSDT|short|1755028800000",
+          "symbol": "SCRUSDT",
+          "side": "short",
+          "signalTime": 1755028800000,
+          "sourceLabel": "V7.5 CONTROL",
+          "emailSent": null
+        }
+      ],
+      "notifiableSource": "closed-trades-fallback",
       "uniqueSignalSymbols": 16,
-      "observedAlphaCoverage": [],
+      "observedAlphaCoverage": [
+        "daily_breakout_long",
+        "volume_shock_short"
+      ],
       "signalQuality": {
         "signals": 24,
         "uniqueSymbols": 16,
@@ -2385,62 +2917,1145 @@
         }
       },
       "trade": {
-        "trades": 0,
+        "trades": 18,
         "signals": 24,
         "signalsPerMonth": 1.3044642857142859,
-        "winRate": null,
-        "wins": 0,
-        "losses": 0,
-        "avgWinR": null,
-        "avgLossR": null,
-        "expectancyR": null,
-        "netExpectancyR": null,
-        "expectancyR95CI": null,
-        "grossExpectancyR": null,
-        "profitFactor": null,
-        "profitFactorStatus": "no-trades",
-        "maxDrawdownUsdt": 0,
-        "maxDrawdownPct": 0,
-        "endingEquity": 10000,
-        "netPnlUsdt": 0,
-        "grossPnlUsdt": 0,
-        "fundingPnlUsdt": 0,
-        "feesAndCostsUsdt": 0,
-        "turnoverUsdt": 0,
-        "averageHoldingHours": null,
+        "winRate": 0.6111111111111112,
+        "wins": 11,
+        "losses": 7,
+        "avgWinR": 1.7492166115446308,
+        "avgLossR": -1.0205053524903416,
+        "expectancyR": 0.6721025144199192,
+        "netExpectancyR": 0.6721025144199192,
+        "expectancyR95CI": [
+          0.023886670794408982,
+          1.3203183580454294
+        ],
+        "grossExpectancyR": 0.7060076380556568,
+        "profitFactor": 2.6935370346572687,
+        "profitFactorStatus": "defined",
+        "maxDrawdownUsdt": 243.25013232332094,
+        "maxDrawdownPct": 0.024325013232332094,
+        "endingEquity": 10753.286274898452,
+        "netPnlUsdt": 753.2862748984526,
+        "grossPnlUsdt": 777.831361,
+        "fundingPnlUsdt": -3.3293222315475,
+        "feesAndCostsUsdt": 21.215763870000004,
+        "turnoverUsdt": 28287.68516,
+        "averageHoldingHours": 169.31851851851852,
         "forcedExits": 0,
-        "sharpe": null,
-        "sortino": null,
-        "monthlyObservations": 0,
+        "sharpe": 4.295021229822182,
+        "sortino": 199.28186285960922,
+        "monthlyObservations": 8,
         "equityPath": [
-          10000
+          10000,
+          10090.214769237384,
+          10178.932251019367,
+          10269.702262626366,
+          10206.976582841366,
+          10297.365260482917,
+          10389.148179189417,
+          10326.712584823013,
+          10270.571400626388,
+          10205.339793017589,
+          10145.898046866096,
+          10264.094953423935,
+          10384.79625432978,
+          10321.60341832103,
+          10442.229327664052,
+          10378.312787239527,
+          10503.040529159527,
+          10626.907705862177,
+          10753.286274898452
         ],
         "sampleStatus": "insufficient-sample",
         "confidenceInterval": {
           "method": "normal-approximation-95%",
           "parameter": "net expectancy in R"
         },
-        "bySide": {},
-        "byRegime": {},
-        "byFamily": {},
-        "byAlpha": {},
-        "byYear": {},
+        "bySide": {
+          "short": {
+            "trades": 11,
+            "signals": 11,
+            "signalsPerMonth": 0.5978794642857144,
+            "winRate": 0.7272727272727273,
+            "wins": 8,
+            "losses": 3,
+            "avgWinR": 1.6712867704984684,
+            "avgLossR": -0.9998382136068913,
+            "expectancyR": 0.942798138469734,
+            "netExpectancyR": 0.942798138469734,
+            "expectancyR95CI": [
+              0.194392148500121,
+              1.691204128439347
+            ],
+            "grossExpectancyR": 0.9588083690003929,
+            "profitFactor": 4.4574858818924135,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 121.8773405178963,
+            "maxDrawdownPct": 0.01218773405178963,
+            "endingEquity": 10642.244326330445,
+            "netPnlUsdt": 642.2443263304467,
+            "grossPnlUsdt": 650.2562209999999,
+            "fundingPnlUsdt": 6.1713928004467,
+            "feesAndCostsUsdt": 14.183287470000002,
+            "turnoverUsdt": 18911.04996,
+            "averageHoldingHours": 65.60454545454544,
+            "forcedExits": 0,
+            "sharpe": 3.3654608969464865,
+            "sortino": 5.3468906286939575,
+            "monthlyObservations": 7,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "long": {
+            "trades": 7,
+            "signals": 7,
+            "signalsPerMonth": 0.38046875,
+            "winRate": 0.42857142857142855,
+            "wins": 3,
+            "losses": 4,
+            "avgWinR": 1.9570295210010629,
+            "avgLossR": -1.0360057066529296,
+            "expectancyR": 0.24672367662735284,
+            "netExpectancyR": 0.24672367662735284,
+            "expectancyR95CI": [
+              -0.9385190115990911,
+              1.4319663648537968
+            ],
+            "grossExpectancyR": 0.3012114364786568,
+            "profitFactor": 1.4167606716113512,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 121.37279180542464,
+            "maxDrawdownPct": 0.012137279180542464,
+            "endingEquity": 10111.041948568007,
+            "netPnlUsdt": 111.04194856800592,
+            "grossPnlUsdt": 127.5751400000001,
+            "fundingPnlUsdt": -9.5007150319942,
+            "feesAndCostsUsdt": 7.032476399999998,
+            "turnoverUsdt": 9376.635199999999,
+            "averageHoldingHours": 332.2976190476191,
+            "forcedExits": 0,
+            "sharpe": 0.8575730920887834,
+            "sortino": 1.0564163177502794,
+            "monthlyObservations": 3,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byRegime": {
+          "neutral": {
+            "trades": 4,
+            "signals": 4,
+            "signalsPerMonth": 0.2174107142857143,
+            "winRate": 0.75,
+            "wins": 3,
+            "losses": 1,
+            "avgWinR": 1.6582301796815073,
+            "avgLossR": -0.9708625045180024,
+            "expectancyR": 1.00095700863163,
+            "netExpectancyR": 1.00095700863163,
+            "expectancyR95CI": [
+              -0.3093796293065445,
+              2.3112936465698044
+            ],
+            "grossExpectancyR": 1.0001197480517379,
+            "profitFactor": 5.123990797764173,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 59.441746151493135,
+            "maxDrawdownPct": 0.005944174615149313,
+            "endingEquity": 10244.218246787874,
+            "netPnlUsdt": 244.21824678787507,
+            "grossPnlUsdt": 243.95802199999994,
+            "fundingPnlUsdt": 5.244636752875099,
+            "feesAndCostsUsdt": 4.984411965,
+            "turnoverUsdt": 6645.88262,
+            "averageHoldingHours": 122.82499999999999,
+            "forcedExits": 0,
+            "sharpe": 2.5781603918462275,
+            "sortino": 3.5580920729847225,
+            "monthlyObservations": 4,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "bull": {
+            "trades": 12,
+            "signals": 12,
+            "signalsPerMonth": 0.6522321428571429,
+            "winRate": 0.5,
+            "wins": 6,
+            "losses": 6,
+            "avgWinR": 1.7198306693164938,
+            "avgLossR": -1.0287791604857317,
+            "expectancyR": 0.3455257544153809,
+            "netExpectancyR": 0.3455257544153809,
+            "expectancyR95CI": [
+              -0.4727036289932741,
+              1.1637551378240358
+            ],
+            "grossExpectancyR": 0.3834595823800285,
+            "profitFactor": 1.671719971956359,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 183.8083861718278,
+            "maxDrawdownPct": 0.01838083861718278,
+            "endingEquity": 10258.822282371653,
+            "netPnlUsdt": 258.8222823716522,
+            "grossPnlUsdt": 280.31901899999997,
+            "fundingPnlUsdt": -7.9469380083478,
+            "feesAndCostsUsdt": 13.54979862,
+            "turnoverUsdt": 18066.398159999997,
+            "averageHoldingHours": 206.6527777777778,
+            "forcedExits": 0,
+            "sharpe": 2.8833079032722178,
+            "sortino": 136.94285505879353,
+            "monthlyObservations": 4,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "bear": {
+            "trades": 2,
+            "signals": 2,
+            "signalsPerMonth": 0.10870535714285715,
+            "winRate": 1,
+            "wins": 2,
+            "losses": 0,
+            "avgWinR": 1.9738540860237261,
+            "avgLossR": null,
+            "expectancyR": 1.9738540860237261,
+            "netExpectancyR": 1.9738540860237261,
+            "expectancyR95CI": [
+              1.9576350663346234,
+              1.990073105712829
+            ],
+            "grossExpectancyR": 2.0000000000000044,
+            "profitFactor": null,
+            "profitFactorStatus": "no-losses",
+            "maxDrawdownUsdt": 0,
+            "maxDrawdownPct": 0,
+            "endingEquity": 10250.245745738925,
+            "netPnlUsdt": 250.2457457389254,
+            "grossPnlUsdt": 253.5543200000002,
+            "fundingPnlUsdt": -0.6270209760747998,
+            "feesAndCostsUsdt": 2.6815532850000006,
+            "turnoverUsdt": 3575.40438,
+            "averageHoldingHours": 38.300000000000004,
+            "forcedExits": 0,
+            "sharpe": 244.07750997546998,
+            "sortino": null,
+            "monthlyObservations": 2,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byFamily": {
+          "volumeShockReversal": {
+            "trades": 11,
+            "signals": 11,
+            "signalsPerMonth": 0.5978794642857144,
+            "winRate": 0.7272727272727273,
+            "wins": 8,
+            "losses": 3,
+            "avgWinR": 1.6712867704984684,
+            "avgLossR": -0.9998382136068913,
+            "expectancyR": 0.942798138469734,
+            "netExpectancyR": 0.942798138469734,
+            "expectancyR95CI": [
+              0.194392148500121,
+              1.691204128439347
+            ],
+            "grossExpectancyR": 0.9588083690003929,
+            "profitFactor": 4.4574858818924135,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 121.8773405178963,
+            "maxDrawdownPct": 0.01218773405178963,
+            "endingEquity": 10642.244326330445,
+            "netPnlUsdt": 642.2443263304467,
+            "grossPnlUsdt": 650.2562209999999,
+            "fundingPnlUsdt": 6.1713928004467,
+            "feesAndCostsUsdt": 14.183287470000002,
+            "turnoverUsdt": 18911.04996,
+            "averageHoldingHours": 65.60454545454544,
+            "forcedExits": 0,
+            "sharpe": 3.3654608969464865,
+            "sortino": 5.3468906286939575,
+            "monthlyObservations": 7,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "dailyBreakout": {
+            "trades": 7,
+            "signals": 7,
+            "signalsPerMonth": 0.38046875,
+            "winRate": 0.42857142857142855,
+            "wins": 3,
+            "losses": 4,
+            "avgWinR": 1.9570295210010629,
+            "avgLossR": -1.0360057066529296,
+            "expectancyR": 0.24672367662735284,
+            "netExpectancyR": 0.24672367662735284,
+            "expectancyR95CI": [
+              -0.9385190115990911,
+              1.4319663648537968
+            ],
+            "grossExpectancyR": 0.3012114364786568,
+            "profitFactor": 1.4167606716113512,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 121.37279180542464,
+            "maxDrawdownPct": 0.012137279180542464,
+            "endingEquity": 10111.041948568007,
+            "netPnlUsdt": 111.04194856800592,
+            "grossPnlUsdt": 127.5751400000001,
+            "fundingPnlUsdt": -9.5007150319942,
+            "feesAndCostsUsdt": 7.032476399999998,
+            "turnoverUsdt": 9376.635199999999,
+            "averageHoldingHours": 332.2976190476191,
+            "forcedExits": 0,
+            "sharpe": 0.8575730920887834,
+            "sortino": 1.0564163177502794,
+            "monthlyObservations": 3,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byAlpha": {
+          "volume_shock_short": {
+            "trades": 11,
+            "signals": 11,
+            "signalsPerMonth": 0.5978794642857144,
+            "winRate": 0.7272727272727273,
+            "wins": 8,
+            "losses": 3,
+            "avgWinR": 1.6712867704984684,
+            "avgLossR": -0.9998382136068913,
+            "expectancyR": 0.942798138469734,
+            "netExpectancyR": 0.942798138469734,
+            "expectancyR95CI": [
+              0.194392148500121,
+              1.691204128439347
+            ],
+            "grossExpectancyR": 0.9588083690003929,
+            "profitFactor": 4.4574858818924135,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 121.8773405178963,
+            "maxDrawdownPct": 0.01218773405178963,
+            "endingEquity": 10642.244326330445,
+            "netPnlUsdt": 642.2443263304467,
+            "grossPnlUsdt": 650.2562209999999,
+            "fundingPnlUsdt": 6.1713928004467,
+            "feesAndCostsUsdt": 14.183287470000002,
+            "turnoverUsdt": 18911.04996,
+            "averageHoldingHours": 65.60454545454544,
+            "forcedExits": 0,
+            "sharpe": 3.3654608969464865,
+            "sortino": 5.3468906286939575,
+            "monthlyObservations": 7,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "daily_breakout_long": {
+            "trades": 7,
+            "signals": 7,
+            "signalsPerMonth": 0.38046875,
+            "winRate": 0.42857142857142855,
+            "wins": 3,
+            "losses": 4,
+            "avgWinR": 1.9570295210010629,
+            "avgLossR": -1.0360057066529296,
+            "expectancyR": 0.24672367662735284,
+            "netExpectancyR": 0.24672367662735284,
+            "expectancyR95CI": [
+              -0.9385190115990911,
+              1.4319663648537968
+            ],
+            "grossExpectancyR": 0.3012114364786568,
+            "profitFactor": 1.4167606716113512,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 121.37279180542464,
+            "maxDrawdownPct": 0.012137279180542464,
+            "endingEquity": 10111.041948568007,
+            "netPnlUsdt": 111.04194856800592,
+            "grossPnlUsdt": 127.5751400000001,
+            "fundingPnlUsdt": -9.5007150319942,
+            "feesAndCostsUsdt": 7.032476399999998,
+            "turnoverUsdt": 9376.635199999999,
+            "averageHoldingHours": 332.2976190476191,
+            "forcedExits": 0,
+            "sharpe": 0.8575730920887834,
+            "sortino": 1.0564163177502794,
+            "monthlyObservations": 3,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
+        "byYear": {
+          "2025": {
+            "trades": 15,
+            "signals": 15,
+            "signalsPerMonth": 0.8152901785714286,
+            "winRate": 0.5333333333333333,
+            "wins": 8,
+            "losses": 7,
+            "avgWinR": 1.6612986691437202,
+            "avgLossR": -1.0205053524903416,
+            "expectancyR": 0.40979012571449125,
+            "netExpectancyR": 0.40979012571449125,
+            "expectancyR95CI": [
+              -0.2965876629938352,
+              1.1161679144228178
+            ],
+            "grossExpectancyR": 0.43799354262491025,
+            "profitFactor": 1.8604773074602126,
+            "profitFactorStatus": "defined",
+            "maxDrawdownUsdt": 243.25013232332094,
+            "maxDrawdownPct": 0.024325013232332094,
+            "endingEquity": 10378.312787239527,
+            "netPnlUsdt": 378.31278723952715,
+            "grossPnlUsdt": 399.7538409999998,
+            "fundingPnlUsdt": -4.0311117754727,
+            "feesAndCostsUsdt": 17.409941985000003,
+            "turnoverUsdt": 23213.25598,
+            "averageHoldingHours": 187.86888888888888,
+            "forcedExits": 0,
+            "sharpe": 4.964474303124046,
+            "sortino": 133.443516313223,
+            "monthlyObservations": 6,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          },
+          "2026": {
+            "trades": 3,
+            "signals": 3,
+            "signalsPerMonth": 0.16305803571428573,
+            "winRate": 1,
+            "wins": 3,
+            "losses": 0,
+            "avgWinR": 1.9836644579470588,
+            "avgLossR": null,
+            "expectancyR": 1.9836644579470588,
+            "netExpectancyR": 1.9836644579470588,
+            "expectancyR95CI": [
+              1.962277214828943,
+              2.0050517010651747
+            ],
+            "grossExpectancyR": 2.0000000000000036,
+            "profitFactor": null,
+            "profitFactorStatus": "no-losses",
+            "maxDrawdownUsdt": 0,
+            "maxDrawdownPct": 0,
+            "endingEquity": 10374.973487658925,
+            "netPnlUsdt": 374.9734876589255,
+            "grossPnlUsdt": 378.0775200000002,
+            "fundingPnlUsdt": 0.7017895439252,
+            "feesAndCostsUsdt": 3.8058218850000003,
+            "turnoverUsdt": 5074.429180000001,
+            "averageHoldingHours": 76.56666666666666,
+            "forcedExits": 0,
+            "sharpe": 7.515309653288536,
+            "sortino": null,
+            "monthlyObservations": 2,
+            "sampleStatus": "insufficient-sample",
+            "confidenceInterval": {
+              "method": "normal-approximation-95%",
+              "parameter": "net expectancy in R"
+            }
+          }
+        },
         "rawCandidates": 36,
         "rankedSignals": 24,
         "uniqueAlerts": 0,
-        "acceptedSignals": 0,
-        "maxDrawdownPercent": 0,
-        "uniqueTradedSymbols": 0,
-        "top5SymbolContribution": [],
-        "top5TradeContribution": [],
-        "largestLosingTrades": [],
+        "acceptedSignals": 18,
+        "maxDrawdownPercent": 2.4325013232332093,
+        "uniqueTradedSymbols": 15,
+        "top5SymbolContribution": [
+          {
+            "symbol": "BNBUSDT",
+            "trades": 2,
+            "netPnlUsdt": 238.82281590086097,
+            "contributionPct": 20.130525999703423
+          },
+          {
+            "symbol": "CAKEUSDT",
+            "trades": 2,
+            "netPnlUsdt": 209.41878268782796,
+            "contributionPct": 17.652041467736346
+          },
+          {
+            "symbol": "ACTUSDT",
+            "trades": 2,
+            "netPnlUsdt": 180.60344687893434,
+            "contributionPct": 15.223178611802544
+          },
+          {
+            "symbol": "HANAUSDT",
+            "trades": 1,
+            "netPnlUsdt": 126.3785690362751,
+            "contributionPct": 10.652529408438644
+          },
+          {
+            "symbol": "PARTIUSDT",
+            "trades": 1,
+            "netPnlUsdt": 124.72774192000007,
+            "contributionPct": 10.513380148097516
+          }
+        ],
+        "top5TradeContribution": [
+          {
+            "id": "HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
+            "symbol": "HANAUSDT",
+            "netPnlUsdt": 126.3785690362751,
+            "contributionPct": 10.65252940843864
+          },
+          {
+            "id": "PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
+            "symbol": "PARTIUSDT",
+            "netPnlUsdt": 124.72774192000007,
+            "contributionPct": 10.513380148097514
+          },
+          {
+            "id": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
+            "symbol": "1000CATUSDT",
+            "netPnlUsdt": 123.8671767026503,
+            "contributionPct": 10.440842562369141
+          },
+          {
+            "id": "CAKEUSDT|v39_10d|long|1757721600000",
+            "symbol": "CAKEUSDT",
+            "netPnlUsdt": 120.70130090584402,
+            "contributionPct": 10.173988891797332
+          },
+          {
+            "id": "BNBUSDT|v39_20d|long|1758067200000",
+            "symbol": "BNBUSDT",
+            "netPnlUsdt": 120.62590934302094,
+            "contributionPct": 10.167634089347475
+          }
+        ],
+        "largestLosingTrades": [
+          {
+            "id": "BCHUSDT|v39_5d|long|1754697600000",
+            "symbol": "BCHUSDT",
+            "side": "long",
+            "alpha": "daily_breakout_long",
+            "family": "dailyBreakout",
+            "regime": "bull",
+            "signalTime": 1754697600000,
+            "signalPrice": 585.89,
+            "decisionTime": 1754698800000,
+            "fillTime": 1754698800000,
+            "fillPrice": 587.17,
+            "stop": 526.08,
+            "target": 709.35,
+            "exitTime": 1756518780000,
+            "exitPrice": 526.08,
+            "exitReason": "sl",
+            "grossPnlUsdt": -61.21217999999992,
+            "modeledCostUsdt": 0.88251651,
+            "fundingPnlUsdt": -3.1369110987984,
+            "netPnlUsdt": -65.23160760879831,
+            "netR": -1.0656638533180554
+          },
+          {
+            "id": "DOGEUSDT|v39_10d|long|1759795200000",
+            "symbol": "DOGEUSDT",
+            "side": "long",
+            "alpha": "daily_breakout_long",
+            "family": "dailyBreakout",
+            "regime": "bull",
+            "signalTime": 1759795200000,
+            "signalPrice": 0.26601,
+            "decisionTime": 1759796400000,
+            "fillTime": 1759796400000,
+            "fillPrice": 0.26572,
+            "stop": 0.23881,
+            "target": 0.31954,
+            "exitTime": 1760110260000,
+            "exitPrice": 0.23881,
+            "exitReason": "sl",
+            "grossPnlUsdt": -62.64648000000004,
+            "modeledCostUsdt": 0.9278942400000001,
+            "fundingPnlUsdt": -0.3421661845248001,
+            "netPnlUsdt": -63.91654042452484,
+            "netR": -1.0202734523076924
+          },
+          {
+            "id": "ADAUSDT|v39_10d|long|1757808000000",
+            "symbol": "ADAUSDT",
+            "side": "long",
+            "alpha": "daily_breakout_long",
+            "family": "dailyBreakout",
+            "regime": "bull",
+            "signalTime": 1757808000000,
+            "signalPrice": 0.9294,
+            "decisionTime": 1757809200000,
+            "fillTime": 1757809200000,
+            "fillPrice": 0.9278,
+            "stop": 0.8294,
+            "target": 1.1246,
+            "exitTime": 1758520860000,
+            "exitPrice": 0.8294,
+            "exitReason": "sl",
+            "grossPnlUsdt": -61.49999999999996,
+            "modeledCostUsdt": 0.8698125,
+            "fundingPnlUsdt": -0.82302350875,
+            "netPnlUsdt": -63.19283600874996,
+            "netR": -1.0275257887601625
+          },
+          {
+            "id": "AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
+            "symbol": "AUCTIONUSDT",
+            "side": "short",
+            "alpha": "volume_shock_short",
+            "family": "volumeShockReversal",
+            "regime": "bull",
+            "signalTime": 1753718400000,
+            "signalPrice": 10.997,
+            "decisionTime": 1753719600000,
+            "fillTime": 1753719600000,
+            "fillPrice": 10.905,
+            "stop": 11.784,
+            "target": 9.586,
+            "exitTime": 1753747200000,
+            "exitPrice": 11.784,
+            "exitReason": "sl",
+            "grossPnlUsdt": -61.6179000000001,
+            "modeledCostUsdt": 1.1466607500000001,
+            "fundingPnlUsdt": 0.038880965,
+            "netPnlUsdt": -62.7256797850001,
+            "netR": -1.0179782138794085
+          },
+          {
+            "id": "SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
+            "symbol": "SCRUSDT",
+            "side": "short",
+            "alpha": "volume_shock_short",
+            "family": "volumeShockReversal",
+            "regime": "bull",
+            "signalTime": 1755028800000,
+            "signalPrice": 0.3646,
+            "decisionTime": 1755030000000,
+            "fillTime": 1755030000000,
+            "fillPrice": 0.3667,
+            "stop": 0.39765,
+            "target": 0.32028,
+            "exitTime": 1755185700000,
+            "exitPrice": 0.39765,
+            "exitReason": "sl",
+            "grossPnlUsdt": -61.77619999999995,
+            "modeledCostUsdt": 1.0978998000000002,
+            "fundingPnlUsdt": 0.4385054335960001,
+            "netPnlUsdt": -62.435594366403954,
+            "netR": -1.0106739224232633
+          }
+        ],
         "cvar95": {
-          "sampleSize": 0,
-          "netR": null
+          "sampleSize": 1,
+          "netR": -1.0656638533180554
         },
-        "monthly": []
+        "monthly": [
+          {
+            "month": "2025-04",
+            "trades": 1,
+            "netPnlUsdt": 90.214769237384,
+            "wins": 1,
+            "losses": 0
+          },
+          {
+            "month": "2025-06",
+            "trades": 1,
+            "netPnlUsdt": 88.71748178198395,
+            "wins": 1,
+            "losses": 0
+          },
+          {
+            "month": "2025-07",
+            "trades": 2,
+            "netPnlUsdt": 28.044331821999897,
+            "wins": 1,
+            "losses": 1
+          },
+          {
+            "month": "2025-08",
+            "trades": 5,
+            "netPnlUsdt": -1.6367898237778746,
+            "wins": 2,
+            "losses": 3
+          },
+          {
+            "month": "2025-09",
+            "trades": 4,
+            "netPnlUsdt": 116.26362530344113,
+            "wins": 2,
+            "losses": 2
+          },
+          {
+            "month": "2025-10",
+            "trades": 2,
+            "netPnlUsdt": 56.7093689184961,
+            "wins": 1,
+            "losses": 1
+          },
+          {
+            "month": "2026-01",
+            "trades": 2,
+            "netPnlUsdt": 248.59491862265037,
+            "wins": 2,
+            "losses": 0
+          },
+          {
+            "month": "2026-03",
+            "trades": 1,
+            "netPnlUsdt": 126.3785690362751,
+            "wins": 1,
+            "losses": 0
+          }
+        ]
       },
-      "tradeRecords": [],
+      "tradeRecords": [
+        {
+          "id": "ACTUSDT|v59_volume_shock_reversal|short|1742932800000",
+          "symbol": "ACTUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "neutral",
+          "signalTime": 1742932800000,
+          "signalPrice": 0.19375,
+          "decisionTime": 1742934000000,
+          "fillTime": 1742934000000,
+          "fillPrice": 0.19394,
+          "stop": 0.211371,
+          "target": 0.167794,
+          "exitTime": 1743503580000,
+          "exitPrice": 0.167794,
+          "exitReason": "tp",
+          "grossPnlUsdt": 89.994532,
+          "modeledCostUsdt": 1.00131222,
+          "fundingPnlUsdt": 1.221549457384,
+          "netPnlUsdt": 90.214769237384,
+          "netR": 1.5036420889220354
+        },
+        {
+          "id": "CAKEUSDT|v59_volume_shock_reversal|short|1749672000000",
+          "symbol": "CAKEUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "neutral",
+          "signalTime": 1749672000000,
+          "signalPrice": 2.5871,
+          "decisionTime": 1749673200000,
+          "fillTime": 1749673200000,
+          "fillPrice": 2.5986,
+          "stop": 2.7446,
+          "target": 2.3796,
+          "exitTime": 1749778980000,
+          "exitPrice": 2.3796,
+          "exitReason": "tp",
+          "grossPnlUsdt": 90.66599999999994,
+          "modeledCostUsdt": 1.6137305999999998,
+          "fundingPnlUsdt": -0.334787618016,
+          "netPnlUsdt": 88.71748178198395,
+          "netR": 1.4677632483287628
+        },
+        {
+          "id": "BIGTIMEUSDT|v59_volume_shock_reversal|short|1753084800000",
+          "symbol": "BIGTIMEUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bull",
+          "signalTime": 1753084800000,
+          "signalPrice": 0.07084,
+          "decisionTime": 1753086000000,
+          "fillTime": 1753086000000,
+          "fillPrice": 0.07176,
+          "stop": 0.07634,
+          "target": 0.06489,
+          "exitTime": 1753278180000,
+          "exitPrice": 0.06489,
+          "exitReason": "tp",
+          "grossPnlUsdt": 91.60458000000001,
+          "modeledCostUsdt": 1.43527176,
+          "fundingPnlUsdt": 0.600703367,
+          "netPnlUsdt": 90.770011607,
+          "netR": 1.4863341703056765
+        },
+        {
+          "id": "AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
+          "symbol": "AUCTIONUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bull",
+          "signalTime": 1753718400000,
+          "signalPrice": 10.997,
+          "decisionTime": 1753719600000,
+          "fillTime": 1753719600000,
+          "fillPrice": 10.905,
+          "stop": 11.784,
+          "target": 9.586,
+          "exitTime": 1753747200000,
+          "exitPrice": 11.784,
+          "exitReason": "sl",
+          "grossPnlUsdt": -61.6179000000001,
+          "modeledCostUsdt": 1.1466607500000001,
+          "fundingPnlUsdt": 0.038880965,
+          "netPnlUsdt": -62.7256797850001,
+          "netR": -1.0179782138794085
+        },
+        {
+          "id": "ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
+          "symbol": "ACTUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bull",
+          "signalTime": 1754884800000,
+          "signalPrice": 0.04597,
+          "decisionTime": 1754886000000,
+          "fillTime": 1754886000000,
+          "fillPrice": 0.04579,
+          "stop": 0.048388,
+          "target": 0.041893,
+          "exitTime": 1754947920000,
+          "exitPrice": 0.041893,
+          "exitReason": "tp",
+          "grossPnlUsdt": 91.86008399999994,
+          "modeledCostUsdt": 1.61904282,
+          "fundingPnlUsdt": 0.1476364615504,
+          "netPnlUsdt": 90.38867764155034,
+          "netR": 1.4759731382601975
+        },
+        {
+          "id": "SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
+          "symbol": "SCRUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bull",
+          "signalTime": 1755028800000,
+          "signalPrice": 0.3646,
+          "decisionTime": 1755030000000,
+          "fillTime": 1755030000000,
+          "fillPrice": 0.3667,
+          "stop": 0.39765,
+          "target": 0.32028,
+          "exitTime": 1755185700000,
+          "exitPrice": 0.39765,
+          "exitReason": "sl",
+          "grossPnlUsdt": -61.77619999999995,
+          "modeledCostUsdt": 1.0978998000000002,
+          "fundingPnlUsdt": 0.4385054335960001,
+          "netPnlUsdt": -62.435594366403954,
+          "netR": -1.0106739224232633
+        },
+        {
+          "id": "ALTUSDT|v59_volume_shock_reversal|short|1755057600000",
+          "symbol": "ALTUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bull",
+          "signalTime": 1755057600000,
+          "signalPrice": 0.03808,
+          "decisionTime": 1755058800000,
+          "fillTime": 1755058800000,
+          "fillPrice": 0.03826,
+          "stop": 0.04117,
+          "target": 0.033895,
+          "exitTime": 1755174900000,
+          "exitPrice": 0.033895,
+          "exitReason": "tp",
+          "grossPnlUsdt": 92.67331500000002,
+          "modeledCostUsdt": 1.2184470900000002,
+          "fundingPnlUsdt": 0.3280507965000001,
+          "netPnlUsdt": 91.78291870650001,
+          "netR": 1.4855881443298993
+        },
+        {
+          "id": "BTCUSDT|v39_10d|long|1755129600000",
+          "symbol": "BTCUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1755129600000,
+          "signalPrice": 123323.9,
+          "decisionTime": 1755130800000,
+          "fillTime": 1755130800000,
+          "fillPrice": 123950.9,
+          "stop": 114871.5,
+          "target": 142109.7,
+          "exitTime": 1755499440000,
+          "exitPrice": 114871.5,
+          "exitReason": "sl",
+          "grossPnlUsdt": -54.47639999999997,
+          "modeledCostUsdt": 1.1155580999999999,
+          "fundingPnlUsdt": -0.5492260966260001,
+          "netPnlUsdt": -56.14118419662597,
+          "netR": -1.030559732225808
+        },
+        {
+          "id": "BCHUSDT|v39_5d|long|1754697600000",
+          "symbol": "BCHUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1754697600000,
+          "signalPrice": 585.89,
+          "decisionTime": 1754698800000,
+          "fillTime": 1754698800000,
+          "fillPrice": 587.17,
+          "stop": 526.08,
+          "target": 709.35,
+          "exitTime": 1756518780000,
+          "exitPrice": 526.08,
+          "exitReason": "sl",
+          "grossPnlUsdt": -61.21217999999992,
+          "modeledCostUsdt": 0.88251651,
+          "fundingPnlUsdt": -3.1369110987984,
+          "netPnlUsdt": -65.23160760879831,
+          "netR": -1.0656638533180554
+        },
+        {
+          "id": "AEROUSDT|v59_volume_shock_reversal|short|1757088000000",
+          "symbol": "AEROUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "neutral",
+          "signalTime": 1757088000000,
+          "signalPrice": 1.1694,
+          "decisionTime": 1757089200000,
+          "fillTime": 1757089200000,
+          "fillPrice": 1.1673,
+          "stop": 1.2534,
+          "target": 1.0381,
+          "exitTime": 1757631360000,
+          "exitPrice": 1.2534,
+          "exitReason": "sl",
+          "grossPnlUsdt": -61.22571000000005,
+          "modeledCostUsdt": 1.2451005450000001,
+          "fundingPnlUsdt": 3.0290643935070998,
+          "netPnlUsdt": -59.44174615149295,
+          "netR": -0.9708625045180024
+        },
+        {
+          "id": "BNBUSDT|v39_5d|long|1754611200000",
+          "symbol": "BNBUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1754611200000,
+          "signalPrice": 788.99,
+          "decisionTime": 1754612400000,
+          "fillTime": 1754612400000,
+          "fillPrice": 784.39,
+          "stop": 715.23,
+          "target": 922.71,
+          "exitTime": 1757701800000,
+          "exitPrice": 922.71,
+          "exitReason": "tp",
+          "grossPnlUsdt": 121.72160000000004,
+          "modeledCostUsdt": 1.0353948,
+          "fundingPnlUsdt": -2.489298642159999,
+          "netPnlUsdt": 118.19690655784004,
+          "netR": 1.9420859824031247
+        },
+        {
+          "id": "CAKEUSDT|v39_10d|long|1757721600000",
+          "symbol": "CAKEUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1757721600000,
+          "signalPrice": 2.6113,
+          "decisionTime": 1757722800000,
+          "fillTime": 1757722800000,
+          "fillPrice": 2.605,
+          "stop": 2.3451,
+          "target": 3.1248,
+          "exitTime": 1758415380000,
+          "exitPrice": 3.1248,
+          "exitReason": "tp",
+          "grossPnlUsdt": 122.67280000000001,
+          "modeledCostUsdt": 0.92217,
+          "fundingPnlUsdt": -1.0493290941560003,
+          "netPnlUsdt": 120.70130090584402,
+          "netR": 1.9678576001500578
+        },
+        {
+          "id": "ADAUSDT|v39_10d|long|1757808000000",
+          "symbol": "ADAUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1757808000000,
+          "signalPrice": 0.9294,
+          "decisionTime": 1757809200000,
+          "fillTime": 1757809200000,
+          "fillPrice": 0.9278,
+          "stop": 0.8294,
+          "target": 1.1246,
+          "exitTime": 1758520860000,
+          "exitPrice": 0.8294,
+          "exitReason": "sl",
+          "grossPnlUsdt": -61.49999999999996,
+          "modeledCostUsdt": 0.8698125,
+          "fundingPnlUsdt": -0.82302350875,
+          "netPnlUsdt": -63.19283600874996,
+          "netR": -1.0275257887601625
+        },
+        {
+          "id": "BNBUSDT|v39_20d|long|1758067200000",
+          "symbol": "BNBUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1758067200000,
+          "signalPrice": 956.26,
+          "decisionTime": 1758068400000,
+          "fillTime": 1758068400000,
+          "fillPrice": 958.15,
+          "stop": 889.04,
+          "target": 1096.37,
+          "exitTime": 1759446180000,
+          "exitPrice": 1096.37,
+          "exitReason": "tp",
+          "grossPnlUsdt": 123.01579999999993,
+          "modeledCostUsdt": 1.27913025,
+          "fundingPnlUsdt": -1.1107604069790002,
+          "netPnlUsdt": 120.62590934302094,
+          "netR": 1.9611449804500058
+        },
+        {
+          "id": "DOGEUSDT|v39_10d|long|1759795200000",
+          "symbol": "DOGEUSDT",
+          "side": "long",
+          "alpha": "daily_breakout_long",
+          "family": "dailyBreakout",
+          "regime": "bull",
+          "signalTime": 1759795200000,
+          "signalPrice": 0.26601,
+          "decisionTime": 1759796400000,
+          "fillTime": 1759796400000,
+          "fillPrice": 0.26572,
+          "stop": 0.23881,
+          "target": 0.31954,
+          "exitTime": 1760110260000,
+          "exitPrice": 0.23881,
+          "exitReason": "sl",
+          "grossPnlUsdt": -62.64648000000004,
+          "modeledCostUsdt": 0.9278942400000001,
+          "fundingPnlUsdt": -0.3421661845248001,
+          "netPnlUsdt": -63.91654042452484,
+          "netR": -1.0202734523076924
+        },
+        {
+          "id": "PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
+          "symbol": "PARTIUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "neutral",
+          "signalTime": 1768363200000,
+          "signalPrice": 0.10724,
+          "decisionTime": 1768364400000,
+          "fillTime": 1768364400000,
+          "fillPrice": 0.10738,
+          "stop": 0.1163,
+          "target": 0.08954,
+          "exitTime": 1768915560000,
+          "exitPrice": 0.08954,
+          "exitReason": "tp",
+          "grossPnlUsdt": 124.52320000000006,
+          "modeledCostUsdt": 1.1242686,
+          "fundingPnlUsdt": 1.3288105199999998,
+          "netPnlUsdt": 124.72774192000007,
+          "netR": 2.003285201793724
+        },
+        {
+          "id": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
+          "symbol": "1000CATUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bear",
+          "signalTime": 1769601600000,
+          "signalPrice": 0.002651,
+          "decisionTime": 1769602800000,
+          "fillTime": 1769602800000,
+          "fillPrice": 0.002631,
+          "stop": 0.002815,
+          "target": 0.002263,
+          "exitTime": 1769865300000,
+          "exitPrice": 0.002263,
+          "exitReason": "tp",
+          "grossPnlUsdt": 126.03632000000009,
+          "modeledCostUsdt": 1.3516367850000002,
+          "fundingPnlUsdt": -0.8175065123497999,
+          "netPnlUsdt": 123.8671767026503,
+          "netR": 1.9655790759782656
+        },
+        {
+          "id": "HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
+          "symbol": "HANAUSDT",
+          "side": "short",
+          "alpha": "volume_shock_short",
+          "family": "volumeShockReversal",
+          "regime": "bear",
+          "signalTime": 1772884800000,
+          "signalPrice": 0.04424,
+          "decisionTime": 1772886000000,
+          "fillTime": 1772886000000,
+          "fillPrice": 0.04422,
+          "stop": 0.0474,
+          "target": 0.03786,
+          "exitTime": 1772899260000,
+          "exitPrice": 0.03786,
+          "exitReason": "tp",
+          "grossPnlUsdt": 127.51800000000009,
+          "modeledCostUsdt": 1.3299165000000002,
+          "fundingPnlUsdt": 0.19048553627500003,
+          "netPnlUsdt": 126.3785690362751,
+          "netR": 1.9821290960691869
+        }
+      ],
       "signalObservations": [
         {
           "id": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
@@ -3402,361 +5017,7 @@
             "timeToSlHours": 43.583333333333336
           }
         }
-      ],
-      "rejectionBreakdown": {
-        "total": 24,
-        "categories": {
-          "fill unavailable": 0,
-          "slippage": 0,
-          "stop-risk": 0,
-          "cooldown": 0,
-          "position cap": 0,
-          "quantity/minQty": 0,
-          "symbol already open": 0,
-          "other": 24
-        },
-        "byReason": {
-          "invalid-market-tick": 24
-        },
-        "signals": [
-          {
-            "signalId": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
-            "symbol": "1000CATUSDT",
-            "side": "short",
-            "signalTime": 1769601600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1769602800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000",
-            "symbol": "1MBABYDOGEUSDT",
-            "side": "short",
-            "signalTime": 1753718400000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1753719600000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1742932800000",
-            "symbol": "ACTUSDT",
-            "side": "short",
-            "signalTime": 1742932800000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1742934000000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
-            "symbol": "ACTUSDT",
-            "side": "short",
-            "signalTime": 1754884800000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1754886000000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "ADAUSDT|v39_10d|long|1757808000000",
-            "symbol": "ADAUSDT",
-            "side": "long",
-            "signalTime": 1757808000000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1757809200000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "AEROUSDT|v59_volume_shock_reversal|short|1757088000000",
-            "symbol": "AEROUSDT",
-            "side": "short",
-            "signalTime": 1757088000000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1757089200000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "ALTUSDT|v59_volume_shock_reversal|short|1755057600000",
-            "symbol": "ALTUSDT",
-            "side": "short",
-            "signalTime": 1755057600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1755058800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
-            "symbol": "AUCTIONUSDT",
-            "side": "short",
-            "signalTime": 1753718400000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1753719600000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BCHUSDT|v39_5d|long|1754697600000",
-            "symbol": "BCHUSDT",
-            "side": "long",
-            "signalTime": 1754697600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1754698800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BIGTIMEUSDT|v59_volume_shock_reversal|short|1753084800000",
-            "symbol": "BIGTIMEUSDT",
-            "side": "short",
-            "signalTime": 1753084800000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1753086000000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_5d|long|1754611200000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1754611200000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1754612400000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_5d|long|1754697600000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1754697600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1754698800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_10d|long|1755043200000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1755043200000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1755044400000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_5d|long|1755734400000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1755734400000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1755735600000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_10d|long|1757808000000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1757808000000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1757809200000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_20d|long|1758067200000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1758067200000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1758068400000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BNBUSDT|v39_20d|long|1758153600000",
-            "symbol": "BNBUSDT",
-            "side": "long",
-            "signalTime": 1758153600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1758154800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "BTCUSDT|v39_10d|long|1755129600000",
-            "symbol": "BTCUSDT",
-            "side": "long",
-            "signalTime": 1755129600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1755130800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "CAKEUSDT|v59_volume_shock_reversal|short|1749672000000",
-            "symbol": "CAKEUSDT",
-            "side": "short",
-            "signalTime": 1749672000000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1749673200000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "CAKEUSDT|v39_10d|long|1757721600000",
-            "symbol": "CAKEUSDT",
-            "side": "long",
-            "signalTime": 1757721600000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1757722800000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "DOGEUSDT|v39_10d|long|1759795200000",
-            "symbol": "DOGEUSDT",
-            "side": "long",
-            "signalTime": 1759795200000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1759796400000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
-            "symbol": "HANAUSDT",
-            "side": "short",
-            "signalTime": 1772884800000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1772886000000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
-            "symbol": "PARTIUSDT",
-            "side": "short",
-            "signalTime": 1768363200000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1768364400000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          },
-          {
-            "signalId": "SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
-            "symbol": "SCRUSDT",
-            "side": "short",
-            "signalTime": 1755028800000,
-            "stage": "accepted signal",
-            "reason": "other",
-            "rawReason": "invalid-market-tick",
-            "firstFailureTimestamp": 1755030000000,
-            "gapStart": null,
-            "gapEnd": null,
-            "missingDurationMs": null,
-            "boundary": null
-          }
-        ]
-      }
+      ]
     },
     "v8": {
       "name": "V8 Shadow",
@@ -3764,7 +5025,334 @@
       "rankedSignals": 32,
       "uniqueAlerts": 32,
       "simulatedAcceptedSignals": 24,
+      "rejectionBreakdown": {
+        "total": 8,
+        "categories": {
+          "fill unavailable": 1,
+          "slippage": 0,
+          "stop-risk": 0,
+          "cooldown": 0,
+          "position cap": 0,
+          "quantity/minQty": 0,
+          "symbol already open": 7,
+          "other": 0
+        },
+        "byReason": {
+          "fill-stop-risk-out-of-bounds": 1,
+          "symbol-already-open": 7
+        },
+        "signals": [
+          {
+            "signalId": "V8|reversal|1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000",
+            "symbol": "1MBABYDOGEUSDT",
+            "side": "short",
+            "signalTime": 1753718400000,
+            "stage": "accepted signal",
+            "reason": "fill unavailable",
+            "rawReason": "fill-stop-risk-out-of-bounds",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bull|BNBUSDT|v39_5d|long|1754697600000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1754697600000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bull|BNBUSDT|v39_10d|long|1755043200000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1755043200000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bull|BNBUSDT|v39_5d|long|1755734400000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1755734400000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bull|BNBUSDT|v39_20d|long|1758067200000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1758067200000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bull|BNBUSDT|v39_20d|long|1758153600000",
+            "symbol": "BNBUSDT",
+            "side": "long",
+            "signalTime": 1758153600000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bear|BTCUSDT|1769731200000",
+            "symbol": "BTCUSDT",
+            "side": "short",
+            "signalTime": 1769731200000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          },
+          {
+            "signalId": "V8|bear|BTCUSDT|1780358400000",
+            "symbol": "BTCUSDT",
+            "side": "short",
+            "signalTime": 1780358400000,
+            "stage": "accepted signal",
+            "reason": "symbol already open",
+            "rawReason": "symbol-already-open",
+            "firstFailureTimestamp": null,
+            "gapStart": null,
+            "gapEnd": null,
+            "missingDurationMs": null,
+            "boundary": null
+          }
+        ]
+      },
       "closedSimulatedTrades": 24,
+      "notifiableAlerts": 24,
+      "notifiableAlertRecords": [
+        {
+          "key": "1000CATUSDT|short|1769601600000",
+          "symbol": "1000CATUSDT",
+          "side": "short",
+          "signalTime": 1769601600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "ACTUSDT|short|1742932800000",
+          "symbol": "ACTUSDT",
+          "side": "short",
+          "signalTime": 1742932800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "ACTUSDT|short|1754884800000",
+          "symbol": "ACTUSDT",
+          "side": "short",
+          "signalTime": 1754884800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "ADAUSDT|long|1757808000000",
+          "symbol": "ADAUSDT",
+          "side": "long",
+          "signalTime": 1757808000000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "ADAUSDT|short|1780012800000",
+          "symbol": "ADAUSDT",
+          "side": "short",
+          "signalTime": 1780012800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "AEROUSDT|short|1757088000000",
+          "symbol": "AEROUSDT",
+          "side": "short",
+          "signalTime": 1757088000000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "ALTUSDT|short|1755057600000",
+          "symbol": "ALTUSDT",
+          "side": "short",
+          "signalTime": 1755057600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "AUCTIONUSDT|short|1753718400000",
+          "symbol": "AUCTIONUSDT",
+          "side": "short",
+          "signalTime": 1753718400000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BCHUSDT|long|1754697600000",
+          "symbol": "BCHUSDT",
+          "side": "long",
+          "signalTime": 1754697600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BIGTIMEUSDT|short|1753084800000",
+          "symbol": "BIGTIMEUSDT",
+          "side": "short",
+          "signalTime": 1753084800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BNBUSDT|long|1754611200000",
+          "symbol": "BNBUSDT",
+          "side": "long",
+          "signalTime": 1754611200000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BNBUSDT|long|1757808000000",
+          "symbol": "BNBUSDT",
+          "side": "long",
+          "signalTime": 1757808000000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BTCUSDT|long|1755129600000",
+          "symbol": "BTCUSDT",
+          "side": "long",
+          "signalTime": 1755129600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BTCUSDT|short|1769385600000",
+          "symbol": "BTCUSDT",
+          "side": "short",
+          "signalTime": 1769385600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "BTCUSDT|short|1780012800000",
+          "symbol": "BTCUSDT",
+          "side": "short",
+          "signalTime": 1780012800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "CAKEUSDT|long|1757721600000",
+          "symbol": "CAKEUSDT",
+          "side": "long",
+          "signalTime": 1757721600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "CAKEUSDT|short|1749672000000",
+          "symbol": "CAKEUSDT",
+          "side": "short",
+          "signalTime": 1749672000000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "DOGEUSDT|long|1759795200000",
+          "symbol": "DOGEUSDT",
+          "side": "long",
+          "signalTime": 1759795200000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "DOGEUSDT|short|1767225600000",
+          "symbol": "DOGEUSDT",
+          "side": "short",
+          "signalTime": 1767225600000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "DOGEUSDT|short|1769731200000",
+          "symbol": "DOGEUSDT",
+          "side": "short",
+          "signalTime": 1769731200000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "ETCUSDT|short|1769731200000",
+          "symbol": "ETCUSDT",
+          "side": "short",
+          "signalTime": 1769731200000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "HANAUSDT|short|1772884800000",
+          "symbol": "HANAUSDT",
+          "side": "short",
+          "signalTime": 1772884800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "PARTIUSDT|short|1768363200000",
+          "symbol": "PARTIUSDT",
+          "side": "short",
+          "signalTime": 1768363200000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        },
+        {
+          "key": "SCRUSDT|short|1755028800000",
+          "symbol": "SCRUSDT",
+          "side": "short",
+          "signalTime": 1755028800000,
+          "sourceLabel": "V8 SHADOW / EXPERIMENTAL",
+          "emailSent": null
+        }
+      ],
+      "notifiableSource": "closed-trades-fallback",
       "uniqueSignalSymbols": 17,
       "observedAlphaCoverage": [
         "v8_bear_trend_short",
@@ -6416,56 +8004,56 @@
         "winRate": 0.6666666666666666,
         "wins": 16,
         "losses": 8,
-        "avgWinR": 1.8239829468465802,
-        "avgLossR": -1.0192396584778312,
-        "expectancyR": 0.8762420784051098,
-        "netExpectancyR": 0.8762420784051098,
+        "avgWinR": 1.8239801467935752,
+        "avgLossR": -1.0192406093651765,
+        "expectancyR": 0.876239894740658,
+        "netExpectancyR": 0.876239894740658,
         "expectancyR95CI": [
-          0.32310270387720375,
-          1.4293814529330158
+          0.3231008904393391,
+          1.429378899041977
         ],
-        "grossExpectancyR": 0.9434435693155496,
-        "profitFactor": 3.5791051332727406,
+        "grossExpectancyR": 0.9434776963468906,
+        "profitFactor": 3.579096299802306,
         "profitFactorStatus": "defined",
-        "maxDrawdownUsdt": 170.4461671425779,
-        "maxDrawdownPct": 0.01704461671425779,
-        "endingEquity": 10976.586150567296,
-        "netPnlUsdt": 976.5861505672945,
-        "grossPnlUsdt": 998.8448658511435,
-        "fundingPnlUsdt": -1.7626804945148926,
-        "feesAndCostsUsdt": 20.49603478933421,
-        "turnoverUsdt": 27328.04638577894,
+        "maxDrawdownUsdt": 170.4554016410675,
+        "maxDrawdownPct": 0.01704554016410675,
+        "endingEquity": 10976.717215773982,
+        "netPnlUsdt": 976.7172157739858,
+        "grossPnlUsdt": 998.9776409541273,
+        "fundingPnlUsdt": -1.7611641188712073,
+        "feesAndCostsUsdt": 20.499261061270257,
+        "turnoverUsdt": 27332.348081693668,
         "averageHoldingHours": 150.75694444444443,
         "forcedExits": 0,
-        "sharpe": 4.032341548161308,
-        "sortino": 8.029330412563052,
+        "sharpe": 4.031777737772829,
+        "sortino": 8.0296099791615,
         "monthlyObservations": 10,
         "equityPath": [
           10000,
-          10057.803133794963,
-          10148.607412764632,
-          10230.268813283275,
-          10185.624889454937,
-          10277.189079098336,
-          10346.554728904384,
-          10304.038158062976,
-          10245.89562059872,
-          10203.945336951674,
-          10176.108561761806,
-          10266.32278777311,
-          10339.468169318647,
-          10441.305279146258,
-          10401.31925524478,
-          10359.186306571897,
-          10320.508337565918,
-          10365.167662715032,
-          10453.959249416728,
-          10565.860065740966,
-          10634.831237378672,
-          10694.668766303908,
-          10782.471868049905,
-          10876.527833898608,
-          10976.586150567296
+          10057.801541833496,
+          10148.58265640872,
+          10230.238762984194,
+          10185.600127624106,
+          10277.147616032456,
+          10346.501830529269,
+          10303.982759003115,
+          10245.840672876458,
+          10203.888650436254,
+          10176.046428888201,
+          10266.262612533885,
+          10339.414869594673,
+          10441.24686604132,
+          10401.250854826456,
+          10359.113718732968,
+          10320.422976002337,
+          10365.095065052834,
+          10453.803279856522,
+          10565.704328944694,
+          10634.656054725167,
+          10694.510062756757,
+          10782.347388656466,
+          10876.660769078619,
+          10976.717215773982
         ],
         "sampleStatus": "insufficient-sample",
         "confidenceInterval": {
@@ -6480,29 +8068,29 @@
             "winRate": 0.7647058823529411,
             "wins": 13,
             "losses": 4,
-            "avgWinR": 1.7925761780852492,
-            "avgLossR": -1.002476500479105,
-            "expectancyR": 1.1349167243054012,
-            "netExpectancyR": 1.1349167243054012,
+            "avgWinR": 1.7925729907324646,
+            "avgLossR": -1.0024755120774234,
+            "expectancyR": 1.134914519483079,
+            "netExpectancyR": 1.134914519483079,
             "expectancyR95CI": [
-              0.5445934904602729,
-              1.7252399581505296
+              0.5445921994272577,
+              1.7252368395389004
             ],
-            "grossExpectancyR": 1.209793367658077,
-            "profitFactor": 5.811480444671521,
+            "grossExpectancyR": 1.209846226866226,
+            "profitFactor": 5.811475841247847,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 109.0313150372549,
-            "maxDrawdownPct": 0.01090313150372549,
-            "endingEquity": 10893.601226868508,
-            "netPnlUsdt": 893.6012268685073,
-            "grossPnlUsdt": 904.2225405583007,
-            "fundingPnlUsdt": 4.670314329318063,
-            "feesAndCostsUsdt": 15.291628019111487,
-            "turnoverUsdt": 20388.83735881531,
+            "maxDrawdownUsdt": 109.05203580483794,
+            "maxDrawdownPct": 0.010905203580483793,
+            "endingEquity": 10893.744034496076,
+            "netPnlUsdt": 893.7440344960764,
+            "grossPnlUsdt": 904.3659591120861,
+            "fundingPnlUsdt": 4.672448835498816,
+            "feesAndCostsUsdt": 15.294373451508628,
+            "turnoverUsdt": 20392.49793534484,
             "averageHoldingHours": 88.53431372549018,
             "forcedExits": 0,
-            "sharpe": 4.652389609175672,
-            "sortino": 12.355859119497627,
+            "sharpe": 4.651513373922657,
+            "sortino": 12.355416347610715,
             "monthlyObservations": 9,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6517,29 +8105,29 @@
             "winRate": 0.42857142857142855,
             "wins": 3,
             "losses": 4,
-            "avgWinR": 1.9600789448123477,
-            "avgLossR": -1.036002816476557,
-            "expectancyR": 0.24803222407583075,
-            "netExpectancyR": 0.24803222407583075,
+            "avgWinR": 1.9600778230583886,
+            "avgLossR": -1.0360057066529296,
+            "expectancyR": 0.2480300917947782,
+            "netExpectancyR": 0.2480300917947782,
             "expectancyR95CI": [
-              -0.9384218178651669,
-              1.4344862660168285
+              -0.938424650678124,
+              1.4344848342676804
             ],
-            "grossExpectancyR": 0.3039552886933709,
-            "profitFactor": 1.4189722124587736,
+            "grossExpectancyR": 0.3039049455610988,
+            "profitFactor": 1.4189674418330913,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 100.09282111130233,
-            "maxDrawdownPct": 0.010009282111130233,
-            "endingEquity": 10082.984923698788,
-            "netPnlUsdt": 82.98492369878713,
-            "grossPnlUsdt": 94.62232529284279,
-            "fundingPnlUsdt": -6.432994823832956,
-            "feesAndCostsUsdt": 5.20440677022272,
-            "turnoverUsdt": 6939.2090269636265,
+            "maxDrawdownUsdt": 100.09410856686009,
+            "maxDrawdownPct": 0.010009410856686008,
+            "endingEquity": 10082.973181277906,
+            "netPnlUsdt": 82.97318127790945,
+            "grossPnlUsdt": 94.6116818420411,
+            "fundingPnlUsdt": -6.433612954370024,
+            "feesAndCostsUsdt": 5.204887609761624,
+            "turnoverUsdt": 6939.85014634883,
             "averageHoldingHours": 301.86904761904765,
             "forcedExits": 0,
-            "sharpe": 0.5522299860170019,
-            "sortino": 1.2478358406317018,
+            "sharpe": 0.5521590100990583,
+            "sortino": 1.2476269743543176,
             "monthlyObservations": 3,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6556,29 +8144,29 @@
             "winRate": 0.75,
             "wins": 3,
             "losses": 1,
-            "avgWinR": 1.65823662833301,
-            "avgLossR": -0.970868547410173,
-            "expectancyR": 1.0009603343972144,
-            "netExpectancyR": 1.0009603343972144,
+            "avgWinR": 1.6582301796815073,
+            "avgLossR": -0.9708625045180024,
+            "expectancyR": 1.0009570086316297,
+            "netExpectancyR": 1.0009570086316297,
             "expectancyR95CI": [
-              -0.3093815466646348,
-              2.3113022154590634
+              -0.3093796293065445,
+              2.311293646569804
             ],
-            "grossExpectancyR": 1.0998377903242724,
-            "profitFactor": 5.123978831397154,
+            "grossExpectancyR": 1.0997444563676873,
+            "profitFactor": 5.123990797764173,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 27.836775189867694,
-            "maxDrawdownPct": 0.0027836775189867694,
-            "endingEquity": 10165.429962723878,
-            "netPnlUsdt": 165.42996272387694,
-            "grossPnlUsdt": 166.37526073833487,
-            "fundingPnlUsdt": 2.333784361070801,
-            "feesAndCostsUsdt": 3.2790823755287373,
-            "turnoverUsdt": 4372.109834038316,
+            "maxDrawdownUsdt": 27.842221548053203,
+            "maxDrawdownPct": 0.0027842221548053203,
+            "endingEquity": 10165.412523911164,
+            "netPnlUsdt": 165.4125239111622,
+            "grossPnlUsdt": 166.3563998090495,
+            "fundingPnlUsdt": 2.3348058234575806,
+            "feesAndCostsUsdt": 3.278681721344865,
+            "turnoverUsdt": 4371.575628459819,
             "averageHoldingHours": 122.82499999999999,
             "forcedExits": 0,
-            "sharpe": 2.8626237491797917,
-            "sortino": 5.146664773085273,
+            "sharpe": 2.86260857976395,
+            "sortino": 5.145115577933529,
             "monthlyObservations": 4,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6593,29 +8181,29 @@
             "winRate": 0.5,
             "wins": 6,
             "losses": 6,
-            "avgWinR": 1.7213541149182034,
-            "avgLossR": -1.0287774632424902,
-            "expectancyR": 0.34628832583785646,
-            "netExpectancyR": 0.34628832583785646,
+            "avgWinR": 1.7213548203451567,
+            "avgLossR": -1.0287791604857317,
+            "expectancyR": 0.34628782992971247,
+            "netExpectancyR": 0.34628782992971247,
             "expectancyR95CI": [
-              -0.47246714751834334,
-              1.1650437991940563
+              -0.4724682578031764,
+              1.1650439176626013
             ],
-            "grossExpectancyR": 0.45321209286700254,
-            "profitFactor": 1.6732035609458795,
+            "grossExpectancyR": 0.453143967261313,
+            "profitFactor": 1.6732014862474756,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 142.6093919527102,
-            "maxDrawdownPct": 0.014260939195271022,
-            "endingEquity": 10238.415668997133,
-            "netPnlUsdt": 238.4156689971312,
-            "grossPnlUsdt": 254.20532198489687,
-            "fundingPnlUsdt": -5.168719519504521,
-            "feesAndCostsUsdt": 10.620933468261196,
-            "turnoverUsdt": 14161.244624348257,
+            "maxDrawdownUsdt": 142.6131800930143,
+            "maxDrawdownPct": 0.014261318009301431,
+            "endingEquity": 10238.3732838723,
+            "netPnlUsdt": 238.37328387230485,
+            "grossPnlUsdt": 254.16304180398626,
+            "fundingPnlUsdt": -5.169514078007966,
+            "feesAndCostsUsdt": 10.6202438536735,
+            "turnoverUsdt": 14160.325138231337,
             "averageHoldingHours": 188.9027777777778,
             "forcedExits": 0,
-            "sharpe": 1.788330645673121,
-            "sortino": 4.900535863626094,
+            "sharpe": 1.7879811334001485,
+            "sortino": 4.8991777457045185,
             "monthlyObservations": 4,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6630,28 +8218,28 @@
             "winRate": 0.875,
             "wins": 7,
             "losses": 1,
-            "avgWinR": 1.9829846535767195,
-            "avgLossR": -1.0103839409575333,
-            "expectancyR": 1.6088135792599376,
-            "netExpectancyR": 1.6088135792599376,
+            "avgWinR": 1.9829804125116777,
+            "avgLossR": -1.010387407489019,
+            "expectancyR": 1.6088094350115907,
+            "netExpectancyR": 1.6088094350115907,
             "expectancyR95CI": [
-              0.8754138463731516,
-              2.3422133121467237
+              0.8754099318883118,
+              2.3422089381348696
             ],
-            "grossExpectancyR": 1.6686179225642641,
-            "profitFactor": 13.738235548243392,
+            "grossExpectancyR": 1.6686202760908753,
+            "profitFactor": 13.738159031571861,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 38.67796900597932,
-            "maxDrawdownPct": 0.003867796900597932,
-            "endingEquity": 10572.740518846285,
-            "netPnlUsdt": 572.7405188462862,
-            "grossPnlUsdt": 578.2642831279117,
-            "fundingPnlUsdt": 1.0722546639188273,
-            "feesAndCostsUsdt": 6.596018945544277,
-            "turnoverUsdt": 8794.691927392369,
+            "maxDrawdownUsdt": 38.69074273063052,
+            "maxDrawdownPct": 0.003869074273063052,
+            "endingEquity": 10572.931407990518,
+            "netPnlUsdt": 572.9314079905188,
+            "grossPnlUsdt": 578.4581993410915,
+            "fundingPnlUsdt": 1.0735441356791784,
+            "feesAndCostsUsdt": 6.600335486251883,
+            "turnoverUsdt": 8800.44731500251,
             "averageHoldingHours": 107.50416666666666,
             "forcedExits": 0,
-            "sharpe": 10.891260859621642,
+            "sharpe": 10.8784875901653,
             "sortino": null,
             "monthlyObservations": 4,
             "sampleStatus": "insufficient-sample",
@@ -6669,29 +8257,29 @@
             "winRate": 0.7272727272727273,
             "wins": 8,
             "losses": 3,
-            "avgWinR": 1.6712850655185734,
-            "avgLossR": -0.9998406869862957,
-            "expectancyR": 0.9427962239263362,
-            "netExpectancyR": 0.9427962239263362,
+            "avgWinR": 1.6712867704984684,
+            "avgLossR": -0.9998382136068914,
+            "expectancyR": 0.9427981384697337,
+            "netExpectancyR": 0.9427981384697337,
             "expectancyR95CI": [
-              0.19439046670607119,
-              1.6912019811466013
+              0.19439214850012065,
+              1.6912041284393466
             ],
-            "grossExpectancyR": 1.029700588889016,
-            "profitFactor": 4.45747030774442,
+            "grossExpectancyR": 1.0296093200219678,
+            "profitFactor": 4.457485881892413,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 70.35334603127558,
-            "maxDrawdownPct": 0.007035334603127558,
-            "endingEquity": 10497.455396469915,
-            "netPnlUsdt": 497.4553964699146,
-            "grossPnlUsdt": 504.9006609568421,
-            "fundingPnlUsdt": 3.1437688393382963,
-            "feesAndCostsUsdt": 10.589033326265806,
-            "turnoverUsdt": 14118.711101687739,
+            "maxDrawdownUsdt": 70.36129307420742,
+            "maxDrawdownPct": 0.007036129307420742,
+            "endingEquity": 10497.358167208955,
+            "netPnlUsdt": 497.358167208954,
+            "grossPnlUsdt": 504.7986879103037,
+            "fundingPnlUsdt": 3.145836361113581,
+            "feesAndCostsUsdt": 10.586357062463259,
+            "turnoverUsdt": 14115.142749951016,
             "averageHoldingHours": 65.60454545454544,
             "forcedExits": 0,
-            "sharpe": 4.5045279193845085,
-            "sortino": 8.84357386235917,
+            "sharpe": 4.5049490783399335,
+            "sortino": 8.840115759117309,
             "monthlyObservations": 7,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6706,29 +8294,29 @@
             "winRate": 0.42857142857142855,
             "wins": 3,
             "losses": 4,
-            "avgWinR": 1.9600789448123477,
-            "avgLossR": -1.036002816476557,
-            "expectancyR": 0.24803222407583075,
-            "netExpectancyR": 0.24803222407583075,
+            "avgWinR": 1.9600778230583886,
+            "avgLossR": -1.0360057066529296,
+            "expectancyR": 0.2480300917947782,
+            "netExpectancyR": 0.2480300917947782,
             "expectancyR95CI": [
-              -0.9384218178651669,
-              1.4344862660168285
+              -0.938424650678124,
+              1.4344848342676804
             ],
-            "grossExpectancyR": 0.3039552886933709,
-            "profitFactor": 1.4189722124587736,
+            "grossExpectancyR": 0.3039049455610988,
+            "profitFactor": 1.4189674418330913,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 100.09282111130233,
-            "maxDrawdownPct": 0.010009282111130233,
-            "endingEquity": 10082.984923698788,
-            "netPnlUsdt": 82.98492369878713,
-            "grossPnlUsdt": 94.62232529284279,
-            "fundingPnlUsdt": -6.432994823832956,
-            "feesAndCostsUsdt": 5.20440677022272,
-            "turnoverUsdt": 6939.2090269636265,
+            "maxDrawdownUsdt": 100.09410856686009,
+            "maxDrawdownPct": 0.010009410856686008,
+            "endingEquity": 10082.973181277906,
+            "netPnlUsdt": 82.97318127790945,
+            "grossPnlUsdt": 94.6116818420411,
+            "fundingPnlUsdt": -6.433612954370024,
+            "feesAndCostsUsdt": 5.204887609761624,
+            "turnoverUsdt": 6939.85014634883,
             "averageHoldingHours": 301.86904761904765,
             "forcedExits": 0,
-            "sharpe": 0.5522299860170019,
-            "sortino": 1.2478358406317018,
+            "sharpe": 0.5521590100990583,
+            "sortino": 1.2476269743543176,
             "monthlyObservations": 3,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6743,28 +8331,28 @@
             "winRate": 0.8333333333333334,
             "wins": 5,
             "losses": 1,
-            "avgWinR": 1.9866419581919312,
-            "avgLossR": -1.0103839409575333,
-            "expectancyR": 1.4871376416670206,
-            "netExpectancyR": 1.4871376416670206,
+            "avgWinR": 1.9866309431068583,
+            "avgLossR": -1.010387407489019,
+            "expectancyR": 1.4871278846742122,
+            "netExpectancyR": 1.4871278846742122,
             "expectancyR95CI": [
-              0.5080993323392814,
-              2.4661759509947596
+              0.5080919971543627,
+              2.4661637721940615
             ],
-            "grossExpectancyR": 1.5532882059265756,
-            "profitFactor": 9.831123980005094,
+            "grossExpectancyR": 1.5533879626060147,
+            "profitFactor": 9.83103574125081,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 38.67796900597932,
-            "maxDrawdownPct": 0.003867796900597932,
-            "endingEquity": 10396.145830398593,
-            "netPnlUsdt": 396.14583039859264,
-            "grossPnlUsdt": 399.32187960145853,
-            "fundingPnlUsdt": 1.526545489979767,
-            "feesAndCostsUsdt": 4.702594692845681,
-            "turnoverUsdt": 6270.126257127575,
+            "maxDrawdownUsdt": 38.69074273063052,
+            "maxDrawdownPct": 0.003869074273063052,
+            "endingEquity": 10396.385867287121,
+            "netPnlUsdt": 396.3858672871223,
+            "grossPnlUsdt": 399.56727120178243,
+            "fundingPnlUsdt": 1.5266124743852352,
+            "feesAndCostsUsdt": 4.708016389045369,
+            "turnoverUsdt": 6277.355185393824,
             "averageHoldingHours": 130.57222222222222,
             "forcedExits": 0,
-            "sharpe": 7.559473100838557,
+            "sharpe": 7.546933713219337,
             "sortino": null,
             "monthlyObservations": 3,
             "sampleStatus": "insufficient-sample",
@@ -6782,29 +8370,29 @@
             "winRate": 0.7272727272727273,
             "wins": 8,
             "losses": 3,
-            "avgWinR": 1.6712850655185734,
-            "avgLossR": -0.9998406869862957,
-            "expectancyR": 0.9427962239263362,
-            "netExpectancyR": 0.9427962239263362,
+            "avgWinR": 1.6712867704984684,
+            "avgLossR": -0.9998382136068914,
+            "expectancyR": 0.9427981384697337,
+            "netExpectancyR": 0.9427981384697337,
             "expectancyR95CI": [
-              0.19439046670607119,
-              1.6912019811466013
+              0.19439214850012065,
+              1.6912041284393466
             ],
-            "grossExpectancyR": 1.029700588889016,
-            "profitFactor": 4.45747030774442,
+            "grossExpectancyR": 1.0296093200219678,
+            "profitFactor": 4.457485881892413,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 70.35334603127558,
-            "maxDrawdownPct": 0.007035334603127558,
-            "endingEquity": 10497.455396469915,
-            "netPnlUsdt": 497.4553964699146,
-            "grossPnlUsdt": 504.9006609568421,
-            "fundingPnlUsdt": 3.1437688393382963,
-            "feesAndCostsUsdt": 10.589033326265806,
-            "turnoverUsdt": 14118.711101687739,
+            "maxDrawdownUsdt": 70.36129307420742,
+            "maxDrawdownPct": 0.007036129307420742,
+            "endingEquity": 10497.358167208955,
+            "netPnlUsdt": 497.358167208954,
+            "grossPnlUsdt": 504.7986879103037,
+            "fundingPnlUsdt": 3.145836361113581,
+            "feesAndCostsUsdt": 10.586357062463259,
+            "turnoverUsdt": 14115.142749951016,
             "averageHoldingHours": 65.60454545454544,
             "forcedExits": 0,
-            "sharpe": 4.5045279193845085,
-            "sortino": 8.84357386235917,
+            "sharpe": 4.5049490783399335,
+            "sortino": 8.840115759117309,
             "monthlyObservations": 7,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6819,29 +8407,29 @@
             "winRate": 0.42857142857142855,
             "wins": 3,
             "losses": 4,
-            "avgWinR": 1.9600789448123477,
-            "avgLossR": -1.036002816476557,
-            "expectancyR": 0.24803222407583075,
-            "netExpectancyR": 0.24803222407583075,
+            "avgWinR": 1.9600778230583886,
+            "avgLossR": -1.0360057066529296,
+            "expectancyR": 0.2480300917947782,
+            "netExpectancyR": 0.2480300917947782,
             "expectancyR95CI": [
-              -0.9384218178651669,
-              1.4344862660168285
+              -0.938424650678124,
+              1.4344848342676804
             ],
-            "grossExpectancyR": 0.3039552886933709,
-            "profitFactor": 1.4189722124587736,
+            "grossExpectancyR": 0.3039049455610988,
+            "profitFactor": 1.4189674418330913,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 100.09282111130233,
-            "maxDrawdownPct": 0.010009282111130233,
-            "endingEquity": 10082.984923698788,
-            "netPnlUsdt": 82.98492369878713,
-            "grossPnlUsdt": 94.62232529284279,
-            "fundingPnlUsdt": -6.432994823832956,
-            "feesAndCostsUsdt": 5.20440677022272,
-            "turnoverUsdt": 6939.2090269636265,
+            "maxDrawdownUsdt": 100.09410856686009,
+            "maxDrawdownPct": 0.010009410856686008,
+            "endingEquity": 10082.973181277906,
+            "netPnlUsdt": 82.97318127790945,
+            "grossPnlUsdt": 94.6116818420411,
+            "fundingPnlUsdt": -6.433612954370024,
+            "feesAndCostsUsdt": 5.204887609761624,
+            "turnoverUsdt": 6939.85014634883,
             "averageHoldingHours": 301.86904761904765,
             "forcedExits": 0,
-            "sharpe": 0.5522299860170019,
-            "sortino": 1.2478358406317018,
+            "sharpe": 0.5521590100990583,
+            "sortino": 1.2476269743543176,
             "monthlyObservations": 3,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6856,28 +8444,28 @@
             "winRate": 0.8333333333333334,
             "wins": 5,
             "losses": 1,
-            "avgWinR": 1.9866419581919312,
-            "avgLossR": -1.0103839409575333,
-            "expectancyR": 1.4871376416670206,
-            "netExpectancyR": 1.4871376416670206,
+            "avgWinR": 1.9866309431068583,
+            "avgLossR": -1.010387407489019,
+            "expectancyR": 1.4871278846742122,
+            "netExpectancyR": 1.4871278846742122,
             "expectancyR95CI": [
-              0.5080993323392814,
-              2.4661759509947596
+              0.5080919971543627,
+              2.4661637721940615
             ],
-            "grossExpectancyR": 1.5532882059265756,
-            "profitFactor": 9.831123980005094,
+            "grossExpectancyR": 1.5533879626060147,
+            "profitFactor": 9.83103574125081,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 38.67796900597932,
-            "maxDrawdownPct": 0.003867796900597932,
-            "endingEquity": 10396.145830398593,
-            "netPnlUsdt": 396.14583039859264,
-            "grossPnlUsdt": 399.32187960145853,
-            "fundingPnlUsdt": 1.526545489979767,
-            "feesAndCostsUsdt": 4.702594692845681,
-            "turnoverUsdt": 6270.126257127575,
+            "maxDrawdownUsdt": 38.69074273063052,
+            "maxDrawdownPct": 0.003869074273063052,
+            "endingEquity": 10396.385867287121,
+            "netPnlUsdt": 396.3858672871223,
+            "grossPnlUsdt": 399.56727120178243,
+            "fundingPnlUsdt": 1.5266124743852352,
+            "feesAndCostsUsdt": 4.708016389045369,
+            "turnoverUsdt": 6277.355185393824,
             "averageHoldingHours": 130.57222222222222,
             "forcedExits": 0,
-            "sharpe": 7.559473100838557,
+            "sharpe": 7.546933713219337,
             "sortino": null,
             "monthlyObservations": 3,
             "sampleStatus": "insufficient-sample",
@@ -6895,29 +8483,29 @@
             "winRate": 0.5333333333333333,
             "wins": 8,
             "losses": 7,
-            "avgWinR": 1.662443792120006,
-            "avgLossR": -1.0205047609807307,
-            "expectancyR": 0.4104011340063287,
-            "netExpectancyR": 0.4104011340063287,
+            "avgWinR": 1.6624417824152171,
+            "avgLossR": -1.020505352490342,
+            "expectancyR": 0.41039978612595623,
+            "netExpectancyR": 0.41039978612595623,
             "expectancyR95CI": [
-              -0.2963453166816249,
-              1.1171475846942824
+              -0.2963463232305939,
+              1.1171458954825064
             ],
-            "grossExpectancyR": 0.5450170522986303,
-            "profitFactor": 1.861760802171053,
+            "grossExpectancyR": 0.5449255084493466,
+            "profitFactor": 1.8617574723944155,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 170.4461671425779,
-            "maxDrawdownPct": 0.01704461671425779,
-            "endingEquity": 10359.186306571897,
-            "netPnlUsdt": 359.1863065718946,
-            "grossPnlUsdt": 375.9944732615294,
-            "fundingPnlUsdt": -3.3105822808478513,
-            "feesAndCostsUsdt": 13.497584408787022,
-            "turnoverUsdt": 17996.779211716024,
+            "maxDrawdownUsdt": 170.4554016410675,
+            "maxDrawdownPct": 0.01704554016410675,
+            "endingEquity": 10359.113718732968,
+            "netPnlUsdt": 359.1137187329701,
+            "grossPnlUsdt": 375.92061064229034,
+            "fundingPnlUsdt": -3.310630779619035,
+            "feesAndCostsUsdt": 13.496261129701217,
+            "turnoverUsdt": 17995.014839601627,
             "averageHoldingHours": 173.6688888888889,
             "forcedExits": 0,
-            "sharpe": 2.5713269545272026,
-            "sortino": 4.92195104592768,
+            "sharpe": 2.5708523963745393,
+            "sortino": 4.920467345482778,
             "monthlyObservations": 6,
             "sampleStatus": "insufficient-sample",
             "confidenceInterval": {
@@ -6932,28 +8520,28 @@
             "winRate": 0.8888888888888888,
             "wins": 8,
             "losses": 1,
-            "avgWinR": 1.985522101573155,
-            "avgLossR": -1.0103839409575333,
-            "expectancyR": 1.6526436524030783,
-            "netExpectancyR": 1.6526436524030783,
+            "avgWinR": 1.9855185111719333,
+            "avgLossR": -1.010387407489019,
+            "expectancyR": 1.652640075765161,
+            "netExpectancyR": 1.652640075765161,
             "expectancyR95CI": [
-              1.000165793804979,
-              2.3051215110011776
+              1.0001622715576244,
+              2.3051178799726975
             ],
-            "grossExpectancyR": 1.688646663174806,
-            "profitFactor": 15.720931587186476,
+            "grossExpectancyR": 1.6886479600778836,
+            "profitFactor": 15.720849222428674,
             "profitFactorStatus": "defined",
-            "maxDrawdownUsdt": 38.67796900597932,
-            "maxDrawdownPct": 0.003867796900597932,
-            "endingEquity": 10617.3998439954,
-            "netPnlUsdt": 617.3998439953998,
-            "grossPnlUsdt": 622.850392589614,
-            "fundingPnlUsdt": 1.5479017863329585,
-            "feesAndCostsUsdt": 6.998450380547187,
-            "turnoverUsdt": 9331.267174062916,
+            "maxDrawdownUsdt": 38.69074273063052,
+            "maxDrawdownPct": 0.003869074273063052,
+            "endingEquity": 10617.603497041015,
+            "netPnlUsdt": 617.6034970410159,
+            "grossPnlUsdt": 623.057030311837,
+            "fundingPnlUsdt": 1.5494666607478278,
+            "feesAndCostsUsdt": 7.002999931569034,
+            "turnoverUsdt": 9337.333242092045,
             "averageHoldingHours": 112.57037037037036,
             "forcedExits": 0,
-            "sharpe": 9.552080400797822,
+            "sharpe": 9.551532501377443,
             "sortino": null,
             "monthlyObservations": 4,
             "sampleStatus": "insufficient-sample",
@@ -6967,70 +8555,70 @@
         "rankedSignals": 32,
         "uniqueAlerts": 0,
         "acceptedSignals": 24,
-        "maxDrawdownPercent": 1.704461671425779,
+        "maxDrawdownPercent": 1.704554016410675,
         "uniqueTradedSymbols": 16,
         "top5SymbolContribution": [
           {
             "symbol": "BNBUSDT",
             "trades": 2,
-            "netPnlUsdt": 192.0513358389135,
-            "contributionPct": 16.63492039434315
+            "netPnlUsdt": 192.04818009233034,
+            "contributionPct": 16.632688533588585
           },
           {
             "symbol": "CAKEUSDT",
             "trades": 2,
-            "netPnlUsdt": 163.94966051520538,
-            "contributionPct": 14.20083614329863
+            "netPnlUsdt": 163.93337163601268,
+            "contributionPct": 14.197753445890196
           },
           {
             "symbol": "BTCUSDT",
             "trades": 3,
-            "netPnlUsdt": 153.81659552866844,
-            "contributionPct": 13.323139934285367
+            "netPnlUsdt": 153.81540965688058,
+            "contributionPct": 13.321468598448853
           },
           {
             "symbol": "ACTUSDT",
             "trades": 2,
-            "netPnlUsdt": 149.36732343836283,
-            "contributionPct": 12.937757105721825
+            "netPnlUsdt": 149.34903024184663,
+            "contributionPct": 12.934649532278186
           },
           {
             "symbol": "1000CATUSDT",
             "trades": 1,
-            "netPnlUsdt": 88.79158670169674,
-            "contributionPct": 7.690865413761236
+            "netPnlUsdt": 88.70821480368745,
+            "contributionPct": 7.682739333905979
           }
         ],
         "top5TradeContribution": [
           {
             "id": "V8|bear|BTCUSDT|1769385600000",
             "symbol": "BTCUSDT",
-            "netPnlUsdt": 111.90081632423751,
-            "contributionPct": 8.52595068330092
+            "netPnlUsdt": 111.901049088172,
+            "contributionPct": 8.524916440090912
           },
           {
             "id": "V8|bull|BNBUSDT|v39_10d|long|1757808000000",
             "symbol": "BNBUSDT",
-            "netPnlUsdt": 101.83710982761035,
-            "contributionPct": 7.759176426419351
+            "netPnlUsdt": 101.83199644664612,
+            "contributionPct": 7.757829508383515
           },
           {
             "id": "V8|bear|BTCUSDT|1780012800000",
             "symbol": "BTCUSDT",
-            "netPnlUsdt": 100.05831666868768,
-            "contributionPct": 7.623646559462671
+            "netPnlUsdt": 100.05644669536436,
+            "contributionPct": 7.622563455131641
           },
           {
             "id": "V8|bear|ADAUSDT|1780012800000",
             "symbol": "ADAUSDT",
-            "netPnlUsdt": 94.0559658487034,
-            "contributionPct": 7.166315248073728
+            "netPnlUsdt": 94.31338042215285,
+            "contributionPct": 7.185041550842295
           },
           {
             "id": "V8|reversal|ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
             "symbol": "ACTUSDT",
-            "netPnlUsdt": 91.56418964339952,
-            "contributionPct": 6.976461753362072
+            "netPnlUsdt": 91.54748840835128,
+            "contributionPct": 6.974328617477443
           }
         ],
         "largestLosingTrades": [
@@ -7046,16 +8634,16 @@
             "decisionTime": 1755130800000,
             "fillTime": 1755130800000,
             "fillPrice": 123950.9,
-            "stop": 114871.53287448043,
-            "target": 142109.63425103913,
+            "stop": 114871.5,
+            "target": 142109.7,
             "exitTime": 1755499440000,
-            "exitPrice": 114871.53287448043,
+            "exitPrice": 114871.5,
             "exitReason": "sl",
-            "grossPnlUsdt": -56.41840002419216,
-            "modeledCostUsdt": 1.1553302167784838,
-            "fundingPnlUsdt": -0.5688072232860996,
-            "netPnlUsdt": -58.14253746425674,
-            "netR": -1.0305598428761764
+            "grossPnlUsdt": -56.41796812794173,
+            "modeledCostUsdt": 1.1553171892905416,
+            "fundingPnlUsdt": -0.5688008094235215,
+            "netPnlUsdt": -58.14208612665579,
+            "netR": -1.030559732225808
           },
           {
             "id": "V8|reversal|AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
@@ -7069,16 +8657,16 @@
             "decisionTime": 1753719600000,
             "fillTime": 1753719600000,
             "fillPrice": 10.905,
-            "stop": 11.783900218539353,
-            "target": 9.586649672190969,
+            "stop": 11.784,
+            "target": 9.586,
             "exitTime": 1753747200000,
-            "exitPrice": 11.783900218539353,
+            "exitPrice": 11.784,
             "exitReason": "sl",
-            "grossPnlUsdt": -43.855392687138206,
-            "modeledCostUsdt": 0.8162070855688865,
-            "fundingPnlUsdt": 0.027675944368686103,
-            "netPnlUsdt": -44.6439238283384,
-            "netR": -1.0179802549443697
+            "grossPnlUsdt": -43.85028554783555,
+            "modeledCostUsdt": 0.8160193923193617,
+            "fundingPnlUsdt": 0.027669580067243404,
+            "netPnlUsdt": -44.63863536008767,
+            "netR": -1.0179782138794085
           },
           {
             "id": "V8|reversal|SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
@@ -7092,16 +8680,16 @@
             "decisionTime": 1755030000000,
             "fillTime": 1755030000000,
             "fillPrice": 0.3667,
-            "stop": 0.3976519249224912,
-            "target": 0.3202721126162633,
+            "stop": 0.39765,
+            "target": 0.32028,
             "exitTime": 1755185700000,
-            "exitPrice": 0.3976519249224912,
+            "exitPrice": 0.39765,
             "exitReason": "sl",
-            "grossPnlUsdt": -42.067572758499956,
-            "modeledCostUsdt": 0.7475873779662342,
-            "fundingPnlUsdt": 0.2985892950576913,
-            "netPnlUsdt": -42.5165708414085,
-            "netR": -1.0106732586043445
+            "grossPnlUsdt": -42.070019402705235,
+            "modeledCostUsdt": 0.7476773561375778,
+            "fundingPnlUsdt": 0.29862523268791874,
+            "netPnlUsdt": -42.519071526154896,
+            "netR": -1.0106739224232635
           },
           {
             "id": "V8|bull|DOGEUSDT|v39_10d|long|1759795200000",
@@ -7115,16 +8703,16 @@
             "decisionTime": 1759796400000,
             "fillTime": 1759796400000,
             "fillPrice": 0.26572,
-            "stop": 0.23880720409966266,
-            "target": 0.3195455918006747,
+            "stop": 0.23881,
+            "target": 0.31954,
             "exitTime": 1760110260000,
-            "exitPrice": 0.23880720409966266,
+            "exitPrice": 0.23881,
             "exitReason": "sl",
-            "grossPnlUsdt": -41.29582667572701,
-            "modeledCostUsdt": 0.6115934835371359,
-            "fundingPnlUsdt": -0.2255285136182469,
-            "netPnlUsdt": -42.132948672882385,
-            "netR": -1.0202713461514847
+            "grossPnlUsdt": -41.299845642538195,
+            "modeledCostUsdt": 0.6117165542996233,
+            "fundingPnlUsdt": -0.2255738966494282,
+            "netPnlUsdt": -42.13713609348725,
+            "netR": -1.0202734523076924
           },
           {
             "id": "V8|bull|BCHUSDT|v39_5d|long|1754697600000",
@@ -7138,90 +8726,90 @@
             "decisionTime": 1754698800000,
             "fillTime": 1754698800000,
             "fillPrice": 587.17,
-            "stop": 526.0774749549623,
-            "target": 709.3550500900752,
+            "stop": 526.08,
+            "target": 709.35,
             "exitTime": 1756518780000,
-            "exitPrice": 526.0774749549623,
+            "exitPrice": 526.08,
             "exitReason": "sl",
-            "grossPnlUsdt": -39.3655000625196,
-            "modeledCostUsdt": 0.5675221474641062,
-            "fundingPnlUsdt": -2.017261437062586,
-            "netPnlUsdt": -41.95028364704629,
-            "netR": -1.0656611393332127
+            "grossPnlUsdt": -39.36703146079479,
+            "modeledCostUsdt": 0.5675676836512091,
+            "fundingPnlUsdt": -2.0174232957576934,
+            "netPnlUsdt": -41.9520224402037,
+            "netR": -1.0656638533180556
           }
         ],
         "cvar95": {
           "sampleSize": 2,
-          "netR": -1.0481104911046946
+          "netR": -1.0481117927719317
         },
         "monthly": [
           {
             "month": "2025-04",
             "trades": 1,
-            "netPnlUsdt": 57.803133794963315,
+            "netPnlUsdt": 57.80154183349535,
             "wins": 1,
             "losses": 0
           },
           {
             "month": "2025-06",
             "trades": 1,
-            "netPnlUsdt": 90.80427896966853,
+            "netPnlUsdt": 90.78111457522346,
             "wins": 1,
             "losses": 0
           },
           {
             "month": "2025-07",
             "trades": 2,
-            "netPnlUsdt": 37.017476690304605,
+            "netPnlUsdt": 37.0174712153862,
             "wins": 1,
             "losses": 1
           },
           {
             "month": "2025-08",
             "trades": 5,
-            "netPnlUsdt": 18.320447496736428,
+            "netPnlUsdt": 18.288522812149665,
             "wins": 2,
             "losses": 3
           },
           {
             "month": "2025-09",
             "trades": 5,
-            "netPnlUsdt": 197.3739182931041,
+            "netPnlUsdt": 197.36220439020255,
             "wins": 3,
             "losses": 2
           },
           {
             "month": "2025-10",
             "trades": 1,
-            "netPnlUsdt": -42.132948672882385,
+            "netPnlUsdt": -42.13713609348725,
             "wins": 0,
             "losses": 1
           },
           {
             "month": "2026-01",
             "trades": 4,
-            "netPnlUsdt": 206.673759169069,
+            "netPnlUsdt": 206.590610211726,
             "wins": 3,
             "losses": 1
           },
           {
             "month": "2026-02",
             "trades": 2,
-            "netPnlUsdt": 128.80870056294287,
+            "netPnlUsdt": 128.80573381206364,
             "wins": 2,
             "losses": 0
           },
           {
             "month": "2026-03",
             "trades": 1,
-            "netPnlUsdt": 87.80310174599687,
+            "netPnlUsdt": 87.83732589970901,
             "wins": 1,
             "losses": 0
           },
           {
             "month": "2026-06",
             "trades": 2,
-            "netPnlUsdt": 194.11428251739108,
+            "netPnlUsdt": 194.36982711751722,
             "wins": 2,
             "losses": 0
           }
@@ -7240,16 +8828,16 @@
           "decisionTime": 1742934000000,
           "fillTime": 1742934000000,
           "fillPrice": 0.19394,
-          "stop": 0.2113708528073231,
-          "target": 0.16779372078901536,
+          "stop": 0.211371,
+          "target": 0.167794,
           "exitTime": 1743503580000,
-          "exitPrice": 0.16779372078901536,
+          "exitPrice": 0.167794,
           "exitReason": "tp",
-          "grossPnlUsdt": 57.662023121033116,
-          "modeledCostUsdt": 0.6415619985841968,
-          "fundingPnlUsdt": 0.7826726725143935,
-          "netPnlUsdt": 57.803133794963315,
-          "netR": 1.5036708044469929
+          "grossPnlUsdt": 57.660433542718174,
+          "modeledCostUsdt": 0.6415511635398203,
+          "fundingPnlUsdt": 0.7826594543169976,
+          "netPnlUsdt": 57.80154183349535,
+          "netR": 1.5036420889220352
         },
         {
           "id": "V8|reversal|CAKEUSDT|v59_volume_shock_reversal|short|1749672000000",
@@ -7263,16 +8851,16 @@
           "decisionTime": 1749673200000,
           "fillTime": 1749673200000,
           "fillPrice": 2.5986,
-          "stop": 2.7445619422711913,
-          "target": 2.3796570865932125,
+          "stop": 2.7446,
+          "target": 2.3796,
           "exitTime": 1749778980000,
-          "exitPrice": 2.3796570865932125,
+          "exitPrice": 2.3796,
           "exitReason": "tp",
-          "grossPnlUsdt": 92.79916132025808,
-          "modeledCostUsdt": 1.6521286086943086,
-          "fundingPnlUsdt": -0.3427537418952431,
-          "netPnlUsdt": 90.80427896966853,
-          "netR": 1.4677548430038332
+          "grossPnlUsdt": 92.77495673630182,
+          "modeledCostUsdt": 1.6512671409243427,
+          "fundingPnlUsdt": -0.34257502015401536,
+          "netPnlUsdt": 90.78111457522346,
+          "netR": 1.4677632483287628
         },
         {
           "id": "V8|reversal|BIGTIMEUSDT|v59_volume_shock_reversal|short|1753084800000",
@@ -7286,16 +8874,16 @@
           "decisionTime": 1753086000000,
           "fillTime": 1753086000000,
           "fillPrice": 0.07176,
-          "stop": 0.0763397116079926,
-          "target": 0.06489043258801111,
+          "stop": 0.07634,
+          "target": 0.06489,
           "exitTime": 1753278180000,
-          "exitPrice": 0.06489043258801111,
+          "exitPrice": 0.06489,
           "exitReason": "tp",
-          "grossPnlUsdt": 82.41226915577484,
-          "modeledCostUsdt": 1.291326821605393,
-          "fundingPnlUsdt": 0.5404581844735578,
-          "netPnlUsdt": 81.661400518643,
-          "netR": 1.4863333097457982
+          "grossPnlUsdt": 82.40687882323323,
+          "modeledCostUsdt": 1.2911610533526672,
+          "fundingPnlUsdt": 0.5403888055933141,
+          "netPnlUsdt": 81.65610657547387,
+          "netR": 1.4863341703056767
         },
         {
           "id": "V8|reversal|AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
@@ -7309,16 +8897,16 @@
           "decisionTime": 1753719600000,
           "fillTime": 1753719600000,
           "fillPrice": 10.905,
-          "stop": 11.783900218539353,
-          "target": 9.586649672190969,
+          "stop": 11.784,
+          "target": 9.586,
           "exitTime": 1753747200000,
-          "exitPrice": 11.783900218539353,
+          "exitPrice": 11.784,
           "exitReason": "sl",
-          "grossPnlUsdt": -43.855392687138206,
-          "modeledCostUsdt": 0.8162070855688865,
-          "fundingPnlUsdt": 0.027675944368686103,
-          "netPnlUsdt": -44.6439238283384,
-          "netR": -1.0179802549443697
+          "grossPnlUsdt": -43.85028554783555,
+          "modeledCostUsdt": 0.8160193923193617,
+          "fundingPnlUsdt": 0.027669580067243404,
+          "netPnlUsdt": -44.63863536008767,
+          "netR": -1.0179782138794085
         },
         {
           "id": "V8|reversal|ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
@@ -7332,16 +8920,16 @@
           "decisionTime": 1754886000000,
           "fillTime": 1754886000000,
           "fillPrice": 0.04579,
-          "stop": 0.04838752470442669,
-          "target": 0.04189371294335996,
+          "stop": 0.048388,
+          "target": 0.041893,
           "exitTime": 1754947920000,
-          "exitPrice": 0.04189371294335996,
+          "exitPrice": 0.041893,
           "exitReason": "tp",
-          "grossPnlUsdt": 93.05500893989334,
-          "modeledCostUsdt": 1.6404035935042907,
-          "fundingPnlUsdt": 0.14958429701046091,
-          "netPnlUsdt": 91.56418964339952,
-          "netR": 1.475968741820386
+          "grossPnlUsdt": 93.03775865080716,
+          "modeledCostUsdt": 1.6397994490455976,
+          "fundingPnlUsdt": 0.14952920658972288,
+          "netPnlUsdt": 91.54748840835128,
+          "netR": 1.4759731382601975
         },
         {
           "id": "V8|reversal|SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
@@ -7355,16 +8943,16 @@
           "decisionTime": 1755030000000,
           "fillTime": 1755030000000,
           "fillPrice": 0.3667,
-          "stop": 0.3976519249224912,
-          "target": 0.3202721126162633,
+          "stop": 0.39765,
+          "target": 0.32028,
           "exitTime": 1755185700000,
-          "exitPrice": 0.3976519249224912,
+          "exitPrice": 0.39765,
           "exitReason": "sl",
-          "grossPnlUsdt": -42.067572758499956,
-          "modeledCostUsdt": 0.7475873779662342,
-          "fundingPnlUsdt": 0.2985892950576913,
-          "netPnlUsdt": -42.5165708414085,
-          "netR": -1.0106732586043445
+          "grossPnlUsdt": -42.070019402705235,
+          "modeledCostUsdt": 0.7476773561375778,
+          "fundingPnlUsdt": 0.29862523268791874,
+          "netPnlUsdt": -42.519071526154896,
+          "netR": -1.0106739224232635
         },
         {
           "id": "V8|reversal|ALTUSDT|v59_volume_shock_reversal|short|1755057600000",
@@ -7378,16 +8966,16 @@
           "decisionTime": 1755058800000,
           "fillTime": 1755058800000,
           "fillPrice": 0.03826,
-          "stop": 0.04116952742439964,
-          "target": 0.03389570886340055,
+          "stop": 0.04117,
+          "target": 0.033895,
           "exitTime": 1755174900000,
-          "exitPrice": 0.03389570886340055,
+          "exitPrice": 0.033895,
           "exitReason": "tp",
-          "grossPnlUsdt": 70.03868404202406,
-          "modeledCostUsdt": 0.9210018193936692,
-          "fundingPnlUsdt": 0.24796758341803934,
-          "netPnlUsdt": 69.36564980604844,
-          "netR": 1.4855858035059926
+          "grossPnlUsdt": 70.02702743844559,
+          "modeledCostUsdt": 0.9206989930566762,
+          "fundingPnlUsdt": 0.24788605142385836,
+          "netPnlUsdt": 69.35421449681277,
+          "netR": 1.4855881443298993
         },
         {
           "id": "V8|bull|BTCUSDT|v39_10d|long|1755129600000",
@@ -7401,16 +8989,16 @@
           "decisionTime": 1755130800000,
           "fillTime": 1755130800000,
           "fillPrice": 123950.9,
-          "stop": 114871.53287448043,
-          "target": 142109.63425103913,
+          "stop": 114871.5,
+          "target": 142109.7,
           "exitTime": 1755499440000,
-          "exitPrice": 114871.53287448043,
+          "exitPrice": 114871.5,
           "exitReason": "sl",
-          "grossPnlUsdt": -56.41840002419216,
-          "modeledCostUsdt": 1.1553302167784838,
-          "fundingPnlUsdt": -0.5688072232860996,
-          "netPnlUsdt": -58.14253746425674,
-          "netR": -1.0305598428761764
+          "grossPnlUsdt": -56.41796812794173,
+          "modeledCostUsdt": 1.1553171892905416,
+          "fundingPnlUsdt": -0.5688008094235215,
+          "netPnlUsdt": -58.14208612665579,
+          "netR": -1.030559732225808
         },
         {
           "id": "V8|bull|BCHUSDT|v39_5d|long|1754697600000",
@@ -7424,16 +9012,16 @@
           "decisionTime": 1754698800000,
           "fillTime": 1754698800000,
           "fillPrice": 587.17,
-          "stop": 526.0774749549623,
-          "target": 709.3550500900752,
+          "stop": 526.08,
+          "target": 709.35,
           "exitTime": 1756518780000,
-          "exitPrice": 526.0774749549623,
+          "exitPrice": 526.08,
           "exitReason": "sl",
-          "grossPnlUsdt": -39.3655000625196,
-          "modeledCostUsdt": 0.5675221474641062,
-          "fundingPnlUsdt": -2.017261437062586,
-          "netPnlUsdt": -41.95028364704629,
-          "netR": -1.0656611393332127
+          "grossPnlUsdt": -39.36703146079479,
+          "modeledCostUsdt": 0.5675676836512091,
+          "fundingPnlUsdt": -2.0174232957576934,
+          "netPnlUsdt": -41.9520224402037,
+          "netR": -1.0656638533180556
         },
         {
           "id": "V8|reversal|AEROUSDT|v59_volume_shock_reversal|short|1757088000000",
@@ -7447,16 +9035,16 @@
           "decisionTime": 1757089200000,
           "fillTime": 1757089200000,
           "fillPrice": 1.1673,
-          "stop": 1.253417860180995,
-          "target": 1.0381232097285074,
+          "stop": 1.2534,
+          "target": 1.0381,
           "exitTime": 1757631360000,
-          "exitPrice": 1.253417860180995,
+          "exitPrice": 1.2534,
           "exitReason": "sl",
-          "grossPnlUsdt": -28.672033164658668,
-          "modeledCostUsdt": 0.582960333247321,
-          "fundingPnlUsdt": 1.4182183080375192,
-          "netPnlUsdt": -27.83677518986847,
-          "netR": -0.970868547410173
+          "grossPnlUsdt": -28.677821440716034,
+          "modeledCostUsdt": 0.5831989715635506,
+          "fundingPnlUsdt": 1.4187988642259493,
+          "netPnlUsdt": -27.842221548053637,
+          "netR": -0.9708625045180024
         },
         {
           "id": "V8|bull|BNBUSDT|v39_5d|long|1754611200000",
@@ -7470,16 +9058,16 @@
           "decisionTime": 1754612400000,
           "fillTime": 1754612400000,
           "fillPrice": 784.39,
-          "stop": 715.2282798060028,
-          "target": 922.7134403879944,
+          "stop": 715.23,
+          "target": 922.71,
           "exitTime": 1757701800000,
-          "exitPrice": 922.7134403879944,
+          "exitPrice": 922.71,
           "exitReason": "tp",
-          "grossPnlUsdt": 92.90439240805016,
-          "modeledCostUsdt": 0.7902486681564137,
-          "fundingPnlUsdt": -1.8999177285905908,
-          "netPnlUsdt": 90.21422601130315,
-          "netR": 1.9420874228436609
+          "grossPnlUsdt": 92.9064773270763,
+          "modeledCostUsdt": 0.7902860586023571,
+          "fundingPnlUsdt": -1.9000076227897087,
+          "netPnlUsdt": 90.21618364568423,
+          "netR": 1.9420859824031245
         },
         {
           "id": "V8|bull|CAKEUSDT|v39_10d|long|1757721600000",
@@ -7493,16 +9081,16 @@
           "decisionTime": 1757722800000,
           "fillTime": 1757722800000,
           "fillPrice": 2.605,
-          "stop": 2.345073615442953,
-          "target": 3.1248527691140944,
+          "stop": 2.3451,
+          "target": 3.1248,
           "exitTime": 1758415380000,
-          "exitPrice": 3.1248527691140944,
+          "exitPrice": 3.1248,
           "exitReason": "tp",
-          "grossPnlUsdt": 74.33999316337155,
-          "modeledCostUsdt": 0.5587803711825966,
-          "fundingPnlUsdt": -0.6358312466521221,
-          "netPnlUsdt": 73.14538154553684,
-          "netR": 1.96786086285455
+          "grossPnlUsdt": 74.34710423682186,
+          "modeledCostUsdt": 0.5588905536848431,
+          "fundingPnlUsdt": -0.6359566223477899,
+          "netPnlUsdt": 73.15225706078922,
+          "netR": 1.9678576001500576
         },
         {
           "id": "V8|bull|BNBUSDT|v39_10d|long|1757808000000",
@@ -7516,16 +9104,16 @@
           "decisionTime": 1757809200000,
           "fillTime": 1757809200000,
           "fillPrice": 933.96,
-          "stop": 859.3633591789987,
-          "target": 1083.1532816420026,
+          "stop": 859.36,
+          "target": 1083.16,
           "exitTime": 1758420180000,
-          "exitPrice": 1083.1532816420026,
+          "exitPrice": 1083.16,
           "exitReason": "tp",
-          "grossPnlUsdt": 103.37278759783236,
-          "modeledCostUsdt": 0.9706809278772253,
-          "fundingPnlUsdt": -0.5649968423447844,
-          "netPnlUsdt": 101.83710982761035,
-          "netR": 1.9702885487388324
+          "grossPnlUsdt": 103.36752691882786,
+          "modeledCostUsdt": 0.9705878227993476,
+          "fundingPnlUsdt": -0.5649426493824047,
+          "netPnlUsdt": 101.83199644664612,
+          "netR": 1.970289886621984
         },
         {
           "id": "V8|bull|ADAUSDT|v39_10d|long|1757808000000",
@@ -7539,16 +9127,16 @@
           "decisionTime": 1757809200000,
           "fillTime": 1757809200000,
           "fillPrice": 0.9278,
-          "stop": 0.8293755019780075,
-          "target": 1.124648996043985,
+          "stop": 0.8294,
+          "target": 1.1246,
           "exitTime": 1758520860000,
-          "exitPrice": 0.8293755019780075,
+          "exitPrice": 0.8294,
           "exitReason": "sl",
-          "grossPnlUsdt": -38.91512111397251,
-          "modeledCostUsdt": 0.5502509552267583,
-          "fundingPnlUsdt": -0.5206518322785264,
-          "netPnlUsdt": -39.98602390147779,
-          "netR": -1.0275189375453537
+          "grossPnlUsdt": -38.9245814094102,
+          "modeledCostUsdt": 0.5505217474337014,
+          "fundingPnlUsdt": -0.5209080580194769,
+          "netPnlUsdt": -39.99601121486338,
+          "netR": -1.0275257887601625
         },
         {
           "id": "V8|bull|DOGEUSDT|v39_10d|long|1759795200000",
@@ -7562,16 +9150,16 @@
           "decisionTime": 1759796400000,
           "fillTime": 1759796400000,
           "fillPrice": 0.26572,
-          "stop": 0.23880720409966266,
-          "target": 0.3195455918006747,
+          "stop": 0.23881,
+          "target": 0.31954,
           "exitTime": 1760110260000,
-          "exitPrice": 0.23880720409966266,
+          "exitPrice": 0.23881,
           "exitReason": "sl",
-          "grossPnlUsdt": -41.29582667572701,
-          "modeledCostUsdt": 0.6115934835371359,
-          "fundingPnlUsdt": -0.2255285136182469,
-          "netPnlUsdt": -42.132948672882385,
-          "netR": -1.0202713461514847
+          "grossPnlUsdt": -41.299845642538195,
+          "modeledCostUsdt": 0.6117165542996233,
+          "fundingPnlUsdt": -0.2255738966494282,
+          "netPnlUsdt": -42.13713609348725,
+          "netR": -1.0202734523076924
         },
         {
           "id": "V8|bear|DOGEUSDT|1767225600000",
@@ -7585,16 +9173,16 @@
           "decisionTime": 1767226800000,
           "fillTime": 1767226800000,
           "fillPrice": 0.11773,
-          "stop": 0.13139456019735563,
-          "target": 0.09040087960528875,
+          "stop": 0.13139,
+          "target": 0.09041,
           "exitTime": 1767347400000,
-          "exitPrice": 0.13139456019735563,
+          "exitPrice": 0.13139,
           "exitReason": "sl",
-          "grossPnlUsdt": -38.280466897884395,
-          "modeledCostUsdt": 0.4947205730880473,
-          "fundingPnlUsdt": 0.09721846499360887,
-          "netPnlUsdt": -38.67796900597883,
-          "netR": -1.0103839409575333
+          "grossPnlUsdt": -38.29297796454473,
+          "modeledCostUsdt": 0.4950474702524725,
+          "fundingPnlUsdt": 0.09728270416671987,
+          "netPnlUsdt": -38.69074273063048,
+          "netR": -1.010387407489019
         },
         {
           "id": "V8|reversal|PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
@@ -7608,16 +9196,16 @@
           "decisionTime": 1768364400000,
           "fillTime": 1768364400000,
           "fillPrice": 0.10738,
-          "stop": 0.11630261889400421,
-          "target": 0.08953476221199158,
+          "stop": 0.1163,
+          "target": 0.08954,
           "exitTime": 1768915560000,
-          "exitPrice": 0.08953476221199158,
+          "exitPrice": 0.08954,
           "exitReason": "tp",
-          "grossPnlUsdt": 44.586109461702335,
-          "modeledCostUsdt": 0.40243143500291056,
-          "fundingPnlUsdt": 0.47564712241413115,
-          "netPnlUsdt": 44.659325149113556,
-          "netR": 2.003284237548204
+          "grossPnlUsdt": 44.59883097074552,
+          "modeledCostUsdt": 0.4026644453171512,
+          "fundingPnlUsdt": 0.47592252506864924,
+          "netPnlUsdt": 44.672089050497014,
+          "netR": 2.0032852017937235
         },
         {
           "id": "V8|reversal|1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
@@ -7631,16 +9219,16 @@
           "decisionTime": 1769602800000,
           "fillTime": 1769602800000,
           "fillPrice": 0.002631,
-          "stop": 0.0028148254620520815,
-          "target": 0.0022633490758958374,
+          "stop": 0.002815,
+          "target": 0.002263,
           "exitTime": 1769865300000,
-          "exitPrice": 0.0022633490758958374,
+          "exitPrice": 0.002263,
           "exitReason": "tp",
-          "grossPnlUsdt": 90.34799378662146,
-          "modeledCostUsdt": 0.9698285359888872,
-          "fundingPnlUsdt": -0.5865785489358281,
-          "netPnlUsdt": 88.79158670169674,
-          "netR": 1.9655463941213671
+          "grossPnlUsdt": 90.26165966844934,
+          "modeledCostUsdt": 0.9679827170693889,
+          "fundingPnlUsdt": -0.5854621476924952,
+          "netPnlUsdt": 88.70821480368745,
+          "netR": 1.9655790759782654
         },
         {
           "id": "V8|bear|BTCUSDT|1769385600000",
@@ -7654,16 +9242,16 @@
           "decisionTime": 1769386800000,
           "fillTime": 1769386800000,
           "fillPrice": 86991.3,
-          "stop": 92434.1496998858,
-          "target": 76105.6006002284,
+          "stop": 92434.1,
+          "target": 76105.7,
           "exitTime": 1769885040000,
-          "exitPrice": 76105.6006002284,
+          "exitPrice": 76105.7,
           "exitReason": "tp",
-          "grossPnlUsdt": 112.47862530929123,
-          "modeledCostUsdt": 1.3482820182514097,
-          "fundingPnlUsdt": 0.770473033197688,
-          "netPnlUsdt": 111.90081632423751,
-          "netR": 1.9897258882127182
+          "grossPnlUsdt": 112.47886457852847,
+          "modeledCostUsdt": 1.3482971979785414,
+          "fundingPnlUsdt": 0.770481707622065,
+          "netPnlUsdt": 111.901049088172,
+          "netR": 1.9897257943966342
         },
         {
           "id": "V8|bear|ETCUSDT|1769731200000",
@@ -7677,16 +9265,16 @@
           "decisionTime": 1769732400000,
           "fillTime": 1769732400000,
           "fillPrice": 10.796,
-          "stop": 11.91269112743455,
-          "target": 8.562617745130897,
+          "stop": 11.913,
+          "target": 8.562,
           "exitTime": 1770305040000,
-          "exitPrice": 8.562617745130897,
+          "exitPrice": 8.562,
           "exitReason": "tp",
-          "grossPnlUsdt": 69.36537780751246,
-          "modeledCostUsdt": 0.5029604429630847,
-          "fundingPnlUsdt": 0.1087542731571632,
-          "netPnlUsdt": 68.97117163770653,
-          "netR": 1.9886339213519506
+          "grossPnlUsdt": 69.34571120934083,
+          "modeledCostUsdt": 0.5026788036365557,
+          "fundingPnlUsdt": 0.1086933747690739,
+          "netPnlUsdt": 68.95172578047335,
+          "netR": 1.988637064297223
         },
         {
           "id": "V8|bear|DOGEUSDT|1769731200000",
@@ -7700,16 +9288,16 @@
           "decisionTime": 1769732400000,
           "fillTime": 1769732400000,
           "fillPrice": 0.11724,
-          "stop": 0.13115396925416845,
-          "target": 0.0894120614916631,
+          "stop": 0.13115,
+          "target": 0.08942,
           "exitTime": 1770322920000,
-          "exitPrice": 0.0894120614916631,
+          "exitPrice": 0.08942,
           "exitReason": "tp",
-          "grossPnlUsdt": 60.455764309446515,
-          "modeledCostUsdt": 0.3820531193237374,
-          "fundingPnlUsdt": -0.236182264886437,
-          "netPnlUsdt": 59.83752892523634,
-          "netR": 1.9795475124242679
+          "grossPnlUsdt": 60.472591963651425,
+          "modeledCostUsdt": 0.38226851267892664,
+          "fundingPnlUsdt": -0.23631541938223105,
+          "netPnlUsdt": 59.85400803159027,
+          "netR": 1.9795416762544942
         },
         {
           "id": "V8|reversal|HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
@@ -7723,16 +9311,16 @@
           "decisionTime": 1772886000000,
           "fillTime": 1772886000000,
           "fillPrice": 0.04422,
-          "stop": 0.04740129842512579,
-          "target": 0.03785740314974843,
+          "stop": 0.0474,
+          "target": 0.03786,
           "exitTime": 1772899260000,
-          "exitPrice": 0.03785740314974843,
+          "exitPrice": 0.03786,
           "exitReason": "tp",
-          "grossPnlUsdt": 88.59440973983169,
-          "modeledCostUsdt": 0.9235957167097083,
-          "fundingPnlUsdt": 0.13228772287488857,
-          "netPnlUsdt": 87.80310174599687,
-          "netR": 1.982136389956012
+          "grossPnlUsdt": 88.6292684708597,
+          "modeledCostUsdt": 0.9243363801371259,
+          "fundingPnlUsdt": 0.13239380898643838,
+          "netPnlUsdt": 87.83732589970901,
+          "netR": 1.9821290960691866
         },
         {
           "id": "V8|bear|ADAUSDT|1780012800000",
@@ -7746,16 +9334,16 @@
           "decisionTime": 1780014000000,
           "fillTime": 1780014000000,
           "fillPrice": 0.2351,
-          "stop": 0.2530496704820393,
-          "target": 0.1992006590359214,
+          "stop": 0.253,
+          "target": 0.1993,
           "exitTime": 1780532820000,
-          "exitPrice": 0.1992006590359214,
+          "exitPrice": 0.1993,
           "exitReason": "tp",
-          "grossPnlUsdt": 94.9512854560267,
-          "modeledCostUsdt": 0.9327349727554322,
-          "fundingPnlUsdt": 0.03741536543211851,
-          "netPnlUsdt": 94.0559658487034,
-          "netR": 1.9811414958097027
+          "grossPnlUsdt": 95.21366535183392,
+          "modeledCostUsdt": 0.9379077957073809,
+          "fundingPnlUsdt": 0.03762286602630238,
+          "netPnlUsdt": 94.31338042215285,
+          "netR": 1.981089165586592
         },
         {
           "id": "V8|bear|BTCUSDT|1780012800000",
@@ -7769,16 +9357,16 @@
           "decisionTime": 1780014000000,
           "fillTime": 1780014000000,
           "fillPrice": 73757.1,
-          "stop": 79085.36182118049,
-          "target": 63100.576357639045,
+          "stop": 79085.4,
+          "target": 63100.5,
           "exitTime": 1780533540000,
-          "exitPrice": 63100.576357639045,
+          "exitPrice": 63100.5,
           "exitReason": "tp",
-          "grossPnlUsdt": 100.35129361706602,
-          "modeledCostUsdt": 1.0418435664639694,
-          "fundingPnlUsdt": 0.7488666180856253,
-          "netPnlUsdt": 100.05831666868768,
-          "netR": 1.9941609731610173
+          "grossPnlUsdt": 100.34941606297255,
+          "modeledCostUsdt": 1.0418166087914913,
+          "fundingPnlUsdt": 0.7488472411833051,
+          "netPnlUsdt": 100.05644669536436,
+          "netR": 1.9941610149993483
         }
       ],
       "signalObservations": [
@@ -9066,7 +10654,10 @@
     }
   },
   "alphaCoverage": {
-    "v75": [],
+    "v75": [
+      "daily_breakout_long",
+      "volume_shock_short"
+    ],
     "v8": [
       "v8_bear_trend_short",
       "v8_daily_breakout_long",
@@ -9074,15 +10665,15 @@
     ]
   },
   "reproducibility": {
-    "repositoryCommitSha": "ef0ee30550d5225be646ae1c443098248c32da75",
+    "repositoryCommitSha": "ee65454189a5a0268141e846b9399d5cc57d0af6",
     "strategyCommitSha": "003b931fe1ad576a3d42858f18c5fb9a19d58ae9",
-    "runnerSha256": "378dfcc36d08ef36da3d78e02a4214c822d9952588c701315d1844b14dd0ffa3",
+    "runnerSha256": "5963e41482285e0ec66eccb0a2713c8b16c083f7ad11434d2a4a764bc2a04ffb",
     "configSha256": "fdc4433881eafbc383795df9602b667d1f9b8033ef0d8f3c96e0d6814eb96dd8",
     "manifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
     "datasetSnapshot": "2026-08-01T00:00:00.000Z",
     "preRunWorkingTreeDirty": false,
     "reportWritesCreateExpectedDirty": true,
-    "runTimestamp": "2026-08-23T11:04:46.438Z"
+    "runTimestamp": "2026-08-24T01:28:59.796Z"
   },
   "m4": {
     "strictComplete": false,
@@ -9093,8 +10684,8 @@
   "releaseChecklist": [
     {
       "item": "V7.5 Control ranked rejection audit",
-      "status": "BLOCKED",
-      "evidence": "24 per-signal rows with raw reason and category"
+      "status": "PASS",
+      "evidence": "6 per-signal rows with raw reason and category"
     },
     {
       "item": "V8 Shadow signal pipeline",
@@ -9123,125 +10714,29 @@
     },
     {
       "item": "production release",
-      "status": "BLOCKED",
-      "evidence": "The persisted V7.5 accepted=0 result was invalidated by the missing exchange-rule loader input. A fresh signal-validation replay is required after the loader fix before PR #1 can become Ready for Review."
+      "status": "READY",
+      "evidence": "manual上线授权 required; no deployment performed"
     }
   ],
   "acceptanceAudit": {
-    "status": "INVALIDATED_BY_ACCEPTANCE_LOADER_BUG",
+    "status": "CORRECTIVE_REPLAY_VALIDATED",
     "rankedSignals": 24,
-    "persistedAcceptedSignals": 0,
-    "recomputedAcceptedSignals": null,
-    "requiresReplay": true,
+    "persistedAcceptedSignals": 18,
+    "recomputedAcceptedSignals": 18,
+    "requiresReplay": false,
     "rows": [
-      {
-        "signalId": "1000CATUSDT|v59_volume_shock_reversal|short|1769601600000",
-        "symbol": "1000CATUSDT",
-        "side": "short",
-        "signalTime": 1769601600000,
-        "firstFailureTimestamp": 1769602800000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
       {
         "signalId": "1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000",
         "symbol": "1MBABYDOGEUSDT",
         "side": "short",
         "signalTime": 1753718400000,
-        "firstFailureTimestamp": 1753719600000,
-        "reason": "invalid-market-tick",
         "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1742932800000",
-        "symbol": "ACTUSDT",
-        "side": "short",
-        "signalTime": 1742932800000,
-        "firstFailureTimestamp": 1742934000000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "ACTUSDT|v59_volume_shock_reversal|short|1754884800000",
-        "symbol": "ACTUSDT",
-        "side": "short",
-        "signalTime": 1754884800000,
-        "firstFailureTimestamp": 1754886000000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "ADAUSDT|v39_10d|long|1757808000000",
-        "symbol": "ADAUSDT",
-        "side": "long",
-        "signalTime": 1757808000000,
-        "firstFailureTimestamp": 1757809200000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "AEROUSDT|v59_volume_shock_reversal|short|1757088000000",
-        "symbol": "AEROUSDT",
-        "side": "short",
-        "signalTime": 1757088000000,
-        "firstFailureTimestamp": 1757089200000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "ALTUSDT|v59_volume_shock_reversal|short|1755057600000",
-        "symbol": "ALTUSDT",
-        "side": "short",
-        "signalTime": 1755057600000,
-        "firstFailureTimestamp": 1755058800000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "AUCTIONUSDT|v59_volume_shock_reversal|short|1753718400000",
-        "symbol": "AUCTIONUSDT",
-        "side": "short",
-        "signalTime": 1753718400000,
-        "firstFailureTimestamp": 1753719600000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "BCHUSDT|v39_5d|long|1754697600000",
-        "symbol": "BCHUSDT",
-        "side": "long",
-        "signalTime": 1754697600000,
-        "firstFailureTimestamp": 1754698800000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "BIGTIMEUSDT|v59_volume_shock_reversal|short|1753084800000",
-        "symbol": "BIGTIMEUSDT",
-        "side": "short",
-        "signalTime": 1753084800000,
-        "firstFailureTimestamp": 1753086000000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "BNBUSDT|v39_5d|long|1754611200000",
-        "symbol": "BNBUSDT",
-        "side": "long",
-        "signalTime": 1754611200000,
-        "firstFailureTimestamp": 1754612400000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
+        "reason": "fill unavailable",
+        "rawReason": "fill unavailable",
+        "firstFailureTimestamp": null,
+        "gapStart": null,
+        "gapEnd": null,
+        "missingDurationMs": null,
         "boundary": null
       },
       {
@@ -9249,9 +10744,13 @@
         "symbol": "BNBUSDT",
         "side": "long",
         "signalTime": 1754697600000,
-        "firstFailureTimestamp": 1754698800000,
-        "reason": "invalid-market-tick",
         "stage": "accepted signal",
+        "reason": "other",
+        "rawReason": "symbol already open",
+        "firstFailureTimestamp": null,
+        "gapStart": null,
+        "gapEnd": null,
+        "missingDurationMs": null,
         "boundary": null
       },
       {
@@ -9259,9 +10758,13 @@
         "symbol": "BNBUSDT",
         "side": "long",
         "signalTime": 1755043200000,
-        "firstFailureTimestamp": 1755044400000,
-        "reason": "invalid-market-tick",
         "stage": "accepted signal",
+        "reason": "other",
+        "rawReason": "symbol already open",
+        "firstFailureTimestamp": null,
+        "gapStart": null,
+        "gapEnd": null,
+        "missingDurationMs": null,
         "boundary": null
       },
       {
@@ -9269,9 +10772,13 @@
         "symbol": "BNBUSDT",
         "side": "long",
         "signalTime": 1755734400000,
-        "firstFailureTimestamp": 1755735600000,
-        "reason": "invalid-market-tick",
         "stage": "accepted signal",
+        "reason": "other",
+        "rawReason": "symbol already open",
+        "firstFailureTimestamp": null,
+        "gapStart": null,
+        "gapEnd": null,
+        "missingDurationMs": null,
         "boundary": null
       },
       {
@@ -9279,19 +10786,13 @@
         "symbol": "BNBUSDT",
         "side": "long",
         "signalTime": 1757808000000,
-        "firstFailureTimestamp": 1757809200000,
-        "reason": "invalid-market-tick",
         "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "BNBUSDT|v39_20d|long|1758067200000",
-        "symbol": "BNBUSDT",
-        "side": "long",
-        "signalTime": 1758067200000,
-        "firstFailureTimestamp": 1758068400000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
+        "reason": "cooldown",
+        "rawReason": "cooldown",
+        "firstFailureTimestamp": null,
+        "gapStart": null,
+        "gapEnd": null,
+        "missingDurationMs": null,
         "boundary": null
       },
       {
@@ -9299,338 +10800,30 @@
         "symbol": "BNBUSDT",
         "side": "long",
         "signalTime": 1758153600000,
-        "firstFailureTimestamp": 1758154800000,
-        "reason": "invalid-market-tick",
         "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "BTCUSDT|v39_10d|long|1755129600000",
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "signalTime": 1755129600000,
-        "firstFailureTimestamp": 1755130800000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "CAKEUSDT|v59_volume_shock_reversal|short|1749672000000",
-        "symbol": "CAKEUSDT",
-        "side": "short",
-        "signalTime": 1749672000000,
-        "firstFailureTimestamp": 1749673200000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "CAKEUSDT|v39_10d|long|1757721600000",
-        "symbol": "CAKEUSDT",
-        "side": "long",
-        "signalTime": 1757721600000,
-        "firstFailureTimestamp": 1757722800000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "DOGEUSDT|v39_10d|long|1759795200000",
-        "symbol": "DOGEUSDT",
-        "side": "long",
-        "signalTime": 1759795200000,
-        "firstFailureTimestamp": 1759796400000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "HANAUSDT|v59_volume_shock_reversal|short|1772884800000",
-        "symbol": "HANAUSDT",
-        "side": "short",
-        "signalTime": 1772884800000,
-        "firstFailureTimestamp": 1772886000000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "PARTIUSDT|v59_volume_shock_reversal|short|1768363200000",
-        "symbol": "PARTIUSDT",
-        "side": "short",
-        "signalTime": 1768363200000,
-        "firstFailureTimestamp": 1768364400000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
-        "boundary": null
-      },
-      {
-        "signalId": "SCRUSDT|v59_volume_shock_reversal|short|1755028800000",
-        "symbol": "SCRUSDT",
-        "side": "short",
-        "signalTime": 1755028800000,
-        "firstFailureTimestamp": 1755030000000,
-        "reason": "invalid-market-tick",
-        "stage": "accepted signal",
+        "reason": "other",
+        "rawReason": "symbol already open",
+        "firstFailureTimestamp": null,
+        "gapStart": null,
+        "gapEnd": null,
+        "missingDurationMs": null,
         "boundary": null
       }
     ],
-    "reason": "The persisted validation run had no data/backtest exchangeInfo.json. marketFor() therefore supplied empty filters and the frozen acceptance contract rejected every ranked V7.5 signal at invalid-market-tick. The verified source snapshot exists, and the loader is now fixed; no formal replay was run in this M5 pass.",
+    "reason": "Corrective replay accounted for every ranked signal after the exchangeInfo loader fix. No invalid-market-tick rejection remains; the previous accepted=0 snapshot is retained only as invalidated audit history.",
     "evidence": {
-      "missingRootExchangeInfo": "D:\\Codex\\Gmail\\tele-v75\\data\\backtest\\exchangeInfo.json",
-      "availableVerifiedSource": "D:\\Codex\\Gmail\\tele-v75\\data\\backtest\\source\\current-exchangeInfo.json",
-      "allSignalsHadMinuteData": true
+      "exchangeInfoRootPresent": false,
+      "verifiedExchangeInfoSourcePresent": true,
+      "accountedSignals": 24,
+      "invalidMarketTick": 0
+    },
+    "previousRun": {
+      "status": "INVALIDATED_BY_LOADER_BUG",
+      "rankedSignals": 24,
+      "persistedAcceptedSignals": 0,
+      "rawReason": "invalid-market-tick",
+      "reason": "The prior snapshot lacked exchange filters at marketFor(); it is not reused for accepted/trade metrics."
     }
-  },
-  "notifiableAlertIncrement": {
-    "v75Notifiable": 0,
-    "v8OnlyNotifiable": 24,
-    "overlapDeduped": 0,
-    "combinedNotifiable": 24,
-    "actualSignalIncreasePct": null,
-    "emailSent": null,
-    "alerts": [
-      {
-        "key": "1000CATUSDT|short|1769601600000",
-        "symbol": "1000CATUSDT",
-        "side": "short",
-        "signalTime": 1769601600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "ACTUSDT|short|1742932800000",
-        "symbol": "ACTUSDT",
-        "side": "short",
-        "signalTime": 1742932800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "ACTUSDT|short|1754884800000",
-        "symbol": "ACTUSDT",
-        "side": "short",
-        "signalTime": 1754884800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "ADAUSDT|long|1757808000000",
-        "symbol": "ADAUSDT",
-        "side": "long",
-        "signalTime": 1757808000000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "ADAUSDT|short|1780012800000",
-        "symbol": "ADAUSDT",
-        "side": "short",
-        "signalTime": 1780012800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "AEROUSDT|short|1757088000000",
-        "symbol": "AEROUSDT",
-        "side": "short",
-        "signalTime": 1757088000000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "ALTUSDT|short|1755057600000",
-        "symbol": "ALTUSDT",
-        "side": "short",
-        "signalTime": 1755057600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "AUCTIONUSDT|short|1753718400000",
-        "symbol": "AUCTIONUSDT",
-        "side": "short",
-        "signalTime": 1753718400000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BCHUSDT|long|1754697600000",
-        "symbol": "BCHUSDT",
-        "side": "long",
-        "signalTime": 1754697600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BIGTIMEUSDT|short|1753084800000",
-        "symbol": "BIGTIMEUSDT",
-        "side": "short",
-        "signalTime": 1753084800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BNBUSDT|long|1754611200000",
-        "symbol": "BNBUSDT",
-        "side": "long",
-        "signalTime": 1754611200000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BNBUSDT|long|1757808000000",
-        "symbol": "BNBUSDT",
-        "side": "long",
-        "signalTime": 1757808000000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BTCUSDT|long|1755129600000",
-        "symbol": "BTCUSDT",
-        "side": "long",
-        "signalTime": 1755129600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BTCUSDT|short|1769385600000",
-        "symbol": "BTCUSDT",
-        "side": "short",
-        "signalTime": 1769385600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "BTCUSDT|short|1780012800000",
-        "symbol": "BTCUSDT",
-        "side": "short",
-        "signalTime": 1780012800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "CAKEUSDT|long|1757721600000",
-        "symbol": "CAKEUSDT",
-        "side": "long",
-        "signalTime": 1757721600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "CAKEUSDT|short|1749672000000",
-        "symbol": "CAKEUSDT",
-        "side": "short",
-        "signalTime": 1749672000000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "DOGEUSDT|long|1759795200000",
-        "symbol": "DOGEUSDT",
-        "side": "long",
-        "signalTime": 1759795200000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "DOGEUSDT|short|1767225600000",
-        "symbol": "DOGEUSDT",
-        "side": "short",
-        "signalTime": 1767225600000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "DOGEUSDT|short|1769731200000",
-        "symbol": "DOGEUSDT",
-        "side": "short",
-        "signalTime": 1769731200000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "ETCUSDT|short|1769731200000",
-        "symbol": "ETCUSDT",
-        "side": "short",
-        "signalTime": 1769731200000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "HANAUSDT|short|1772884800000",
-        "symbol": "HANAUSDT",
-        "side": "short",
-        "signalTime": 1772884800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "PARTIUSDT|short|1768363200000",
-        "symbol": "PARTIUSDT",
-        "side": "short",
-        "signalTime": 1768363200000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      },
-      {
-        "key": "SCRUSDT|short|1755028800000",
-        "symbol": "SCRUSDT",
-        "side": "short",
-        "signalTime": 1755028800000,
-        "sources": [
-          "V8 SHADOW"
-        ],
-        "sourceLabel": "V8 SHADOW / EXPERIMENTAL"
-      }
-    ]
   },
   "notificationStages": [
     {
@@ -9647,13 +10840,13 @@
     },
     {
       "stage": "accepted signal",
-      "v75": 0,
+      "v75": 18,
       "v8": 24,
       "userReceipt": false
     },
     {
       "stage": "notifiable alert",
-      "v75": 0,
+      "v75": 18,
       "v8": 24,
       "userReceipt": true
     },
@@ -9664,9 +10857,6 @@
       "userReceipt": true
     }
   ],
-  "productionReleaseStatus": "BLOCKED",
-  "releaseBlockers": [
-    "The persisted V7.5 accepted=0 result was invalidated by the missing exchange-rule loader input.",
-    "A fresh signal-validation replay is required after the loader fix before PR #1 can become Ready for Review."
-  ]
+  "productionReleaseStatus": "READY",
+  "releaseBlockers": []
 }
