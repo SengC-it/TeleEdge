@@ -74,9 +74,9 @@ begin
       v_reason := 'invalid-fill-or-stop';
     elsif v_candidate.side = 'short' and v_stop <= v_fill_price then
       v_reason := 'invalid-fill-or-stop';
-    elsif v_stop_pct > case when v_candidate.family = 'fundingCrowdingReversal' then 0.08
+    elsif v_stop_pct > (case when v_candidate.family = 'fundingCrowdingReversal' then 0.08
                             when v_candidate.family = 'volumeShockReversal' then 0.10
-                            else 0.12 end
+                            else 0.12 end)
        or v_stop_pct < 0.02 then
       v_reason := 'fill-stop-risk-out-of-bounds';
     else
