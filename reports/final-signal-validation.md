@@ -19,17 +19,17 @@
 - Audit status: **CORRECTIVE_REPLAY_VALIDATED**
 - Corrective replay accounted for every ranked signal after the exchangeInfo loader fix. No invalid-market-tick rejection remains; the previous accepted=0 snapshot is retained only as invalidated audit history.
 - Previous accepted=0 snapshot: **INVALIDATED_BY_LOADER_BUG**; it is not reused for current metrics.
-- Category counts: {"fill unavailable":1,"slippage":0,"stop-risk":0,"cooldown":1,"position cap":0,"quantity/minQty":0,"symbol already open":0,"other":4}
-- Raw reason counts: {"fill unavailable":1,"symbol already open":4,"cooldown":1}
+- Category counts: {"fill unavailable":1,"slippage":0,"stop-risk":0,"cooldown":1,"position cap":0,"quantity/minQty":0,"symbol already open":4,"other":0}
+- Raw reason counts: {"fill-stop-risk-out-of-bounds":1,"symbol-already-open":4,"symbol-cooldown":1}
 
 | Signal ID | Symbol | Side | First failure | Category | Raw reason |
 |---|---|---|---|---|---|
-| 1MBABYDOGEUSDT|v59_volume_shock_reversal|short|1753718400000 | 1MBABYDOGEUSDT | short | 2025-07-28T16:00:00.000Z | fill unavailable | fill unavailable |
-| BNBUSDT|v39_5d|long|1754697600000 | BNBUSDT | long | 2025-08-09T00:00:00.000Z | other | symbol already open |
-| BNBUSDT|v39_10d|long|1755043200000 | BNBUSDT | long | 2025-08-13T00:00:00.000Z | other | symbol already open |
-| BNBUSDT|v39_5d|long|1755734400000 | BNBUSDT | long | 2025-08-21T00:00:00.000Z | other | symbol already open |
-| BNBUSDT|v39_10d|long|1757808000000 | BNBUSDT | long | 2025-09-14T00:00:00.000Z | cooldown | cooldown |
-| BNBUSDT|v39_20d|long|1758153600000 | BNBUSDT | long | 2025-09-18T00:00:00.000Z | other | symbol already open |
+| 1MBABYDOGEUSDT\|v59_volume_shock_reversal\|short\|1753718400000 | 1MBABYDOGEUSDT | short | 2025-07-28T16:00:00.000Z | fill unavailable | fill-stop-risk-out-of-bounds |
+| BNBUSDT\|v39_5d\|long\|1754697600000 | BNBUSDT | long | 2025-08-09T00:00:00.000Z | symbol already open | symbol-already-open |
+| BNBUSDT\|v39_10d\|long\|1755043200000 | BNBUSDT | long | 2025-08-13T00:00:00.000Z | symbol already open | symbol-already-open |
+| BNBUSDT\|v39_5d\|long\|1755734400000 | BNBUSDT | long | 2025-08-21T00:00:00.000Z | symbol already open | symbol-already-open |
+| BNBUSDT\|v39_10d\|long\|1757808000000 | BNBUSDT | long | 2025-09-14T00:00:00.000Z | cooldown | symbol-cooldown |
+| BNBUSDT\|v39_20d\|long\|1758153600000 | BNBUSDT | long | 2025-09-18T00:00:00.000Z | symbol already open | symbol-already-open |
 
 ## Notification stages
 

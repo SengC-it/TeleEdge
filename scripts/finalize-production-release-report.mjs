@@ -127,7 +127,8 @@ function markdown(report) {
   const v75 = report.models.v75;
   const v8 = report.models.v8;
   const audit = report.models.v75.rejectionBreakdown;
-  const rows = (audit?.signals || []).map(row => `| ${row.signalId} | ${row.symbol} | ${row.side} | ${new Date(row.signalTime).toISOString()} | ${row.reason} | ${row.rawReason} |`).join('\n');
+  const cell = value => String(value ?? '').replaceAll('|', '\\|');
+  const rows = (audit?.signals || []).map(row => `| ${cell(row.signalId)} | ${cell(row.symbol)} | ${cell(row.side)} | ${new Date(row.signalTime).toISOString()} | ${cell(row.reason)} | ${cell(row.rawReason)} |`).join('\n');
   return [
     `# ${report.result}`,
     '',
