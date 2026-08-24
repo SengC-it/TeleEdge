@@ -4,8 +4,11 @@ import {aggregate} from './indicators.mjs';
 import {loadExchangeInfo, loadFundingHistory, loadPriceHistory} from './market-data.mjs';
 import {buildBreadth, buildBtcEnvironment, generateLatestCandidates} from './strategy.mjs';
 import {acceptCandidates} from './portfolio.mjs';
-import {fetchMinuteRange, getFundingRates, mapLimit} from './binance.mjs';
+import {fetchMinuteRange, getFundingRates, getTickerPrice, mapLimit} from './binance.mjs';
 import {notify} from './notifier.mjs';
+import {createFunnel, summarizeFunnel} from './funnel.mjs';
+import {acceptV8ShadowCandidates, generateV8ShadowCandidates, runV8ShadowMonitor} from './v8-shadow.mjs';
+import {mergeNotifiableAlerts, notifiableAlert} from './notifiable-alerts.mjs';
 
 function eligibleMarkets(exchangeInfo, endTime) {
   return (exchangeInfo.symbols || []).filter(market => market.quoteAsset === 'USDT'
@@ -36,6 +39,18 @@ async function buildEnvironment(markets, endTime) {
   };
 }
 
+async function resolveFillPrices(candidates, now) {
+  const symbols = [...new Set(candidates.map(candidate => candidate.marketId))];
+  const results = await mapLimit(symbols, Math.min(3, runtimeConfig.requestConcurrency), async marketId => {
+    try {
+      return [marketId, await getTickerPrice(marketId)];
+    } catch {
+      return [marketId, null];
+    }
+  });
+  return new Map(results.filter(([, price]) => Number.isFinite(price) && price > 0));
+}
+
 export async function runScan(now = Date.now()) {
   const state = loadState(now);
   state.service.status = 'scanning';
@@ -46,6 +61,8 @@ export async function runScan(now = Date.now()) {
     const endTime = Math.floor(now / H1) * H1;
     const exchangeInfo = await loadExchangeInfo();
     const markets = eligibleMarkets(exchangeInfo, endTime);
+    const funnel = createFunnel();
+    for (const market of markets) funnel.record({stage: 'universe', passed: true, family: 'all', side: 'all', regime: 'unknown', symbol: market.symbol, tier: CORE_MARKETS.has(market.symbol) ? 'core' : 'expanded'});
     const marketById = new Map(markets.map(market => [market.symbol, market]));
     const environment = await buildEnvironment(markets, endTime);
     const results = await mapLimit(markets, runtimeConfig.requestConcurrency, async market => {
@@ -55,21 +72,57 @@ export async function runScan(now = Date.now()) {
           loadFundingHistory(market.symbol, endTime),
         ]);
         if (h1.at(-1)?.t + H1 < endTime) throw new Error('price history is stale');
-        return {market, candidates: generateLatestCandidates({
+        const candidates = generateLatestCandidates({
           market,
           h1,
           funding,
           breadthByTime: environment.breadthByTime,
           btcEnvironment: environment.btcEnvironment,
           endTime,
-        })};
+          telemetry: funnel,
+        });
+        const v8Candidates = generateV8ShadowCandidates({
+          market,
+          h1,
+          funding,
+          breadthByTime: environment.breadthByTime,
+          btcEnvironment: environment.btcEnvironment,
+          endTime,
+        });
+        return {market, candidates, v8Candidates};
       } catch (error) {
+        funnel.record({stage: 'history_valid', passed: false, rejectionReason: 'market_data_error', family: 'all', side: 'all', regime: 'unknown', symbol: market.symbol, tier: CORE_MARKETS.has(market.symbol) ? 'core' : 'expanded'});
         return {market, error: String(error)};
       }
     });
     const candidates = results.flatMap(result => result.candidates || []);
     const fresh = candidates.filter(candidate => candidate.t <= now && candidate.t >= now - runtimeConfig.signalMaxAgeMs);
-    const decision = acceptCandidates(fresh, state, marketById);
+    const v8Fresh = results.flatMap(result => result.v8Candidates || [])
+      .filter(candidate => candidate.t <= now && candidate.t >= now - runtimeConfig.signalMaxAgeMs);
+    const fillPrices = runtimeConfig.offline ? new Map() : await resolveFillPrices([...fresh, ...v8Fresh], now);
+    const decision = acceptCandidates(fresh, state, marketById, {
+      decisionTime: now,
+      fillPrices,
+      strictFill: !runtimeConfig.offline,
+      funnel,
+    });
+    const v8Decision = acceptV8ShadowCandidates(v8Fresh, state.v8Shadow, marketById, {
+      decisionTime: now,
+      fillPrices,
+    });
+    const notifiableAlerts = mergeNotifiableAlerts([
+      ...decision.accepted.map(position => notifiableAlert(position, 'V7.5 CONTROL')),
+      ...v8Decision.accepted.map(position => notifiableAlert(position, 'V8 SHADOW')),
+    ]);
+    state.v8Shadow.lastScanSummary = {
+      scanTime: now,
+      candidates: v8Fresh.length,
+      unseenCandidates: v8Decision.unseenCount,
+      rankedCandidates: v8Decision.rankedCount,
+      accepted: v8Decision.accepted.length,
+      rejected: v8Decision.rejected.length,
+      rejectionReasons: Object.fromEntries(v8Decision.rejected.map(item => [item.reason, (v8Decision.rejected.filter(other => other.reason === item.reason).length)])),
+    };
     const errors = [...environment.errors, ...results.filter(result => result.error)];
     const summary = {
       scanTime: now,
@@ -79,12 +132,20 @@ export async function runScan(now = Date.now()) {
       marketErrors: errors.length,
       rawCandidates: candidates.length,
       freshCandidates: fresh.length,
+      fillPricesResolved: fillPrices.size,
+      funnel: summarizeFunnel(funnel),
       unseenCandidates: decision.unseenCount,
       rankedCandidates: decision.rankedCount,
       accepted: decision.accepted.length,
       rejected: decision.rejected.length,
       activePositions: state.positions.length,
       exchangeInfoFallback: exchangeInfo._fallbackError || null,
+      v8Shadow: state.v8Shadow.lastScanSummary,
+      notifiableAlerts: notifiableAlerts.length,
+      v75NotifiableAlerts: notifiableAlerts.filter(alert => alert.sourceLabel === 'V7.5 CONTROL').length,
+      v8OnlyNotifiableAlerts: notifiableAlerts.filter(alert => alert.sourceLabel === 'V8 SHADOW / EXPERIMENTAL').length,
+      overlapDedupedAlerts: notifiableAlerts.filter(alert => alert.sourceLabel === 'V7.5 CONTROL + V8 SHADOW').length,
+      emailSent: 0,
     };
     state.service.lastScanCompletedAt = Date.now();
     state.service.lastScanSummary = summary;
@@ -92,15 +153,23 @@ export async function runScan(now = Date.now()) {
     if (errors.length) state.service.lastError = `${errors.length} market-data errors; first: ${errors[0].market.symbol}: ${errors[0].error}`;
     saveState(state);
     appendNdjson(EVENTS_FILE, {eventId: `scan-${now}`, type: 'scan', at: Date.now(), payload: summary});
-    for (const position of decision.accepted) {
+    for (const alert of notifiableAlerts) {
       try {
-        await notify('entry', position);
+        const result = await notify('entry', {
+          ...alert.payload,
+          sources: alert.sources,
+          sourceLabel: alert.sourceLabel,
+          notificationStage: 'notifiable alert',
+        });
+        if (result.delivered) summary.emailSent++;
       } catch (error) {
         state.service.status = 'degraded';
         state.service.lastError = `Entry notification failed: ${error}`;
         saveState(state);
       }
     }
+    state.service.lastScanSummary = summary;
+    saveState(state);
     return summary;
   } catch (error) {
     state.service.status = 'degraded';
@@ -111,8 +180,12 @@ export async function runScan(now = Date.now()) {
   }
 }
 
-export function firstTouch(position, bars) {
+export function firstTouch(position, bars, now = Infinity) {
+  const fillTime = Number(position.fillTime ?? position.fill_time ?? position.signalTime ?? -Infinity);
+  const firstEligibleMinute = Number.isFinite(fillTime) ? Math.ceil(fillTime / 60_000) * 60_000 : -Infinity;
   for (const bar of bars) {
+    if ((bar.closeTime ?? bar.t + 60_000) >= now) continue;
+    if (bar.t < firstEligibleMinute) continue;
     const stopHit = position.side === 'long' ? bar.l <= position.stop : bar.h >= position.stop;
     const targetHit = position.side === 'long' ? bar.h >= position.target : bar.l <= position.target;
     // Deliberately conservative and consistent with the research fallback.
@@ -124,7 +197,7 @@ export function firstTouch(position, bars) {
 
 async function fundingSince(position, endTime) {
   const events = [];
-  let cursor = (position.lastFundingTime ?? position.signalTime) + 1;
+  let cursor = (position.lastFundingTime ?? position.fillTime ?? position.signalTime) + 1;
   while (cursor < endTime) {
     const batch = await getFundingRates(position.marketId, {startTime: cursor, endTime, limit: 1000});
     if (!Array.isArray(batch) || !batch.length) break;
@@ -169,18 +242,20 @@ export async function runMonitor(now = Date.now()) {
   const state = loadState(now);
   const active = state.positions.filter(position => position.status === 'open');
   if (!active.length) {
+    state.v8Shadow.lastMonitorSummary = await runV8ShadowMonitor(state.v8Shadow, now);
     state.service.lastMonitorAt = now;
     if (state.service.status === 'starting') state.service.status = 'ready';
     saveState(state, now);
-    return {checked: 0, closed: 0, errors: 0};
+    saveState(state, now);
+    return {checked: 0, closed: 0, errors: 0, v8Shadow: state.v8Shadow.lastMonitorSummary};
   }
   const results = await mapLimit(active, Math.min(3, active.length), async position => {
     try {
       const [bars, funding] = await Promise.all([
-        fetchMinuteRange(position.marketId, position.lastCheckedAt, now),
+        fetchMinuteRange(position.marketId, position.lastCheckedAt ?? position.fillTime, now),
         fundingSince(position, now),
       ]);
-      const touch = firstTouch(position, bars);
+      const touch = firstTouch(position, bars, now);
       applyFunding(position, funding, touch?.time ?? now + 1);
       if (!touch) {
         position.lastCheckedAt = Math.floor(now / 60_000) * 60_000;
@@ -215,5 +290,7 @@ export async function runMonitor(now = Date.now()) {
       saveState(state);
     }
   }
-  return {checked: active.length, closed: closed.length, errors: errors.length};
+  state.v8Shadow.lastMonitorSummary = await runV8ShadowMonitor(state.v8Shadow, now);
+  saveState(state, now);
+  return {checked: active.length, closed: closed.length, errors: errors.length, v8Shadow: state.v8Shadow.lastMonitorSummary};
 }

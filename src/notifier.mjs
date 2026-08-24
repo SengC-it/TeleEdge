@@ -5,12 +5,15 @@ function renderEntry(position) {
   return [
     `[Tele-Signal] ${position.side.toUpperCase()} ${position.marketId}`,
     `策略: ${position.family} / ${position.edgeSegment}`,
-    `入场: ${position.entry}`,
+    `信号参考价: ${position.signalPrice ?? position.entry}`,
+    `模拟成交价: ${position.fillPrice ?? position.entry}`,
     `止损: ${position.stop}`,
     `止盈: ${position.target} (${position.targetR}R)`,
     `数量: ${position.quantity}`,
     `计划风险: ${position.riskUsdt.toFixed(2)} USDT`,
-    `信号K线收盘: ${new Date(position.signalTime).toISOString()}`,
+    `信号来源: ${position.sourceLabel || 'V7.5 CONTROL'}`,
+    `信号确认时间: ${new Date(position.signalTime).toISOString()}`,
+    `模拟成交时间: ${new Date(position.fillTime ?? position.openedAt).toISOString()}`,
     '结算规则: TP/SL先触达者；同一1m K线同时触达时按SL；无时间平仓。',
   ].join('\n');
 }

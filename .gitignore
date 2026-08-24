@@ -7,3 +7,8 @@ runtime/
 node_modules/
 supabase/.temp/
 *.log
+data/backtest/price/
+data/backtest/funding/
+data/backtest/
+data/formal-validation/
+reports/.final-signal-trade-backtest*

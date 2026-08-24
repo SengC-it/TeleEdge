@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 2,
+  "status": "M4-INCOMPLETE",
+  "scope": "formal V7.5 vs V8 OOS is not complete",
+  "snapshotTimestamp": "2026-07-15T00:00:00.000Z",
+  "retrievedAt": null,
+  "hashAlgorithm": "SHA-256",
+  "universe": {
+    "source": "Binance USD-M exchangeInfo snapshot",
+    "pointInTime": false,
+    "historicalDelistingsResolved": false,
+    "expandedNonCoreCovered": false,
+    "symbols": [],
+    "markets": [],
+    "note": "Populate with scripts/fetch-backtest-data.mjs. A current exchangeInfo response is not a point-in-time historical universe."
+  },
+  "requiredAlphaCoverage": [
+    "daily_breakout_long",
+    "funding_crowding_short",
+    "volume_shock_short",
+    "v8_bear_trend_short"
+  ],
+  "execution": {
+    "decisionLatencyMinutes": 20,
+    "preferredInterval": "1m",
+    "oneMinuteAvailable": false,
+    "executionProxyAllowedOnlyInSmoke": true
+  },
+  "sources": {
+    "price": {
+      "provider": "Binance Public Data",
+      "urlTemplate": "https://data.binance.vision/data/futures/um/monthly/klines/{SYMBOL}/1h/{SYMBOL}-1h-{YYYY}-{MM}.zip",
+      "apiFallback": "https://fapi.binance.com/fapi/v1/klines"
+    },
+    "funding": {
+      "provider": "Binance USD-M Futures REST API",
+      "urlTemplate": "https://fapi.binance.com/fapi/v1/fundingRate",
+      "fundingIntervalFallbackHours": 8,
+      "fundingIntervalSource": "documented-fallback",
+      "note": "Funding is an event stream. Artifact-level observed fundingIntervalHours takes precedence; otherwise the verifier uses this explicit 8-hour fallback and never requires an event at activeStart."
+    },
+    "universe": {
+      "provider": "Binance USD-M Futures REST API",
+      "urlTemplate": "https://fapi.binance.com/fapi/v1/exchangeInfo"
+    }
+  },
+  "artifacts": []
+}

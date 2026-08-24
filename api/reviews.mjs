@@ -1,0 +1,26 @@
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://jfvbikivtpfjgfsnggiz.supabase.co';
+const REVIEWS_URL = process.env.TELEEDGE_REVIEWS_URL || `${SUPABASE_URL}/functions/v1/teleeg-reviews`;
+const REVIEWS_TOKEN = process.env.TELEEDGE_REVIEWS_TOKEN || '';
+
+export default async function handler(_request, response) {
+  if (!REVIEWS_TOKEN) {
+    return response.status(500).json({ok: false, error: 'reviews-auth-not-configured'});
+  }
+  try {
+    const result = await fetch(REVIEWS_URL, {
+      headers: {
+        accept: 'application/json',
+        'x-teleeg-reviews-token': REVIEWS_TOKEN,
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    const text = await result.text();
+    if (!result.ok) throw new Error(`Reviews service ${result.status}: ${text.slice(0, 300)}`);
+    const payload = JSON.parse(text);
+    response.setHeader('cache-control', 'no-store');
+    return response.status(200).json(payload);
+  } catch (error) {
+    console.error('TeleEdge reviews failure', error);
+    return response.status(502).json({ok: false, error: String(error)});
+  }
+}

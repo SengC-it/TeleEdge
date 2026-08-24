@@ -57,6 +57,7 @@ create table if not exists public.teleeg_candidates (
   route text not null,
   edge_segment text not null,
   entry numeric not null,
+  signal_price numeric,
   stop numeric not null,
   target numeric not null,
   target_r numeric not null,
@@ -68,6 +69,9 @@ create table if not exists public.teleeg_candidates (
   step_size numeric not null,
   min_qty numeric not null,
   features jsonb not null default '{}'::jsonb,
+  decision_time timestamptz,
+  fill_time timestamptz,
+  fill_price numeric,
   status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected')),
   decision_reason text,
   created_at timestamptz not null default now(),
@@ -93,11 +97,16 @@ create table if not exists public.teleeg_positions (
   edge_segment text not null,
   edge_score numeric not null,
   signal_time timestamptz not null,
+  signal_price numeric,
+  decision_time timestamptz,
+  fill_time timestamptz,
+  fill_price numeric,
   opened_at timestamptz not null default now(),
   entry numeric not null,
   stop numeric not null,
   target numeric not null,
   target_r numeric not null,
+  effective_target_r numeric not null,
   stop_pct numeric not null,
   quantity numeric not null,
   notional_usdt numeric(24, 8) not null,
@@ -122,6 +131,91 @@ create unique index if not exists teleeg_positions_one_open_market_idx
   on public.teleeg_positions (market_id) where status = 'open';
 create index if not exists teleeg_positions_status_idx
   on public.teleeg_positions (status, opened_at);
+
+-- V8 shadow state is deliberately separate from V7.5 positions, candidates,
+-- notifications, and account equity. It is research-only and never emits mail.
+create table if not exists public.teleeg_v8_shadow_account (
+  id smallint primary key default 1 check (id = 1),
+  model_version text not null default 'V8-shadow-research-20260819',
+  mode text not null default 'paper-shadow' check (mode = 'paper-shadow'),
+  starting_equity numeric(24, 8) not null default 10000,
+  equity numeric(24, 8) not null default 10000,
+  peak_equity numeric(24, 8) not null default 10000,
+  realized_pnl numeric(24, 8) not null default 0,
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.teleeg_v8_shadow_signals (
+  signal_id text primary key,
+  cycle_time timestamptz not null,
+  signal_time timestamptz not null,
+  market_id text not null,
+  symbol text not null,
+  side text not null check (side in ('long', 'short')),
+  alpha text not null check (alpha in ('bull', 'bear', 'reversal')),
+  family text not null,
+  route text not null,
+  edge_segment text not null,
+  signal_price numeric not null,
+  stop numeric not null,
+  target numeric not null,
+  target_r numeric not null,
+  stop_pct numeric not null,
+  edge_score numeric not null,
+  event_score numeric not null,
+  day_volume numeric not null,
+  features jsonb not null default '{}'::jsonb,
+  status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected')),
+  decision_reason text,
+  created_at timestamptz not null default now(),
+  decided_at timestamptz
+);
+
+create index if not exists teleeg_v8_shadow_signals_cycle_idx
+  on public.teleeg_v8_shadow_signals (cycle_time, status, side, edge_score desc, event_score desc);
+
+create table if not exists public.teleeg_v8_shadow_positions (
+  signal_id text primary key references public.teleeg_v8_shadow_signals(signal_id),
+  model_version text not null default 'V8-shadow-research-20260819',
+  mode text not null default 'paper-shadow' check (mode = 'paper-shadow'),
+  market_id text not null,
+  symbol text not null,
+  side text not null check (side in ('long', 'short')),
+  alpha text not null check (alpha in ('bull', 'bear', 'reversal')),
+  family text not null,
+  signal_time timestamptz not null,
+  signal_price numeric not null,
+  decision_time timestamptz not null,
+  fill_time timestamptz not null,
+  fill_price numeric not null,
+  entry numeric not null,
+  stop numeric not null,
+  target numeric not null,
+  target_r numeric not null,
+  effective_target_r numeric not null,
+  quantity numeric not null default 1,
+  risk_usdt numeric not null,
+  funding_pnl_usdt numeric not null default 0,
+  last_funding_time timestamptz not null,
+  status text not null default 'open' check (status in ('open', 'closed')),
+  exit_reason text check (exit_reason is null or exit_reason in ('tp', 'sl')),
+  exit_price numeric,
+  exit_time timestamptz,
+  ambiguous_same_minute boolean,
+  gross_pnl_usdt numeric,
+  modeled_cost_usdt numeric,
+  net_pnl_usdt numeric,
+  net_r numeric,
+  opened_at timestamptz not null,
+  last_checked_at timestamptz not null,
+  features jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+
+create unique index if not exists teleeg_v8_shadow_one_open_market_idx
+  on public.teleeg_v8_shadow_positions (market_id) where status = 'open';
+create index if not exists teleeg_v8_shadow_positions_status_idx
+  on public.teleeg_v8_shadow_positions (status, opened_at);
 
 create table if not exists public.teleeg_cooldowns (
   market_id text primary key references public.teleeg_markets(market_id),
@@ -149,7 +243,11 @@ create table if not exists public.teleeg_outbox (
   id bigint generated always as identity primary key,
   event_key text not null unique,
   event_type text not null check (event_type in ('entry', 'exit')),
-  position_signal_id text not null references public.teleeg_positions(signal_id),
+  position_signal_id text references public.teleeg_positions(signal_id),
+  v8_position_signal_id text references public.teleeg_v8_shadow_positions(signal_id),
+  alert_key text,
+  sources jsonb not null default '["V7.5 CONTROL"]'::jsonb,
+  alert_classification text not null default 'V7.5 CONTROL',
   subject text not null,
   message text not null,
   payload jsonb not null default '{}'::jsonb,
@@ -164,6 +262,132 @@ create index if not exists teleeg_outbox_pending_idx
   on public.teleeg_outbox (status, created_at);
 create index if not exists teleeg_outbox_position_idx
   on public.teleeg_outbox (position_signal_id);
+create index if not exists teleeg_outbox_v8_position_idx
+  on public.teleeg_outbox (v8_position_signal_id);
+create unique index if not exists teleeg_outbox_alert_key_uidx
+  on public.teleeg_outbox (alert_key);
+
+create or replace function public.teleeg_outbox_prepare_advisory_alert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_position public.teleeg_positions%rowtype;
+begin
+  if new.event_type <> 'entry' or new.position_signal_id is null or new.v8_position_signal_id is not null then
+    return new;
+  end if;
+  select * into v_position from public.teleeg_positions where signal_id = new.position_signal_id;
+  if not found then return new; end if;
+  new.alert_key := coalesce(
+    new.alert_key,
+    v_position.market_id || '|' || v_position.side || '|' || floor(extract(epoch from v_position.signal_time) * 1000)::bigint
+  );
+  new.sources := '["V7.5 CONTROL"]'::jsonb;
+  new.alert_classification := 'V7.5 CONTROL';
+  new.payload := coalesce(new.payload, '{}'::jsonb) || jsonb_build_object(
+    'alert_key', new.alert_key,
+    'sources', new.sources,
+    'source_label', new.alert_classification
+  );
+  if exists (select 1 from public.teleeg_outbox where alert_key = new.alert_key) then
+    update public.teleeg_outbox
+    set position_signal_id = coalesce(position_signal_id, new.position_signal_id),
+        sources = case when sources @> '["V8 SHADOW"]'::jsonb then '["V7.5 CONTROL", "V8 SHADOW"]'::jsonb else '["V7.5 CONTROL"]'::jsonb end,
+        alert_classification = case when sources @> '["V8 SHADOW"]'::jsonb then 'V7.5 CONTROL + V8 SHADOW' else 'V7.5 CONTROL' end,
+        payload = payload || jsonb_build_object(
+          'sources', case when sources @> '["V8 SHADOW"]'::jsonb then '["V7.5 CONTROL", "V8 SHADOW"]'::jsonb else '["V7.5 CONTROL"]'::jsonb end,
+          'source_label', case when sources @> '["V8 SHADOW"]'::jsonb then 'V7.5 CONTROL + V8 SHADOW' else 'V7.5 CONTROL' end
+        )
+    where alert_key = new.alert_key;
+    return null;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.teleeg_outbox_prepare_advisory_alert() from public, anon, authenticated;
+drop trigger if exists teleeg_outbox_prepare_advisory_alert on public.teleeg_outbox;
+create trigger teleeg_outbox_prepare_advisory_alert
+before insert on public.teleeg_outbox
+for each row execute function public.teleeg_outbox_prepare_advisory_alert();
+
+create or replace function public.teleeg_queue_advisory_alert(
+  p_alert_key text,
+  p_model_source text,
+  p_market_id text,
+  p_side text,
+  p_signal_time timestamptz,
+  p_subject text,
+  p_message text,
+  p_payload jsonb default '{}'::jsonb,
+  p_position_signal_id text default null,
+  p_v8_position_signal_id text default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_existing_id bigint;
+  v_sources jsonb;
+  v_classification text;
+begin
+  if p_model_source not in ('V7.5 CONTROL', 'V8 SHADOW') then
+    raise exception 'invalid advisory model source';
+  end if;
+  if nullif(p_alert_key, '') is null or p_market_id is null or p_side is null or p_signal_time is null then
+    raise exception 'incomplete advisory alert identity';
+  end if;
+  if p_position_signal_id is null and p_v8_position_signal_id is null then
+    raise exception 'advisory alert position reference is required';
+  end if;
+  select id into v_existing_id from public.teleeg_outbox where alert_key = p_alert_key for update;
+  insert into public.teleeg_outbox (
+    event_key, event_type, position_signal_id, v8_position_signal_id, alert_key,
+    sources, alert_classification, subject, message, payload
+  ) values (
+    'entry:' || case when p_model_source = 'V8 SHADOW' then 'v8:' else '' end || coalesce(p_position_signal_id, p_v8_position_signal_id),
+    'entry', p_position_signal_id, p_v8_position_signal_id, p_alert_key,
+    case when p_model_source = 'V8 SHADOW' then '["V8 SHADOW"]'::jsonb else '["V7.5 CONTROL"]'::jsonb end,
+    case when p_model_source = 'V8 SHADOW' then 'V8 SHADOW / EXPERIMENTAL' else p_model_source end,
+    p_subject, p_message,
+    coalesce(p_payload, '{}'::jsonb) || jsonb_build_object('alert_key', p_alert_key, 'sources', case when p_model_source = 'V8 SHADOW' then '["V8 SHADOW"]'::jsonb else '["V7.5 CONTROL"]'::jsonb end)
+  )
+  on conflict (alert_key) do update set
+    position_signal_id = coalesce(public.teleeg_outbox.position_signal_id, excluded.position_signal_id),
+    v8_position_signal_id = coalesce(public.teleeg_outbox.v8_position_signal_id, excluded.v8_position_signal_id),
+    sources = case
+      when (public.teleeg_outbox.sources @> '["V7.5 CONTROL"]'::jsonb and excluded.sources @> '["V8 SHADOW"]'::jsonb)
+        or (public.teleeg_outbox.sources @> '["V8 SHADOW"]'::jsonb and excluded.sources @> '["V7.5 CONTROL"]'::jsonb)
+        then '["V7.5 CONTROL", "V8 SHADOW"]'::jsonb
+      when excluded.sources @> '["V7.5 CONTROL"]'::jsonb then '["V7.5 CONTROL"]'::jsonb
+      else '["V8 SHADOW"]'::jsonb
+    end,
+    alert_classification = case
+      when (public.teleeg_outbox.sources @> '["V7.5 CONTROL"]'::jsonb and excluded.sources @> '["V8 SHADOW"]'::jsonb)
+        or (public.teleeg_outbox.sources @> '["V8 SHADOW"]'::jsonb and excluded.sources @> '["V7.5 CONTROL"]'::jsonb)
+        then 'V7.5 CONTROL + V8 SHADOW'
+      when excluded.sources @> '["V7.5 CONTROL"]'::jsonb then 'V7.5 CONTROL'
+      else 'V8 SHADOW / EXPERIMENTAL'
+    end,
+    payload = public.teleeg_outbox.payload || excluded.payload;
+  select sources, alert_classification into v_sources, v_classification
+  from public.teleeg_outbox where alert_key = p_alert_key;
+  return jsonb_build_object(
+    'notifiable', true,
+    'deduped', v_existing_id is not null,
+    'sources', v_sources,
+    'sourceLabel', v_classification
+  );
+end;
+$$;
+
+revoke all on function public.teleeg_queue_advisory_alert(text, text, text, text, timestamptz, text, text, jsonb, text, text) from public, anon, authenticated;
+grant execute on function public.teleeg_queue_advisory_alert(text, text, text, text, timestamptz, text, text, jsonb, text, text) to service_role;
 
 create table if not exists public.teleeg_public_status (
   id smallint primary key default 1 check (id = 1),
@@ -188,12 +412,45 @@ create table if not exists public.teleeg_public_status (
 );
 
 insert into public.teleeg_account (id) values (1) on conflict (id) do nothing;
+insert into public.teleeg_v8_shadow_account (id) values (1) on conflict (id) do nothing;
 insert into public.teleeg_context (id) values (1) on conflict (id) do nothing;
 insert into public.teleeg_public_status (
   id, model_version, mode, equity, realized_pnl
 ) select 1, model_version, mode, equity, realized_pnl
   from public.teleeg_account where id = 1
 on conflict (id) do nothing;
+
+create or replace function public.teleeg_compact_scan_summary(p_summary jsonb)
+returns jsonb
+language sql
+stable
+set search_path = public, pg_catalog
+as $$
+  with reason_rows as (
+    select key as reason, (value #>> '{}')::integer as count
+    from jsonb_each(coalesce(p_summary->'funnel'->'rejectionReasons', '{}'::jsonb))
+    order by (value #>> '{}')::integer desc, key
+    limit 8
+  )
+  select jsonb_build_object(
+    'stages', coalesce(p_summary->'funnel'->'stages', '{}'::jsonb),
+    'topRejectionReasons', coalesce(
+      (select jsonb_agg(jsonb_build_object('reason', reason, 'count', count) order by count desc, reason)
+       from reason_rows),
+      '[]'::jsonb
+    ),
+    'candidateCount', coalesce(p_summary->'candidates', '0'::jsonb),
+    'acceptedCount', coalesce(p_summary->'accepted', '0'::jsonb),
+    'notifiableAlertCount', coalesce(p_summary->'notifiableAlerts', '0'::jsonb),
+    'emailSentCount', coalesce(p_summary->'emailSent', '0'::jsonb),
+    'v8Shadow', jsonb_build_object(
+      'candidates', coalesce(p_summary->'v8Shadow'->'candidates', '0'::jsonb),
+      'accepted', coalesce(p_summary->'v8Shadow'->'accepted', '0'::jsonb),
+      'rejected', coalesce(p_summary->'v8Shadow'->'rejected', '0'::jsonb),
+      'errors', coalesce(p_summary->'v8Shadow'->'errors', '0'::jsonb)
+    )
+  );
+$$;
 
 create or replace function public.teleeg_refresh_public_status()
 returns void
@@ -240,7 +497,7 @@ begin
     (select count(*) from public.teleeg_outbox where status in ('pending', 'failed')),
     v_context.as_of, v_scan.completed_at, v_monitor.completed_at,
     v_context.btc_router, v_context.breadth_above_50,
-    coalesce(v_scan.summary, '{}'::jsonb),
+    public.teleeg_compact_scan_summary(coalesce(v_scan.summary, '{}'::jsonb)),
     case when v_error.completed_at is not null
       and v_error.completed_at > now() - interval '24 hours' then v_error.error else null end,
     now()
@@ -279,6 +536,15 @@ declare
   v_quantity numeric;
   v_risk numeric;
   v_notional numeric;
+  v_signal_price numeric;
+  v_fill_price numeric;
+  v_stop numeric;
+  v_target numeric;
+  v_stop_pct numeric;
+  v_effective_target_r numeric;
+  v_tick_size numeric;
+  v_decision_time timestamptz;
+  v_fill_time timestamptz;
 begin
   perform pg_advisory_xact_lock(hashtext('teleeg-portfolio'));
   select * into v_candidate from public.teleeg_candidates
@@ -288,8 +554,16 @@ begin
     return jsonb_build_object('accepted', v_candidate.status = 'accepted', 'reason', coalesce(v_candidate.decision_reason, v_candidate.status));
   end if;
   select * into v_account from public.teleeg_account where id = 1 for update;
+  v_signal_price := coalesce(v_candidate.signal_price, v_candidate.entry);
+  v_fill_price := v_candidate.fill_price;
+  v_tick_size := v_candidate.tick_size;
+  v_decision_time := coalesce(v_candidate.decision_time, now());
+  v_fill_time := coalesce(v_candidate.fill_time, v_decision_time);
 
   if v_candidate.expires_at < now() then v_reason := 'signal-expired';
+  elsif v_fill_price is null or v_fill_price <= 0 then v_reason := 'fill-price-unavailable';
+  elsif v_fill_time < v_candidate.signal_time then v_reason := 'invalid-fill-time';
+  elsif v_tick_size is null or v_tick_size <= 0 then v_reason := 'invalid-market-tick';
   elsif exists (select 1 from public.teleeg_positions where market_id = v_candidate.market_id and status = 'open') then v_reason := 'symbol-already-open';
   elsif exists (
     select 1 from public.teleeg_cooldowns
@@ -304,8 +578,36 @@ begin
   end if;
 
   if v_reason is null then
+    v_fill_price := round(v_fill_price / v_tick_size) * v_tick_size;
+    v_stop := round(v_candidate.stop / v_tick_size) * v_tick_size;
+    v_stop_pct := abs(v_fill_price - v_stop) / v_fill_price;
+    if v_candidate.side = 'long' and v_stop >= v_fill_price then
+      v_reason := 'invalid-fill-or-stop';
+    elsif v_candidate.side = 'short' and v_stop <= v_fill_price then
+      v_reason := 'invalid-fill-or-stop';
+    elsif v_stop_pct < case when v_candidate.family = 'fundingCrowdingReversal' then 0.02
+                            when v_candidate.family = 'volumeShockReversal' then 0.02
+                            else 0.02 end
+       or v_stop_pct > case when v_candidate.family = 'fundingCrowdingReversal' then 0.08
+                            when v_candidate.family = 'volumeShockReversal' then 0.10
+                            else 0.12 end then
+      v_reason := 'fill-stop-risk-out-of-bounds';
+    else
+      v_target := round((v_fill_price
+        + (case when v_candidate.side = 'long' then 1 else -1 end)
+        * v_candidate.target_r * abs(v_fill_price - v_stop)) / v_tick_size) * v_tick_size;
+      v_effective_target_r := abs(v_target - v_fill_price) / abs(v_fill_price - v_stop);
+      if (v_candidate.side = 'long' and v_target <= v_fill_price)
+         or (v_candidate.side = 'short' and v_target >= v_fill_price)
+         or v_effective_target_r < v_candidate.target_r * 0.95 then
+        v_reason := 'fill-target-risk-too-low';
+      end if;
+    end if;
+  end if;
+
+  if v_reason is null then
     v_quantity := floor(
-      (v_account.equity * v_account.risk_fraction / abs(v_candidate.entry - v_candidate.stop))
+      (v_account.equity * v_account.risk_fraction / abs(v_fill_price - v_stop))
       / v_candidate.step_size
     ) * v_candidate.step_size;
     if v_quantity <= 0 or v_quantity < v_candidate.min_qty then
@@ -319,21 +621,22 @@ begin
     return jsonb_build_object('accepted', false, 'reason', v_reason);
   end if;
 
-  v_risk := v_quantity * abs(v_candidate.entry - v_candidate.stop);
-  v_notional := v_quantity * v_candidate.entry;
+  v_risk := v_quantity * abs(v_fill_price - v_stop);
+  v_notional := v_quantity * v_fill_price;
   insert into public.teleeg_positions (
     signal_id, model_version, mode, market_id, symbol, side, family, route,
-    edge_segment, edge_score, signal_time, entry, stop, target, target_r,
+    edge_segment, edge_score, signal_time, signal_price, decision_time,
+    fill_time, fill_price, opened_at, entry, stop, target, target_r, effective_target_r,
     stop_pct, quantity, notional_usdt, risk_usdt, last_funding_time,
     last_checked_at, features
   ) values (
     v_candidate.signal_id, v_account.model_version, v_account.mode,
     v_candidate.market_id, v_candidate.symbol, v_candidate.side,
     v_candidate.family, v_candidate.route, v_candidate.edge_segment,
-    v_candidate.edge_score, v_candidate.signal_time, v_candidate.entry,
-    v_candidate.stop, v_candidate.target, v_candidate.target_r,
-    v_candidate.stop_pct, v_quantity, v_notional, v_risk,
-    v_candidate.signal_time, v_candidate.signal_time, v_candidate.features
+    v_candidate.edge_score, v_candidate.signal_time, v_signal_price, v_decision_time,
+    v_fill_time, v_fill_price, v_decision_time, v_fill_price, v_stop, v_target, v_candidate.target_r, v_effective_target_r,
+    v_stop_pct, v_quantity, v_notional, v_risk,
+    v_fill_time, v_fill_time, v_candidate.features
   );
   update public.teleeg_candidates set status = 'accepted', decision_reason = 'accepted', decided_at = now()
     where signal_id = p_signal_id;
@@ -344,18 +647,20 @@ begin
     'entry', v_candidate.signal_id,
     '[TeleEdge入场提醒] ' || v_candidate.market_id || ' '
       || case when v_candidate.side = 'long' then '看涨' else '看跌' end,
-    format(E'TeleEdge 模拟交易提醒\n\n交易品种：%s\n方向：%s\n参考入场价：%s\n风险保护价：%s\n目标价格：%s\n参考数量：%s\n本次最多计划亏损：%s USDT\n信号时间：%s\n\n请注意：\n- 这是模拟交易提醒，系统不会自动下单。\n- 价格先到目标价格，按盈利结束。\n- 价格先到风险保护价，按亏损结束。\n- 如果同一分钟内两个价格都碰到，按风险保护价计算。\n- 如果两个价格都没碰到，会继续持有，不会因为时间到了而结束。',
+     format(E'TeleEdge 模拟交易提醒\n\n交易品种：%s\n方向：%s\n信号参考价：%s\n模拟成交价：%s\n风险保护价：%s\n目标价格：%s\n参考数量：%s\n本次最多计划亏损：%s USDT\n信号时间：%s\n模拟成交时间：%s\n\n请注意：\n- 这是模拟交易提醒，系统不会自动下单。\n- 价格先到目标价格，按盈利结束。\n- 价格先到风险保护价，按亏损结束。\n- 如果同一分钟内两个价格都碰到，按风险保护价计算。\n- 如果两个价格都没碰到，会继续持有，不会因为时间到了而结束。',
       v_candidate.market_id,
       case when v_candidate.side = 'long' then '看涨（做多）' else '看跌（做空）' end,
-      v_candidate.entry, v_candidate.stop, v_candidate.target,
-      v_quantity, round(v_risk, 2), v_candidate.signal_time),
+       v_signal_price, v_fill_price, v_stop, v_target,
+       v_quantity, round(v_risk, 2), v_candidate.signal_time, v_fill_time),
     jsonb_build_object('signal_id', v_candidate.signal_id, 'side', v_candidate.side,
-      'market_id', v_candidate.market_id, 'entry', v_candidate.entry,
-      'stop', v_candidate.stop, 'target', v_candidate.target,
+       'market_id', v_candidate.market_id, 'signal_price', v_signal_price,
+       'fill_price', v_fill_price,
+       'stop', v_stop, 'target', v_target, 'effective_target_r', v_effective_target_r,
       'quantity', v_quantity, 'risk_usdt', v_risk)
   ) on conflict (event_key) do nothing;
   update public.teleeg_account set updated_at = now() where id = 1;
-  return jsonb_build_object('accepted', true, 'reason', 'accepted', 'quantity', v_quantity, 'risk_usdt', v_risk);
+  return jsonb_build_object('accepted', true, 'reason', 'accepted', 'quantity', v_quantity, 'risk_usdt', v_risk,
+    'target', v_target, 'effective_target_r', v_effective_target_r, 'stop_pct', v_stop_pct);
 end;
 $$;
 
@@ -492,6 +797,9 @@ alter table public.teleeg_context enable row level security;
 alter table public.teleeg_markets enable row level security;
 alter table public.teleeg_candidates enable row level security;
 alter table public.teleeg_positions enable row level security;
+alter table public.teleeg_v8_shadow_account enable row level security;
+alter table public.teleeg_v8_shadow_signals enable row level security;
+alter table public.teleeg_v8_shadow_positions enable row level security;
 alter table public.teleeg_cooldowns enable row level security;
 alter table public.teleeg_job_runs enable row level security;
 alter table public.teleeg_outbox enable row level security;
@@ -502,6 +810,9 @@ revoke all on table public.teleeg_context from anon, authenticated;
 revoke all on table public.teleeg_markets from anon, authenticated;
 revoke all on table public.teleeg_candidates from anon, authenticated;
 revoke all on table public.teleeg_positions from anon, authenticated;
+revoke all on table public.teleeg_v8_shadow_account from anon, authenticated;
+revoke all on table public.teleeg_v8_shadow_signals from anon, authenticated;
+revoke all on table public.teleeg_v8_shadow_positions from anon, authenticated;
 revoke all on table public.teleeg_cooldowns from anon, authenticated;
 revoke all on table public.teleeg_job_runs from anon, authenticated;
 revoke all on table public.teleeg_outbox from anon, authenticated;
@@ -517,12 +828,16 @@ grant all on table public.teleeg_context to service_role;
 grant all on table public.teleeg_markets to service_role;
 grant all on table public.teleeg_candidates to service_role;
 grant all on table public.teleeg_positions to service_role;
+grant all on table public.teleeg_v8_shadow_account to service_role;
+grant all on table public.teleeg_v8_shadow_signals to service_role;
+grant all on table public.teleeg_v8_shadow_positions to service_role;
 grant all on table public.teleeg_cooldowns to service_role;
 grant all on table public.teleeg_job_runs to service_role;
 grant all on table public.teleeg_outbox to service_role;
 grant all on table public.teleeg_public_status to service_role;
 grant usage, select on all sequences in schema public to service_role;
 
+revoke all on function public.teleeg_compact_scan_summary(jsonb) from public, anon, authenticated;
 revoke all on function public.teleeg_refresh_public_status() from public, anon, authenticated;
 revoke all on function public.teleeg_accept_candidate(text) from public, anon, authenticated;
 revoke all on function public.teleeg_settle_position(text, text, numeric, timestamptz, boolean, numeric, timestamptz, numeric, numeric, numeric, numeric) from public, anon, authenticated;

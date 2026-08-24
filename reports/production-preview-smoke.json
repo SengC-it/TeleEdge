@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "mode": "preview-contract-smoke",
+  "productionReleaseStatus": "READY_FOR_MANUAL_AUTHORIZATION",
+  "signalOnlyAdvisory": true,
+  "pipelines": {"v75Control": "PASS", "v8Shadow": "PASS"},
+  "overlapDedupe": {"status": "PASS", "overlapDedupedAlerts": 1},
+  "v8OnlyNotification": {"status": "PASS", "alerts": 1},
+  "email": {"status": "PASS", "sent": 2, "transport": "preview fake delivery"},
+  "historyReviews": {"status": "PASS", "rows": 2},
+  "dashboardStatus": {"status": "PASS", "notifiableAlerts": 2, "includesByDimension": false},
+  "supabase": {"status": "PASS", "transport": "in-memory read/write contract; no production network or database mutation", "tables": ["teleeg_positions", "teleeg_v8_shadow_positions", "teleeg_outbox"]},
+  "orderPathAudit": {"status": "PASS", "files": ["src/service.mjs", "src/notifier.mjs", "supabase/functions/teleeg-worker/index.ts", "supabase/schema/teleeg.sql"]},
+  "notifiableAlerts": [
+    {"key": "BTCUSDT|long|1700000000000", "sources": ["V7.5 CONTROL", "V8 SHADOW"], "sourceLabel": "V7.5 CONTROL + V8 SHADOW"},
+    {"key": "ETHUSDT|short|1700000100000", "sources": ["V8 SHADOW"], "sourceLabel": "V8 SHADOW / EXPERIMENTAL"}
+  ]
+}
