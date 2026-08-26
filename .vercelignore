@@ -7,4 +7,5 @@ scripts/
 src/
 supabase/
 test/
+data/v81-development/
 .env*
