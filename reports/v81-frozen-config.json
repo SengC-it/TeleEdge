@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "engineVersion": "V8.1-research-1",
+  "engineVersion": "V8.1-research-2",
   "alphaRegistry": {
     "trend_pullback_continuation": {
       "id": "trend_pullback_continuation",
@@ -176,10 +176,10 @@
     "relative_strength_btc_rotation"
   ],
   "scoring": {
-    "version": "v81-score-1",
+    "version": "v81-score-2",
     "tierThresholds": {
-      "qualified": 62,
-      "highConfidence": 78
+      "highConfidence": 88,
+      "qualified": 76
     }
   },
   "riskSettings": {
@@ -189,8 +189,9 @@
   },
   "dedupeRules": {
     "key": "symbol|side|signalTime",
-    "sameTimePerSide": 3,
-    "deterministicTieBreak": "edgeScore,confidenceScore,eventScore,dayVolume,id"
+    "episodeKey": "symbol|side|alpha",
+    "deterministicTieBreak": "edgeScore,eventScore,dayVolume,id",
+    "sameTimePerSide": 3
   },
   "portfolioSettings": {
     "positionCap": 10,
@@ -215,9 +216,16 @@
     "source": "reports/fast-oos-universe.json",
     "mode": "stratified-fallback",
     "requestedSymbols": 388,
-    "symbols": 50,
+    "symbols": 150,
     "sourceManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a"
   },
+  "provenance": {
+    "strategyTreeSha256": "9328aa7e33cec1c52b07931566dd208a8888d2587fb88db67a38fbc9ca7a4092",
+    "developmentRunCodeCommit": "935c5baea770552ca1e4cb83c2f846b5f899ba1f",
+    "reportCommit": "935c5baea770552ca1e4cb83c2f846b5f899ba1f",
+    "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a"
+  },
   "noOrderMode": true,
-  "codeSha": "6873171499057c5696f6bdb67dea0a72f1a54a9e"
+  "frozenConfigSha256": "a9aceecce64298d153b61812752161dc30900124047e47d6181283868d937cd3",
+  "hashScope": "SHA256 of canonical config before report-only fingerprint fields"
 }

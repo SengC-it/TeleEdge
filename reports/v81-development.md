@@ -1,77 +1,78 @@
 # V8.1 Development Research Replay
 
-Status: **RESEARCH_FAIL**. This is a paper/simulation research artifact only.
+Status: **RESEARCH_FAIL**. Research-only paper simulation; no Holdout was run.
 
 ## Boundary and execution
 
 - Development: 2025-01-01T00:00:00.000Z through 2026-01-01T00:00:00.000Z (end exclusive)
-- Scan cadence: 4h
-- Decision latency: 20 minutes
-- Fill/settlement: completed 1m data, first executable minute, same-minute TP+SL => SL
-- Execution proxy: false
+- Scan cadence: 4h; decision latency: 20 minutes
+- Fill and settlement: first executable 1m bar at/after decision time, completed 1m first-touch, same-minute TP+SL => SL
+- Execution proxy: false; fees/funding/cost modeled: true
 - Holdout: **NOT RUN** (2026-01-01T00:00:00.000Z through 2026-07-15T00:00:00.000Z)
 
-## Universe
+## Development universe
 
-- Source: reports/fast-oos-universe.json
-- Mode: stratified-fallback
-- Symbols: 50 (20 core / 30 expanded)
-- Processed partitions: 50
+- Requested: 388; selected/processed: 150/150
+- Selection: stratified-fallback; 37 core / 113 expanded
+- Formal universe gate: PASS (minimum 150)
+- M4 remains: **M4-INCOMPLETE**
 
-## Counts
+## Monthly opportunity counts
 
-- Research observations: 13551 (1129.250 / month mean; 1075.500 median)
-- Qualified alerts: 10988 (915.667 / month mean; 875.000 median)
-- High confidence: 2596 (216.333 / month mean)
-
-## Monthly frequency
-
-| Month | Research | Qualified | High confidence | Unique alerts | Long | Short |
+| Month | Raw | Independent | Qualified A/B | High confidence A | Long | Short |
 |---|---:|---:|---:|---:|---:|---:|
-| 2025-01 | 883 | 691 | 174 | 691 | 327 | 556 |
-| 2025-02 | 694 | 585 | 142 | 585 | 224 | 470 |
-| 2025-03 | 808 | 661 | 165 | 661 | 329 | 479 |
-| 2025-04 | 846 | 678 | 167 | 678 | 415 | 431 |
-| 2025-05 | 878 | 725 | 177 | 725 | 530 | 348 |
-| 2025-06 | 1012 | 809 | 167 | 809 | 398 | 614 |
-| 2025-07 | 1139 | 941 | 219 | 941 | 765 | 374 |
-| 2025-08 | 1193 | 980 | 174 | 980 | 656 | 537 |
-| 2025-09 | 1379 | 1097 | 303 | 1097 | 794 | 585 |
-| 2025-10 | 1628 | 1324 | 320 | 1324 | 706 | 922 |
-| 2025-11 | 1636 | 1338 | 318 | 1338 | 581 | 1055 |
-| 2025-12 | 1455 | 1159 | 270 | 1159 | 610 | 845 |
+| 2025-01 | 2328 | 1234 | 0 | 0 | 526 | 708 |
+| 2025-02 | 2029 | 1046 | 1 | 0 | 440 | 606 |
+| 2025-03 | 2373 | 1208 | 2 | 0 | 575 | 633 |
+| 2025-04 | 2645 | 1256 | 2 | 0 | 652 | 604 |
+| 2025-05 | 2797 | 1373 | 2 | 0 | 764 | 609 |
+| 2025-06 | 3066 | 1692 | 1 | 0 | 703 | 989 |
+| 2025-07 | 3649 | 1705 | 5 | 0 | 1028 | 677 |
+| 2025-08 | 3602 | 1763 | 2 | 0 | 978 | 785 |
+| 2025-09 | 3938 | 2002 | 5 | 0 | 1016 | 986 |
+| 2025-10 | 4439 | 2219 | 6 | 0 | 999 | 1220 |
+| 2025-11 | 4374 | 2126 | 0 | 0 | 896 | 1230 |
+| 2025-12 | 3958 | 2113 | 1 | 0 | 916 | 1197 |
 
-## Portfolio metrics
+## Frozen baseline comparison
 
-| Metric | Value |
-|---|---:|
-| Trades | 870 |
-| Win rate | 33.79% |
-| Profit factor | 0.900 |
-| Expectancy (R) | -0.067 |
-| Net PnL (USDT) | -3201.93 |
-| Net return | -32.02% |
-| Max drawdown (USDT) | 5040.74 |
-| Max drawdown | 50.41% |
-| Unique symbols | 42 |
+| Model | Ranked | Accepted | Trades | Net PnL | Exp R | PF | Max DD |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| v75 | 22 | 17 | 17 | -234.25 | -0.234 | 0.678 | 3.76% |
+| v8 | 23 | 18 | 18 | -185.26 | -0.174 | 0.745 | 3.76% |
+| v81Incremental | 0 | 0 | 0 | 0.00 | n/a | n/a | 0.00% |
+| v81 | 23 | 18 | 18 | -185.26 | -0.174 | 0.745 | 3.76% |
+
+V8.1 combined = frozen V8 Shadow ranked signals plus only Development Alpha rows whose attribution status is KEEP. WATCH/REJECT rows are excluded from the incremental sleeve. The all-new research sleeve is audited separately below.
+
+## V8.1 combined metrics
+
+- Trades: 18; win rate: 33.33%; PF: 0.745; expectancy: -0.174R
+- Net PnL: -185.26 USDT (-1.85%); max DD: 379.55 USDT / 3.76%
+- Unique symbols: 15; ranked signal increase vs V8: 0.00%
 
 ## Alpha attribution
 
-| Alpha | Observations | Qualified | Trades | Expectancy R | PF | Status |
-|---|---:|---:|---:|---:|---:|---|
-| trend_pullback_continuation | 3512 | 3109 | 188 | -0.162 | 0.777 | REJECT |
-| volatility_expansion | 2429 | 2421 | 96 | -0.124 | 0.820 | REJECT |
-| failed_breakout_reversal | 2885 | 2218 | 221 | -0.064 | 0.904 | REJECT |
-| mean_reversion_extreme | 5 | 4 | 1 | -1.020 | 0.000 | WATCH |
-| funding_price_divergence | 861 | 688 | 48 | 0.208 | 1.368 | KEEP |
-| relative_strength_btc_rotation | 3859 | 3615 | 316 | -0.035 | 0.947 | REJECT |
+| Alpha | Independent observations | Qualified | Trades | Net PnL | Exp R | PF | Status |
+|---|---:|---:|---:|---:|---:|---:|---|
+| trend_pullback_continuation | 3036 | 0 | 0 | 0.00 | n/a | n/a | WATCH |
+| volatility_expansion | 4272 | 5 | 0 | 0.00 | n/a | n/a | WATCH |
+| failed_breakout_reversal | 5197 | 0 | 0 | 0.00 | n/a | n/a | WATCH |
+| mean_reversion_extreme | 15 | 0 | 0 | 0.00 | n/a | n/a | WATCH |
+| funding_price_divergence | 2149 | 27 | 1 | -55.37 | -0.923 | 0.000 | WATCH |
+| relative_strength_btc_rotation | 5068 | 1 | 0 | 0.00 | n/a | n/a | WATCH |
 
-## Gate and limitations
+## Gate
 
-- Development gate: **RESEARCH_FAIL**
-- Positive alpha families with sufficient sample: 1
-- Source code SHA: 6873171499057c5696f6bdb67dea0a72f1a54a9e
-- Frozen config SHA256: 0f9d9b9674ae8214622c48250311c2815aeb60cbf27a73ba6d4c4cb10bd53d5b
-- Baseline V7.5/V8 semantics remain frozen; this phase does not rewrite or deploy them.
-- Survivorship, lifecycle, and strict artifact limitations are inherited from the verified clean-eligible input manifest; this report does not upgrade M4 to complete.
-- Results are not a profitability conclusion and must not be used as Holdout evidence.
+- Decision: **RESEARCH_FAIL**
+- Positive families with sufficient sample: 0; KEEP families: 0
+- Tier monotonicity: PASS (insufficient-sample)
+- Provenance: strategy tree 9328aa7e33cec1c52b07931566dd208a8888d2587fb88db67a38fbc9ca7a4092; frozen config a9aceecce64298d153b61812752161dc30900124047e47d6181283868d937cd3
+
+## Limitations
+
+- M4 strict formal dataset remains incomplete; this Development replay does not upgrade M4 or remove survivorship/lifecycle/data continuity limitations.
+- The selected universe is the deterministic 150-symbol fallback from the 388-symbol eligible input; the full 388-symbol Development replay was not run in this artifact.
+- V7.5 and V8 baseline event sets are generated by the frozen backtest and re-evaluated through the shared local acceptance/fill contract for comparability.
+- V8.1 all-new Alpha rows are an audit sleeve; only KEEP rows are included in the V8.1 combined result. WATCH and REJECT are excluded.
+- No parameter optimization, strategy threshold change, Holdout, Production deployment, or real order path was run.
