@@ -300,7 +300,7 @@ async function main() {
     qualifiedMean: replay.frequency.qualified.mean >= 10,
     positiveAlphaFamilies: positiveAlphaFamilies >= 3,
     incrementalAlphaFamilies: keepAlphaIds.length >= 2,
-    tierMonotonicity: tierMonotonicity.valid,
+    tierMonotonicity: tierMonotonicity.sufficientSample && tierMonotonicity.valid,
     portfolioProfitFactor: Number(v81Metrics.profitFactor) >= 1.5,
     portfolioExpectancy: Number(v81Metrics.expectancyR) >= 0.20,
     drawdown: Number(v81Metrics.maxDrawdownPct) <= 0.05,

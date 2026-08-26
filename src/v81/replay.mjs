@@ -704,7 +704,7 @@ export async function runDevelopmentReplay({dataRoot, appDir, start, end, output
 export function researchConfig({start, end, sourceManifestSha256, universeCount, universeMode = 'full-clean-eligible', requestedUniverseCount = universeCount, provenance = {}}) {
   return {
     schemaVersion: 1,
-    engineVersion: 'V8.1-research-1',
+    engineVersion: 'V8.1-research-2',
     alphaRegistry: Object.fromEntries(RESEARCH_ALPHA_IDS.map(id => [id, ALPHA_REGISTRY[id]])),
     baselineAnchors: ['v8_daily_breakout_long', 'v8_funding_crowding_short', 'v8_volume_shock_short', 'v8_bear_trend_short'],
     enabledAlphaIds: RESEARCH_ALPHA_IDS,
