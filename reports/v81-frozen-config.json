@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "engineVersion": "V8.1-research-3",
+  "engineVersion": "V8.1-research-3.1",
   "alphaRegistry": {
     "trend_pullback_continuation": {
       "id": "trend_pullback_continuation",
@@ -220,9 +220,9 @@
     "sourceManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a"
   },
   "provenance": {
-    "strategyTreeSha256": "43e57071c09ee529d7fa152744e999d61969e7fa76f48de17da848e8d757fa55",
-    "developmentRunCodeCommit": "98a347817b7dc64a3105a474b3ee4b07ba529745",
-    "reportCommit": "98a347817b7dc64a3105a474b3ee4b07ba529745",
+    "strategyTreeSha256": "6e1a44992886f141ad6fdf09c3a387036f7df7303b52bfba8c132344534b60e0",
+    "developmentRunCodeCommit": "42ddd615aa9f58c7e21c5108c259d7bbe05d7f2d",
+    "reportCommit": "42ddd615aa9f58c7e21c5108c259d7bbe05d7f2d",
     "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
     "walkForwardSpec": {
       "method": "purged-walk-forward",
@@ -230,6 +230,7 @@
       "purgeDurationHours": 72,
       "noRandomSplit": true,
       "outcomeLabelsUsedOnlyInTraining": true,
+      "labelLifecycleBoundary": "signalTime < validationStart - purge AND exitTime < validationStart - purge",
       "inferenceFeatures": [
         "adx",
         "fundingZ",
@@ -310,6 +311,6 @@
     ]
   },
   "noOrderMode": true,
-  "frozenConfigSha256": "ba27f6b79c0b16d467e2c20a73ae4a4ce950f633bc828194d17538c48e3d0a20",
+  "frozenConfigSha256": "191ef4e21f0b00f3257868985173da1f5fc16729383b5db5c0fb3aab5c56ec1c",
   "hashScope": "SHA256 of canonical config before report-only fingerprint fields"
 }

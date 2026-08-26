@@ -19,22 +19,22 @@ Status: **RESEARCH_FAIL**. Research-only paper simulation; no Holdout was run.
 
 ## Monthly research counts
 
-| Month | Raw | Independent | Standalone executable | OOF qualified | OOF high confidence | Long | Short |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| 2025-01 | 2328 | 1234 | 842 | 0 | 0 | 526 | 708 |
-| 2025-02 | 2029 | 1046 | 635 | 0 | 0 | 440 | 606 |
-| 2025-03 | 2373 | 1208 | 843 | 0 | 0 | 575 | 633 |
-| 2025-04 | 2645 | 1256 | 874 | 0 | 0 | 652 | 604 |
-| 2025-05 | 2797 | 1373 | 966 | 27 | 0 | 764 | 609 |
-| 2025-06 | 3066 | 1692 | 1299 | 73 | 0 | 703 | 989 |
-| 2025-07 | 3649 | 1705 | 1249 | 6 | 0 | 1028 | 677 |
-| 2025-08 | 3602 | 1763 | 1346 | 7 | 0 | 978 | 785 |
-| 2025-09 | 3938 | 2002 | 1431 | 10 | 0 | 1016 | 986 |
-| 2025-10 | 4439 | 2219 | 1469 | 9 | 0 | 999 | 1220 |
-| 2025-11 | 4374 | 2126 | 1414 | 17 | 0 | 896 | 1230 |
-| 2025-12 | 3958 | 2113 | 1515 | 10 | 0 | 916 | 1197 |
+| Month | Raw | Independent | Standalone executable | Qualified candidate | Qualified executable | High candidate | High executable | Long | Short |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 2025-01 | 2328 | 1234 | 842 | 0 | 0 | 0 | 0 | 526 | 708 |
+| 2025-02 | 2029 | 1046 | 635 | 0 | 0 | 0 | 0 | 440 | 606 |
+| 2025-03 | 2373 | 1208 | 843 | 0 | 0 | 0 | 0 | 575 | 633 |
+| 2025-04 | 2645 | 1256 | 874 | 0 | 0 | 0 | 0 | 652 | 604 |
+| 2025-05 | 2797 | 1373 | 966 | 24 | 12 | 0 | 0 | 764 | 609 |
+| 2025-06 | 3066 | 1692 | 1299 | 70 | 46 | 0 | 0 | 703 | 989 |
+| 2025-07 | 3649 | 1705 | 1249 | 8 | 1 | 0 | 0 | 1028 | 677 |
+| 2025-08 | 3602 | 1763 | 1346 | 12 | 1 | 0 | 0 | 978 | 785 |
+| 2025-09 | 3938 | 2002 | 1431 | 9 | 0 | 0 | 0 | 1016 | 986 |
+| 2025-10 | 4439 | 2219 | 1469 | 9 | 1 | 0 | 0 | 999 | 1220 |
+| 2025-11 | 4374 | 2126 | 1414 | 15 | 3 | 0 | 0 | 896 | 1230 |
+| 2025-12 | 3958 | 2113 | 1515 | 8 | 3 | 0 | 0 | 916 | 1197 |
 
-The monthly standaloneExecutable and OOF columns are the formal research denominators; the legacy qualified/high-confidence columns remain available as ex-ante opportunity counts.
+The monthly standaloneExecutable and separately named OOF candidate/executable columns are the formal research denominators; the legacy qualified/high-confidence columns remain available as ex-ante opportunity counts.
 
 ## Frozen baseline comparison
 
@@ -66,25 +66,68 @@ V8.1 combined = frozen V8 Shadow ranked signals plus only Development Alpha rows
 
 ## Purged walk-forward OOF Alpha decisions
 
-| Alpha | OOF observations | OOF qualified | OOF trades | Net PnL | Exp R | PF | Decision |
-|---|---:|---:|---:|---:|---:|---:|---|
-| trend_pullback_continuation | 2339 | 6 | 1850 | 2822.32 | 0.025 | 1.038 | REJECT |
-| volatility_expansion | 3195 | 113 | 1632 | 3611.59 | 0.037 | 1.056 | REJECT |
-| failed_breakout_reversal | 3926 | 1 | 3128 | -2316.16 | -0.012 | 0.981 | REJECT |
-| mean_reversion_extreme | 10 | 0 | 5 | 151.41 | 0.505 | 2.225 | WATCH |
-| funding_price_divergence | 1620 | 32 | 1187 | -1373.94 | -0.019 | 0.971 | REJECT |
-| relative_strength_btc_rotation | 3903 | 7 | 2629 | 3151.74 | 0.020 | 1.031 | REJECT |
+| Alpha | All n / PF / Exp R | Qualified n / PF / Exp R | High n / PF / Exp R | Δ Exp R | Δ PF | Decision |
+|---|---:|---:|---:|---:|---:|
+| trend_pullback_continuation | 1850 / 1.038 / 0.025 | 1 / 0.000 / -1.024 | 0 / n/a / n/a | -1.050 | -1.038 | WATCH |
+| volatility_expansion | 1632 / 1.056 / 0.037 | 59 / 0.934 / -0.045 | 0 / n/a / n/a | -0.082 | -0.122 | REJECT |
+| failed_breakout_reversal | 3128 / 0.981 / -0.012 | 1 / 0.000 / -1.028 | 0 / n/a / n/a | -1.016 | -0.981 | WATCH |
+| mean_reversion_extreme | 5 / 2.225 / 0.505 | 0 / n/a / n/a | 0 / n/a / n/a | n/a | n/a | WATCH |
+| funding_price_divergence | 1187 / 0.971 / -0.019 | 1 / 0.000 / -0.923 | 0 / n/a / n/a | -0.903 | -0.971 | WATCH |
+| relative_strength_btc_rotation | 2629 / 1.031 / 0.020 | 3 / 0.900 / -0.066 | 0 / n/a / n/a | -0.086 | -0.131 | WATCH |
 
 - Folds: 4; purge/embargo: 72h
-- Time ordered: true; purge enforced: true; frozen validation: true; complete OOF coverage: true
+- Time ordered: true; purge enforced: true; label overlap free: true; frozen validation: true; complete OOF coverage: true
+
+### Fold label lifecycle accounting
+
+| Fold | Requested train observations | Train observations | Train executable labels | Excluded label overlap | Purged signals | Label overlap free |
+|---|---:|---:|---:|---:|---:|---|
+| fold-1 | 4744 | 4601 | 3005 | 76 | 143 | true |
+| fold-2 | 7809 | 7626 | 5134 | 173 | 183 | true |
+| fold-3 | 11277 | 11136 | 7783 | 161 | 141 | true |
+| fold-4 | 15498 | 15228 | 10647 | 126 | 270 | true |
+
+### Per-alpha OOF layer details
+
+**trend_pullback_continuation**
+- All OOF executable: sample=1850; symbols=119; wins/losses=652/1198; winRate=35.24%; PF=1.038; Exp=0.025R; 95% CI=[-0.040, 0.091]; net PnL=2822.32 USDT; max DD=69.52%; long=671; short=1179; regimes=bear,bull
+- Qualified OOF executable: sample=1; symbols=1; wins/losses=0/1; winRate=0.00%; PF=0.000; Exp=-1.024R; 95% CI=n/a; net PnL=-61.44 USDT; max DD=0.61%; long=0; short=1; regimes=bear
+- High-confidence OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
+
+**volatility_expansion**
+- All OOF executable: sample=1632; symbols=114; wins/losses=578/1054; winRate=35.42%; PF=1.056; Exp=0.037R; 95% CI=[-0.033, 0.106]; net PnL=3611.59 USDT; max DD=63.00%; long=895; short=737; regimes=bear,bull,sideways
+- Qualified OOF executable: sample=59; symbols=34; wins/losses=19/40; winRate=32.20%; PF=0.934; Exp=-0.045R; 95% CI=[-0.406, 0.316]; net PnL=-159.77 USDT; max DD=9.78%; long=0; short=59; regimes=bear,sideways
+- High-confidence OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
+
+**failed_breakout_reversal**
+- All OOF executable: sample=3128; symbols=119; wins/losses=1147/1981; winRate=36.67%; PF=0.981; Exp=-0.012R; 95% CI=[-0.060, 0.035]; net PnL=-2316.16 USDT; max DD=65.15%; long=1750; short=1378; regimes=bear,bull,sideways
+- Qualified OOF executable: sample=1; symbols=1; wins/losses=0/1; winRate=0.00%; PF=0.000; Exp=-1.028R; 95% CI=n/a; net PnL=-61.69 USDT; max DD=0.62%; long=0; short=1; regimes=sideways
+- High-confidence OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
+
+**mean_reversion_extreme**
+- All OOF executable: sample=5; symbols=5; wins/losses=3/2; winRate=60.00%; PF=2.225; Exp=0.505R; 95% CI=[-0.724, 1.733]; net PnL=151.41 USDT; max DD=0.62%; long=0; short=5; regimes=sideways
+- Qualified OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
+- High-confidence OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
+
+**funding_price_divergence**
+- All OOF executable: sample=1187; symbols=119; wins/losses=424/763; winRate=35.72%; PF=0.971; Exp=-0.019R; 95% CI=[-0.096, 0.057]; net PnL=-1373.94 USDT; max DD=39.26%; long=821; short=366; regimes=bear,bull,sideways
+- Qualified OOF executable: sample=1; symbols=1; wins/losses=0/1; winRate=0.00%; PF=0.000; Exp=-0.923R; 95% CI=n/a; net PnL=-55.37 USDT; max DD=0.55%; long=1; short=0; regimes=bull
+- High-confidence OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
+
+**relative_strength_btc_rotation**
+- All OOF executable: sample=2629; symbols=118; wins/losses=982/1647; winRate=37.35%; PF=1.031; Exp=0.020R; 95% CI=[-0.032, 0.072]; net PnL=3151.74 USDT; max DD=90.72%; long=1110; short=1519; regimes=bear,bull,sideways
+- Qualified OOF executable: sample=3; symbols=3; wins/losses=1/2; winRate=33.33%; PF=0.900; Exp=-0.066R; 95% CI=[-1.887, 1.755]; net PnL=-11.95 USDT; max DD=1.18%; long=0; short=3; regimes=bear
+- High-confidence OOF executable: sample=0; symbols=0; wins/losses=0/0; winRate=n/a; PF=n/a; Exp=n/aR; 95% CI=n/a; net PnL=0.00 USDT; max DD=0.00%; long=0; short=0; regimes=none
 
 ## Gate
 
 - Decision: **RESEARCH_FAIL**
-- Standalone executable outcomes: 13883; OOF qualified outcomes: 71
+- Standalone executable outcomes: 13883; OOF qualified candidates: 155; OOF qualified executable: 67; OOF high-confidence candidates: 0; OOF high-confidence executable: 0
 - Positive standalone families with sufficient sample: 3; OOF KEEP families: 0
-- Tier monotonicity: PASS (insufficient-sample; sufficient=false)
-- Provenance: strategy tree 43e57071c09ee529d7fa152744e999d61969e7fa76f48de17da848e8d757fa55; frozen config ba27f6b79c0b16d467e2c20a73ae4a4ce950f633bc828194d17538c48e3d0a20
+- Tier monotonicity: INSUFFICIENT (valid=false; sufficient=false)
+- Tier comparison: A=High Confidence, B=Qualified-B, C=Research-C
+- Current V8.1 alpha set exhausted: true
+- Provenance: strategy tree 6e1a44992886f141ad6fdf09c3a387036f7df7303b52bfba8c132344534b60e0; frozen config 191ef4e21f0b00f3257868985173da1f5fc16729383b5db5c0fb3aab5c56ec1c
 
 ## Limitations
 
