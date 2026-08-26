@@ -60,6 +60,19 @@ function observationTime(row) {
   return Number(row?.signalTime ?? row?.t);
 }
 
+function observationId(row) {
+  return String(row?.id ?? row?.observationId);
+}
+
+function outcomeHasExecutableLabel(outcome) {
+  return outcome?.executable === true && Number.isFinite(Number(outcome.netR));
+}
+
+function outcomeEndTime(outcome) {
+  const value = Number(outcome?.exitTime);
+  return Number.isFinite(value) ? value : null;
+}
+
 function stripOutcome(row) {
   const {outcome: _ignoredOutcome, ...exAnte} = row || {};
   return exAnte;
@@ -214,15 +227,24 @@ function validateFoldOrdering(folds, purgeDurationMs) {
 export function runPurgedWalkForward({observations = [], outcomes = [], folds = WALK_FORWARD_FOLDS, purgeDurationMs = PURGE_DURATION_MS} = {}) {
   const sortedObservations = [...observations].sort((a, b) => observationTime(a) - observationTime(b) || String(a.id).localeCompare(String(b.id)));
   const sortedOutcomes = [...outcomes].sort((a, b) => Number(a.signalTime) - Number(b.signalTime) || String(a.observationId).localeCompare(String(b.observationId)));
+  const outcomesByObservationId = new Map(sortedOutcomes.map(outcome => [observationId(outcome), outcome]));
   const oofRows = [];
   const oofOutcomes = [];
   const foldReports = [];
   for (const fold of folds) {
     const trainUsedEnd = fold.validationStart - purgeDurationMs;
+    const requestedTrain = sortedObservations.filter(row => observationTime(row) >= fold.trainStart && observationTime(row) < fold.trainEnd);
     const train = sortedObservations.filter(row => observationTime(row) >= fold.trainStart && observationTime(row) < trainUsedEnd);
     const purged = sortedObservations.filter(row => observationTime(row) >= trainUsedEnd && observationTime(row) < fold.validationStart);
+    const trainLabels = train
+      .map(row => ({observation: row, outcome: outcomesByObservationId.get(observationId(row))}))
+      .filter(({outcome}) => outcomeHasExecutableLabel(outcome) && outcomeEndTime(outcome) != null && outcomeEndTime(outcome) < trainUsedEnd);
+    const excludedLabelOverlap = train
+      .map(row => ({observation: row, outcome: outcomesByObservationId.get(observationId(row))}))
+      .filter(({outcome}) => outcomeHasExecutableLabel(outcome) && (outcomeEndTime(outcome) == null || outcomeEndTime(outcome) >= trainUsedEnd));
     const validation = sortedObservations.filter(row => observationTime(row) >= fold.validationStart && observationTime(row) < fold.validationEnd);
-    const models = calibrateAlphaModels(train, sortedOutcomes.filter(row => Number(row.signalTime) >= fold.trainStart && Number(row.signalTime) < trainUsedEnd));
+    const trainingOutcomes = trainLabels.map(({outcome}) => outcome);
+    const models = calibrateAlphaModels(train, trainingOutcomes);
     const modelRows = validation.map(candidate => {
       const scored = applyCalibratedScore(candidate, models[candidate.alpha]);
       return {...scored, oof: true, oofFold: fold.id, validationStart: fold.validationStart, validationEnd: fold.validationEnd};
@@ -247,10 +269,16 @@ export function runPurgedWalkForward({observations = [], outcomes = [], folds = 
       trainUsed: {start: fold.trainStart, end: trainUsedEnd},
       validation: {start: fold.validationStart, end: fold.validationEnd},
       purgeDurationHours: purgeDurationMs / H1,
+      requestedTrainObservations: requestedTrain.length,
       trainObservations: train.length,
+      trainExecutableLabels: trainingOutcomes.length,
+      excludedLabelOverlap: excludedLabelOverlap.length,
+      unresolvedLabelEnd: excludedLabelOverlap.filter(({outcome}) => outcomeEndTime(outcome) == null).length,
+      purgedSignals: purged.length,
       purgedObservations: purged.length,
       validationObservations: validation.length,
       validationExecutableOutcomes: oofOutcomes.filter(row => row.oofFold === fold.id && row.executable).length,
+      labelOverlapFree: trainingOutcomes.every(outcome => outcomeEndTime(outcome) < trainUsedEnd),
       models: Object.fromEntries(Object.entries(models).map(([alpha, model]) => [alpha, {
         trainingObservations: model.trainingObservations,
         trainingExecutableOutcomes: model.trainingExecutableOutcomes,
@@ -270,6 +298,7 @@ export function runPurgedWalkForward({observations = [], outcomes = [], folds = 
       purgeDurationHours: purgeDurationMs / H1,
       noRandomSplit: true,
       outcomeLabelsUsedOnlyInTraining: true,
+      labelLifecycleBoundary: 'signalTime < validationStart - purge AND exitTime < validationStart - purge',
       inferenceFeatures: CALIBRATION_FEATURES,
     },
     folds: foldReports,
@@ -278,6 +307,7 @@ export function runPurgedWalkForward({observations = [], outcomes = [], folds = 
     checks: {
       timeOrdered: foldReports.every(fold => fold.trainUsed.end <= fold.validation.start && fold.validation.start < fold.validation.end),
       purgeEnforced: validateFoldOrdering(foldReports, purgeDurationMs),
+      labelOverlapFree: foldReports.every(fold => fold.labelOverlapFree),
       validationFrozen: foldReports.every(fold => Object.values(fold.models).every(model => model.frozenForValidation)),
       completeValidationCoverage: expectedValidationIds.size === actualValidationIds.size && [...expectedValidationIds].every(id => actualValidationIds.has(id)),
     },

@@ -5,7 +5,7 @@ import {ALPHA_REGISTRY, RESEARCH_ALPHA_IDS, validateAlphaRegistry} from '../src/
 import {fourHourBars, prepareFeatureSeries} from '../src/v81/features.mjs';
 import {detectRelativeStrength} from '../src/v81/alphas/relative-strength.mjs';
 import {scoreCandidate} from '../src/v81/scoring.mjs';
-import {createMonthlyFrequency, frequencySummary, calculateResearchMetrics, alphaAttribution, validateTierMonotonicity, classifyAlphaAttribution} from '../src/v81/metrics.mjs';
+import {createMonthlyFrequency, frequencySummary, recordMonthlyObservation, calculateResearchMetrics, alphaAttribution, validateTierMonotonicity, classifyAlphaAttribution} from '../src/v81/metrics.mjs';
 import {mergeResearchCandidates, rankResearchCandidates} from '../src/v81/dedupe.mjs';
 import {dedupeResearchEpisodes} from '../src/v81/episodes.mjs';
 import {simulateStandaloneObservation, validateDevelopmentUniverse} from '../src/v81/replay.mjs';
@@ -96,6 +96,22 @@ test('relative strength requires local EMA50 direction confirmation', () => {
   assert.equal(detectRelativeStrength({...base, previousEma50: 106}, market, alpha).length, 0);
   const short = {...base, close: 90, ema50: 95, previousEma50: 96, priorLow4: 88, priorHigh4: 100, return12: -0.1, previousRelativeReturn12: -0.02, relativeReturn12: -0.1, regime: 'bear'};
   assert.equal(detectRelativeStrength(short, market, alpha).length, 1);
+});
+
+test('monthly frequency keeps separate OOF candidate and executable denominators', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const end = Date.parse('2026-01-01T00:00:00Z');
+  const monthly = createMonthlyFrequency(start, end);
+  const row = candidate('AUSDT', start, 'monthly-oof');
+  recordMonthlyObservation(monthly, row, 'oofQualifiedCandidates');
+  recordMonthlyObservation(monthly, row, 'oofQualifiedExecutable');
+  recordMonthlyObservation(monthly, row, 'oofHighConfidenceCandidates');
+  recordMonthlyObservation(monthly, row, 'oofHighConfidenceExecutable');
+  const summary = frequencySummary(monthly);
+  assert.equal(summary.oofQualifiedCandidates.max, 1);
+  assert.equal(summary.oofQualifiedExecutable.max, 1);
+  assert.equal(summary.oofHighConfidenceCandidates.max, 1);
+  assert.equal(summary.oofHighConfidenceExecutable.max, 1);
 });
 
 test('monthly frequency keeps zero months and deterministic summary statistics', () => {
@@ -220,21 +236,43 @@ test('purged walk-forward produces frozen OOF rows without outcome leakage', () 
   ];
   const observations = [
     candidate('AUSDT', Date.parse('2025-02-01T00:00:00Z'), 'train-a'),
+    candidate('DUSDT', Date.parse('2025-04-27T00:00:00Z'), 'crossing-train'),
     candidate('BUSDT', Date.parse('2025-06-01T00:00:00Z'), 'oof-a'),
     candidate('CUSDT', Date.parse('2025-08-01T00:00:00Z'), 'oof-b'),
   ];
   const outcomes = observations.map((row, index) => ({
-    observationId: row.id, signalTime: row.t, executable: true, netR: index + 0.1, netPnlUsdt: (index + 0.1) * 10,
+    observationId: row.id, signalTime: row.t, exitTime: row.id === 'crossing-train'
+      ? Date.parse('2025-05-02T00:00:00Z') : row.t + H1, executable: true, netR: index + 0.1, netPnlUsdt: (index + 0.1) * 10,
   }));
   const result = runPurgedWalkForward({observations, outcomes, folds});
   assert.equal(result.checks.timeOrdered, true);
   assert.equal(result.checks.purgeEnforced, true);
+  assert.equal(result.checks.labelOverlapFree, true);
   assert.equal(result.checks.validationFrozen, true);
   assert.equal(result.checks.completeValidationCoverage, true);
   assert.equal(result.folds[0].trainUsed.end, folds[0].validationStart - 72 * H1);
+  assert.equal(result.folds[0].excludedLabelOverlap, 1);
+  assert.equal(result.folds[0].trainExecutableLabels, 1);
+  assert.equal(result.folds[0].purgedSignals, 0);
   assert.deepEqual(result.oofRows.map(row => row.id), ['oof-a', 'oof-b']);
   assert.equal(result.oofRows.some(row => Object.hasOwn(row, 'outcome')), false);
   assert.equal(result.oofOutcomes.every(row => row.oof === true), true);
+});
+
+test('event-end purge excludes a train signal whose executable label enters validation', () => {
+  const validationStart = Date.parse('2025-05-01T00:00:00Z');
+  const boundary = validationStart - 72 * H1;
+  const rows = [candidate('AUSDT', boundary - H1, 'overlap')];
+  const result = runPurgedWalkForward({
+    observations: rows,
+    outcomes: [{observationId: 'overlap', signalTime: rows[0].t, exitTime: validationStart, executable: true, netR: 1, netPnlUsdt: 10}],
+    folds: [{id: 'overlap-fold', trainStart: Date.parse('2025-01-01T00:00:00Z'), trainEnd: validationStart, validationStart, validationEnd: Date.parse('2025-07-01T00:00:00Z')}],
+  });
+  assert.equal(result.folds[0].trainObservations, 1);
+  assert.equal(result.folds[0].trainExecutableLabels, 0);
+  assert.equal(result.folds[0].excludedLabelOverlap, 1);
+  assert.equal(result.folds[0].labelOverlapFree, true);
+  assert.equal(result.folds[0].models.trend_pullback_continuation.trainingExecutableOutcomes, 0);
 });
 
 test('walk-forward inference is invariant to candidate outcome fields', () => {
@@ -268,6 +306,30 @@ test('OOF alpha attribution applies the preregistered KEEP gate without tier quo
   assert.equal(attribution.trend_pullback_continuation.status, 'KEEP');
 });
 
+test('OOF alpha attribution separates all, qualified, and high-confidence executable layers', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const observations = [
+    {...candidate('AUSDT', start, 'layer-a'), tier: 'A'},
+    {...candidate('BUSDT', start + DAY, 'layer-b'), tier: 'B'},
+    {...candidate('CUSDT', start + 2 * DAY, 'layer-c'), tier: 'C'},
+    {...candidate('DUSDT', start + 3 * DAY, 'layer-b-loss'), tier: 'B'},
+  ];
+  const outcomes = observations.map((row, index) => ({
+    observationId: row.id, alpha: row.alpha, marketId: row.marketId, side: row.side, regime: row.regime,
+    signalTime: row.t, exitTime: row.t + H1, executable: true, tier: row.tier,
+    netR: [0.8, 0.3, -0.1, -0.1][index], netPnlUsdt: [8, 3, -1, -1][index],
+  }));
+  const result = alphaAttribution(['trend_pullback_continuation'], observations, outcomes, {initialEquity: 10_000, start, end: start + 10 * DAY}).trend_pullback_continuation;
+  assert.equal(result.allOofExecutable.sample, 4);
+  assert.equal(result.qualifiedOofExecutable.sample, 3);
+  assert.equal(result.highConfidenceOofExecutable.sample, 1);
+  assert.equal(result.allOofExecutable.wins, 2);
+  assert.equal(result.qualifiedOofExecutable.wins, 2);
+  assert.equal(result.scoringEfficacy.deltaExpectancyR > 0, true);
+  assert.equal(result.scoringEfficacy.deltaProfitFactor > 0, true);
+  assert.equal(result.qualifiedStatus, 'WATCH');
+});
+
 test('empty research metrics are finite and explicit', () => {
   const metrics = calculateResearchMetrics([], [], {initialEquity: 10_000});
   assert.equal(metrics.trades, 0);
@@ -295,8 +357,10 @@ test('research metrics use net-PnL profit factor, peak-relative drawdown, and en
 test('tier monotonicity and strict alpha gate do not pass undersampled results', () => {
   const a = {trades: 10, expectancyR: 0.4, profitFactor: 2};
   const b = {trades: 10, expectancyR: 0.2, profitFactor: 1.5};
-  assert.deepEqual(validateTierMonotonicity({A: a, B: b}), {valid: true, sufficientSample: true, reason: 'monotonic'});
-  assert.equal(validateTierMonotonicity({A: {...a, expectancyR: 0.1}, B: b}).valid, false);
+  const c = {trades: 10, expectancyR: 0.1, profitFactor: 1};
+  assert.deepEqual(validateTierMonotonicity({A: a, B: b, C: c}), {valid: true, sufficientSample: true, reason: 'monotonic', sampleByTier: {A: 10, B: 10, C: 10}});
+  assert.equal(validateTierMonotonicity({A: {...a, expectancyR: 0.1}, B: b, C: c}).valid, false);
+  assert.deepEqual(validateTierMonotonicity({A: a, B: b}), {valid: false, sufficientSample: false, reason: 'INSUFFICIENT', sampleByTier: {A: 10, B: 10, C: 0}});
   assert.equal(classifyAlphaAttribution({trades: 29, uniqueSymbols: 20, netPnlUsdt: 100, expectancyR: 0.2, profitFactor: 2, expectancyR95CI: [0.1, 0.3], maxDrawdownPct: 0.1}), 'WATCH');
 });
 

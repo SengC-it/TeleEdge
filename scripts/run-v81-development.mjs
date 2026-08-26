@@ -190,17 +190,24 @@ function reusableBaseline(file, {symbols, start, end, dataRoot}) {
 
 function markdownReport(report) {
   const months = Object.entries(report.monthlyFrequency.months)
-    .map(([month, row]) => `| ${month} | ${row.rawEvents} | ${row.independentResearchObservations} | ${row.standaloneExecutable} | ${row.oofQualified} | ${row.oofHighConfidence} | ${row.long} | ${row.short} |`)
+    .map(([month, row]) => `| ${month} | ${row.rawEvents} | ${row.independentResearchObservations} | ${row.standaloneExecutable} | ${row.oofQualifiedCandidates} | ${row.oofQualifiedExecutable} | ${row.oofHighConfidenceCandidates} | ${row.oofHighConfidenceExecutable} | ${row.long} | ${row.short} |`)
     .join('\n');
   const standaloneAlphaRows = Object.entries(report.standaloneAlphaAttribution)
     .map(([alpha, row]) => `| ${alpha} | ${row.observations} | ${row.executableOutcomes} | ${row.uniqueSymbols} | ${row.metrics.trades} | ${number(row.metrics.netPnlUsdt, 2)} | ${number(row.metrics.expectancyR)} | ${number(row.metrics.profitFactor)} |`)
     .join('\n');
   const oofAlphaRows = Object.entries(report.oofAlphaAttribution)
-    .map(([alpha, row]) => `| ${alpha} | ${row.observations} | ${row.qualified} | ${row.trades} | ${number(row.netPnlUsdt, 2)} | ${number(row.expectancyR)} | ${number(row.profitFactor)} | ${row.status} |`)
+    .map(([alpha, row]) => `| ${alpha} | ${row.allOofExecutable.sample} / ${number(row.allOofExecutable.profitFactor)} / ${number(row.allOofExecutable.expectancyR)} | ${row.qualifiedOofExecutable.sample} / ${number(row.qualifiedOofExecutable.profitFactor)} / ${number(row.qualifiedOofExecutable.expectancyR)} | ${row.highConfidenceOofExecutable.sample} / ${number(row.highConfidenceOofExecutable.profitFactor)} / ${number(row.highConfidenceOofExecutable.expectancyR)} | ${number(row.scoringEfficacy.deltaExpectancyR)} | ${number(row.scoringEfficacy.deltaProfitFactor)} | ${row.status} |`)
     .join('\n');
   const comparisonRows = Object.entries(report.baselineComparison)
     .map(([name, row]) => `| ${name} | ${row.rankedSignals} | ${row.acceptedSignals} | ${row.trades} | ${number(row.metrics.netPnlUsdt, 2)} | ${number(row.metrics.expectancyR)} | ${number(row.metrics.profitFactor)} | ${pct(row.metrics.maxDrawdownPct)} |`)
     .join('\n');
+  const foldRows = report.walkForward.folds
+    .map(fold => `| ${fold.id} | ${fold.requestedTrainObservations} | ${fold.trainObservations} | ${fold.trainExecutableLabels} | ${fold.excludedLabelOverlap} | ${fold.purgedSignals} | ${fold.labelOverlapFree} |`)
+    .join('\n');
+  const oofAlphaDetails = Object.entries(report.oofAlphaAttribution).map(([alpha, row]) => {
+    const layer = (name, value) => `- ${name}: sample=${value.sample}; symbols=${value.uniqueSymbols}; wins/losses=${value.wins}/${value.losses}; winRate=${pct(value.winRate)}; PF=${number(value.profitFactor)}; Exp=${number(value.expectancyR)}R; 95% CI=${Array.isArray(value.expectancyR95CI) ? `[${number(value.expectancyR95CI[0])}, ${number(value.expectancyR95CI[1])}]` : 'n/a'}; net PnL=${number(value.netPnlUsdt, 2)} USDT; max DD=${pct(value.maxDrawdownPct)}; long=${value.long.trades}; short=${value.short.trades}; regimes=${Object.keys(value.byRegime).join(',') || 'none'}`;
+    return `**${alpha}**\n${layer('All OOF executable', row.allOofExecutable)}\n${layer('Qualified OOF executable', row.qualifiedOofExecutable)}\n${layer('High-confidence OOF executable', row.highConfidenceOofExecutable)}`;
+  }).join('\n\n');
   return `# V8.1 Development Research Replay
 
 Status: **${report.gate.decision}**. Research-only paper simulation; no Holdout was run.
@@ -222,11 +229,11 @@ Status: **${report.gate.decision}**. Research-only paper simulation; no Holdout 
 
 ## Monthly research counts
 
-| Month | Raw | Independent | Standalone executable | OOF qualified | OOF high confidence | Long | Short |
-|---|---:|---:|---:|---:|---:|---:|---:|
+| Month | Raw | Independent | Standalone executable | Qualified candidate | Qualified executable | High candidate | High executable | Long | Short |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 ${months}
 
-The monthly standaloneExecutable and OOF columns are the formal research denominators; the legacy qualified/high-confidence columns remain available as ex-ante opportunity counts.
+The monthly standaloneExecutable and separately named OOF candidate/executable columns are the formal research denominators; the legacy qualified/high-confidence columns remain available as ex-ante opportunity counts.
 
 ## Frozen baseline comparison
 
@@ -250,19 +257,31 @@ ${standaloneAlphaRows}
 
 ## Purged walk-forward OOF Alpha decisions
 
-| Alpha | OOF observations | OOF qualified | OOF trades | Net PnL | Exp R | PF | Decision |
-|---|---:|---:|---:|---:|---:|---:|---|
+| Alpha | All n / PF / Exp R | Qualified n / PF / Exp R | High n / PF / Exp R | Δ Exp R | Δ PF | Decision |
+|---|---:|---:|---:|---:|---:|
 ${oofAlphaRows}
 
 - Folds: ${report.walkForward.folds.length}; purge/embargo: ${report.walkForward.spec.purgeDurationHours}h
-- Time ordered: ${report.walkForward.checks.timeOrdered}; purge enforced: ${report.walkForward.checks.purgeEnforced}; frozen validation: ${report.walkForward.checks.validationFrozen}; complete OOF coverage: ${report.walkForward.checks.completeValidationCoverage}
+- Time ordered: ${report.walkForward.checks.timeOrdered}; purge enforced: ${report.walkForward.checks.purgeEnforced}; label overlap free: ${report.walkForward.checks.labelOverlapFree}; frozen validation: ${report.walkForward.checks.validationFrozen}; complete OOF coverage: ${report.walkForward.checks.completeValidationCoverage}
+
+### Fold label lifecycle accounting
+
+| Fold | Requested train observations | Train observations | Train executable labels | Excluded label overlap | Purged signals | Label overlap free |
+|---|---:|---:|---:|---:|---:|---|
+${foldRows}
+
+### Per-alpha OOF layer details
+
+${oofAlphaDetails}
 
 ## Gate
 
 - Decision: **${report.gate.decision}**
-- Standalone executable outcomes: ${report.standalone.executableOutcomes}; OOF qualified outcomes: ${report.oofQualified.trades}
+- Standalone executable outcomes: ${report.standalone.executableOutcomes}; OOF qualified candidates: ${report.oofQualifiedCandidates.count}; OOF qualified executable: ${report.oofQualifiedExecutable.count}; OOF high-confidence candidates: ${report.oofHighConfidenceCandidates.count}; OOF high-confidence executable: ${report.oofHighConfidenceExecutable.count}
 - Positive standalone families with sufficient sample: ${report.gate.positiveStandaloneAlphaFamilies}; OOF KEEP families: ${report.gate.keepAlphaIds.length}
-- Tier monotonicity: ${report.tierMonotonicity.valid ? 'PASS' : 'FAIL'} (${report.tierMonotonicity.reason}; sufficient=${report.tierMonotonicity.sufficientSample})
+- Tier monotonicity: ${report.tierMonotonicity.sufficientSample && report.tierMonotonicity.valid ? 'PASS' : report.tierMonotonicity.reason} (valid=${report.tierMonotonicity.valid}; sufficient=${report.tierMonotonicity.sufficientSample})
+- Tier comparison: A=High Confidence, B=Qualified-B, C=Research-C
+- Current V8.1 alpha set exhausted: ${report.currentV81AlphaSetExhausted}
 - Provenance: strategy tree ${report.provenance.strategyTreeSha256}; frozen config ${report.provenance.frozenConfigSha256}
 
 ## Limitations
@@ -316,8 +335,10 @@ async function main() {
 
   const monthly = JSON.parse(JSON.stringify(replay.monthly));
   addMonthlyField(monthly, standaloneExecutable, 'standaloneExecutable');
-  addMonthlyField(monthly, oofQualifiedRows, 'oofQualified');
-  addMonthlyField(monthly, oofHighConfidenceRows, 'oofHighConfidence');
+  addMonthlyField(monthly, oofQualifiedRows, 'oofQualifiedCandidates');
+  addMonthlyField(monthly, oofQualifiedOutcomes, 'oofQualifiedExecutable');
+  addMonthlyField(monthly, oofHighConfidenceRows, 'oofHighConfidenceCandidates');
+  addMonthlyField(monthly, oofHighConfidenceOutcomes, 'oofHighConfidenceExecutable');
   const monthlyFrequency = frequencySummary(monthly);
 
   const baselineOutput = path.join(outputDir, 'frozen-baseline');
@@ -362,12 +383,17 @@ async function main() {
   const independentCount = replay.observations.independentTotal;
   const combinedRanked = v81Portfolio.rankedCount;
   const signalIncreasePct = v8Summary.rankedSignals > 0 ? (combinedRanked - v8Summary.rankedSignals) / v8Summary.rankedSignals : null;
-  const oofQualifiedCount = oofQualifiedOutcomes.length;
+  const oofQualifiedCandidatesCount = oofQualifiedRows.length;
+  const oofQualifiedExecutableCount = oofQualifiedOutcomes.length;
+  const oofHighConfidenceCandidatesCount = oofHighConfidenceRows.length;
+  const oofHighConfidenceExecutableCount = oofHighConfidenceOutcomes.length;
+  const edgeAlphaCount = Object.values(oofAlpha).filter(row => row.status === 'KEEP' || row.status === 'WATCH').length;
+  const currentV81AlphaSetExhausted = keepAlphaIds.length === 0 || edgeAlphaCount === 1;
   const gateChecks = {
     formalUniverse: replay.universe.symbols.length >= 150,
     incrementalAlphaFamilies: keepAlphaIds.length >= 2,
-    oofQualified: oofQualifiedCount >= 60,
-    qualifiedMean: monthlyFrequency.oofQualified.mean >= 5,
+    oofQualifiedExecutable: oofQualifiedExecutableCount >= 60,
+    qualifiedExecutableMean: monthlyFrequency.oofQualifiedExecutable.mean >= 5,
     tierMonotonicity: tierMonotonicity.sufficientSample && tierMonotonicity.valid,
     portfolioProfitFactor: Number(v81Metrics.profitFactor) >= 1.5,
     portfolioExpectancy: Number(v81Metrics.expectancyR) >= 0.20,
@@ -386,8 +412,12 @@ async function main() {
     minimumFormalUniverse: 150,
     positiveStandaloneAlphaFamilies,
     keepAlphaIds,
-    oofQualifiedCount,
-    oofQualifiedMean: monthlyFrequency.oofQualified.mean,
+    oofQualifiedCandidatesCount,
+    oofQualifiedExecutableCount,
+    oofHighConfidenceCandidatesCount,
+    oofHighConfidenceExecutableCount,
+    oofQualifiedExecutableMean: monthlyFrequency.oofQualifiedExecutable.mean,
+    currentV81AlphaSetExhausted,
   };
   const configBase = researchConfig({
     start,
@@ -413,10 +443,10 @@ async function main() {
   });
   const frozenConfigSha256 = jsonSha256(configBase);
   const report = {
-    reportVersion: 'v81-development-3',
+    reportVersion: 'v81-development-3.1',
     status: 'DEVELOPMENT_ONLY',
     generatedAt: new Date().toISOString(),
-    engine: {version: 'V8.1-research-3', codeSha: codeCommit, researchOnly: true},
+    engine: {version: 'V8.1-research-3.1', codeSha: codeCommit, researchOnly: true},
     boundary: {start, end, durationDays: (end - start) / DAY},
     holdout: {status: 'NOT RUN', start: holdoutStart, end: holdoutEnd},
     universe: {
@@ -437,8 +467,10 @@ async function main() {
       standaloneRejectedOutcomes: standaloneOutcomes.length - standaloneExecutable.length,
       oofRows: oofRows.length,
       oofExecutableOutcomes: oofExecutable.length,
-      oofQualified: oofQualifiedCount,
-      oofHighConfidence: oofHighConfidenceOutcomes.length,
+      oofQualifiedCandidates: oofQualifiedCandidatesCount,
+      oofQualifiedExecutable: oofQualifiedExecutableCount,
+      oofHighConfidenceCandidates: oofHighConfidenceCandidatesCount,
+      oofHighConfidenceExecutable: oofHighConfidenceExecutableCount,
       qualified: qualifiedCount,
       highConfidence: highConfidenceCount,
       accepted: v81Portfolio.accepted.length,
@@ -466,16 +498,10 @@ async function main() {
       oofOutcomes: oofOutcomes.length,
       oofExecutableOutcomes: oofExecutable.length,
     },
-    oofQualified: {
-      rows: oofQualifiedRows.length,
-      trades: oofQualifiedOutcomes.length,
-      metrics: calculateResearchMetrics(oofQualifiedOutcomes, oofQualifiedRows, options),
-    },
-    oofHighConfidence: {
-      rows: oofHighConfidenceRows.length,
-      trades: oofHighConfidenceOutcomes.length,
-      metrics: calculateResearchMetrics(oofHighConfidenceOutcomes, oofHighConfidenceRows, options),
-    },
+    oofQualifiedCandidates: {count: oofQualifiedCandidatesCount, rows: oofQualifiedRows.length},
+    oofQualifiedExecutable: {count: oofQualifiedExecutableCount, rows: oofQualifiedOutcomes.length, metrics: calculateResearchMetrics(oofQualifiedOutcomes, oofQualifiedRows, options)},
+    oofHighConfidenceCandidates: {count: oofHighConfidenceCandidatesCount, rows: oofHighConfidenceRows.length},
+    oofHighConfidenceExecutable: {count: oofHighConfidenceExecutableCount, rows: oofHighConfidenceOutcomes.length, metrics: calculateResearchMetrics(oofHighConfidenceOutcomes, oofHighConfidenceRows, options)},
     oofAlphaAttribution: oofAlpha,
     baselineComparison: {
       v75: v75Summary,
@@ -499,6 +525,7 @@ async function main() {
     breakdowns: {bySide, byRegime},
     tierMetrics,
     tierMonotonicity,
+    currentV81AlphaSetExhausted,
     alphaAttribution: oofAlpha,
     gate,
     provenance: {

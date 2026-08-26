@@ -55,8 +55,10 @@ export function createMonthlyFrequency(start, end) {
     qualified: 0,
     highConfidence: 0,
     standaloneExecutable: 0,
-    oofQualified: 0,
-    oofHighConfidence: 0,
+    oofQualifiedCandidates: 0,
+    oofQualifiedExecutable: 0,
+    oofHighConfidenceCandidates: 0,
+    oofHighConfidenceExecutable: 0,
     uniqueAlerts: 0,
     long: 0,
     short: 0,
@@ -117,8 +119,10 @@ export function frequencySummary(monthly) {
     qualified: field('qualified'),
     highConfidence: field('highConfidence'),
     standaloneExecutable: field('standaloneExecutable'),
-    oofQualified: field('oofQualified'),
-    oofHighConfidence: field('oofHighConfidence'),
+    oofQualifiedCandidates: field('oofQualifiedCandidates'),
+    oofQualifiedExecutable: field('oofQualifiedExecutable'),
+    oofHighConfidenceCandidates: field('oofHighConfidenceCandidates'),
+    oofHighConfidenceExecutable: field('oofHighConfidenceExecutable'),
     uniqueAlerts: field('uniqueAlerts'),
     monthlyConcentration: total > 0
       ? {topMonthShare: (sorted[0] || 0) / total, top3MonthShare: sorted.slice(0, 3).reduce((sum, value) => sum + value, 0) / total}
@@ -203,12 +207,17 @@ export function breakdownMetrics(trades, keyOf, options = {}) {
 export function validateTierMonotonicity(byTier, {minimumSamples = 10} = {}) {
   const a = byTier?.A;
   const b = byTier?.B;
-  if (!a || !b || a.trades < minimumSamples || b.trades < minimumSamples) {
-    return {valid: true, sufficientSample: false, reason: 'insufficient-sample'};
+  const c = byTier?.C;
+  const sampleByTier = {A: Number(a?.trades) || 0, B: Number(b?.trades) || 0, C: Number(c?.trades) || 0};
+  if (!a || !b || !c || Object.values(sampleByTier).some(sample => sample < minimumSamples)) {
+    return {valid: false, sufficientSample: false, reason: 'INSUFFICIENT', sampleByTier};
   }
-  const valid = Number(a.expectancyR) >= Number(b.expectancyR)
-    && (a.profitFactor == null || b.profitFactor == null || Number(a.profitFactor) >= Number(b.profitFactor));
-  return {valid, sufficientSample: true, reason: valid ? 'monotonic' : 'tier-a-b-inversion'};
+  const expectancyMonotonic = Number(a.expectancyR) >= Number(b.expectancyR)
+    && Number(b.expectancyR) >= Number(c.expectancyR);
+  const profitFactorMonotonic = (a.profitFactor == null || b.profitFactor == null || Number(a.profitFactor) >= Number(b.profitFactor))
+    && (b.profitFactor == null || c.profitFactor == null || Number(b.profitFactor) >= Number(c.profitFactor));
+  const valid = expectancyMonotonic && profitFactorMonotonic;
+  return {valid, sufficientSample: true, reason: valid ? 'monotonic' : 'tier-order-inversion', sampleByTier};
 }
 
 export function classifyAlphaAttribution(metrics) {
@@ -224,12 +233,93 @@ export function alphaAttribution(registryIds, observations, trades, options = {}
   return Object.fromEntries(registryIds.map(alpha => {
     const observed = Array.isArray(observations) ? observations.filter(row => row.alpha === alpha) : [];
     const observedCount = Array.isArray(observations) ? observed.length : Number(observations?.byAlpha?.[alpha]?.observations || 0);
-    const qualifiedCount = Array.isArray(observations)
-      ? observed.filter(row => row.tier === 'A' || row.tier === 'B').length
-      : Number(observations?.byAlpha?.[alpha]?.qualified || 0);
-    const primaryTrades = (trades || []).filter(row => row.alpha === alpha);
-    const metrics = calculateResearchMetrics(primaryTrades, [], options);
-    metrics.observations = observedCount;
-    return [alpha, {observations: observedCount, qualified: qualifiedCount, trades: primaryTrades.length, ...metrics, status: classifyAlphaAttribution(metrics)}];
+    const qualifiedCandidates = Array.isArray(observations)
+      ? observed.filter(row => row.tier === 'A' || row.tier === 'B')
+      : [];
+    const highConfidenceCandidates = Array.isArray(observations)
+      ? observed.filter(row => row.tier === 'A')
+      : [];
+    const tierByObservationId = new Map(observed.map(row => [String(row.id ?? row.observationId), row.tier]));
+    const primaryTrades = (trades || [])
+      .filter(row => row.alpha === alpha)
+      .map(row => row.tier ? row : {...row, tier: tierByObservationId.get(String(row.observationId ?? row.id)) || 'C'});
+    const qualifiedTrades = primaryTrades.filter(row => row.tier === 'A' || row.tier === 'B');
+    const highConfidenceTrades = primaryTrades.filter(row => row.tier === 'A');
+    const allOofExecutable = attributionLayer(primaryTrades, observed, options);
+    const qualifiedOofExecutable = attributionLayer(qualifiedTrades, qualifiedCandidates, options);
+    const highConfidenceOofExecutable = attributionLayer(highConfidenceTrades, highConfidenceCandidates, options);
+    const allStatus = classifyAlphaAttribution(allOofExecutable.metrics);
+    const qualifiedStatus = classifyAlphaAttribution(qualifiedOofExecutable.metrics);
+    const scoringEfficacy = {
+      allOofExecutable: {sample: allOofExecutable.sample, expectancyR: allOofExecutable.expectancyR, profitFactor: allOofExecutable.profitFactor},
+      qualifiedOofExecutable: {sample: qualifiedOofExecutable.sample, expectancyR: qualifiedOofExecutable.expectancyR, profitFactor: qualifiedOofExecutable.profitFactor},
+      deltaExpectancyR: difference(qualifiedOofExecutable.expectancyR, allOofExecutable.expectancyR),
+      deltaProfitFactor: difference(qualifiedOofExecutable.profitFactor, allOofExecutable.profitFactor),
+      qualifiedImproves: improves(qualifiedOofExecutable, allOofExecutable),
+    };
+    return [alpha, {
+      alpha,
+      observations: observedCount,
+      qualified: qualifiedCandidates.length,
+      highConfidence: highConfidenceCandidates.length,
+      trades: allOofExecutable.sample,
+      executableCounts: {
+        allOofExecutable: allOofExecutable.sample,
+        qualifiedOofExecutable: qualifiedOofExecutable.sample,
+        highConfidenceOofExecutable: highConfidenceOofExecutable.sample,
+      },
+      candidateCounts: {
+        allOofCandidates: observed.length,
+        oofQualifiedCandidates: qualifiedCandidates.length,
+        oofHighConfidenceCandidates: highConfidenceCandidates.length,
+      },
+      allOofExecutable,
+      qualifiedOofExecutable,
+      highConfidenceOofExecutable,
+      scoringEfficacy,
+      allStatus,
+      qualifiedStatus,
+      status: qualifiedStatus,
+      metrics: allOofExecutable.metrics,
+      ...allOofExecutable.metrics,
+    }];
   }));
+}
+
+function difference(left, right) {
+  return left == null || right == null || !Number.isFinite(Number(left)) || !Number.isFinite(Number(right))
+    ? null
+    : Number(left) - Number(right);
+}
+
+function improves(qualified, all) {
+  return qualified.expectancyR != null && qualified.profitFactor != null
+    && all.expectancyR != null && all.profitFactor != null
+    && Number(qualified.expectancyR) > Number(all.expectancyR)
+    && Number(qualified.profitFactor) > Number(all.profitFactor);
+}
+
+function attributionLayer(trades, observations, options) {
+  const metrics = calculateResearchMetrics(trades, observations, options);
+  const bySide = breakdownMetrics(trades, row => row.side || 'unknown', options);
+  const byRegime = breakdownMetrics(trades, row => row.regime || row.btcRouter || row.features?.regime || 'unknown', options);
+  const empty = () => calculateResearchMetrics([], [], options);
+  return {
+    sample: metrics.trades,
+    uniqueSymbols: metrics.uniqueSymbols,
+    wins: metrics.wins,
+    losses: metrics.losses,
+    winRate: metrics.winRate,
+    profitFactor: metrics.profitFactor,
+    expectancyR: metrics.expectancyR,
+    expectancyR95CI: metrics.expectancyR95CI,
+    netPnlUsdt: metrics.netPnlUsdt,
+    maxDrawdownUsdt: metrics.maxDrawdownUsdt,
+    maxDrawdownPct: metrics.maxDrawdownPct,
+    long: bySide.long || empty(),
+    short: bySide.short || empty(),
+    bySide,
+    byRegime,
+    metrics,
+  };
 }
