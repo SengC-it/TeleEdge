@@ -1,0 +1,13 @@
+{
+  "status": "BLOCKED_RESEARCH_FAIL",
+  "holdoutStatus": "NOT RUN",
+  "lockedAt": "2026-08-26T11:57:09.533Z",
+  "holdout": {
+    "status": "NOT RUN",
+    "start": 1767225600000,
+    "end": 1784073600000
+  },
+  "frozenConfigSha256": "191ef4e21f0b00f3257868985173da1f5fc16729383b5db5c0fb3aab5c56ec1c",
+  "strategyTreeSha256": "6e1a44992886f141ad6fdf09c3a387036f7df7303b52bfba8c132344534b60e0",
+  "developmentRunCodeCommit": "42ddd615aa9f58c7e21c5108c259d7bbe05d7f2d"
+}
