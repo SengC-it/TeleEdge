@@ -17,22 +17,24 @@ Status: **RESEARCH_FAIL**. Research-only paper simulation; no Holdout was run.
 - Formal universe gate: PASS (minimum 150)
 - M4 remains: **M4-INCOMPLETE**
 
-## Monthly opportunity counts
+## Monthly research counts
 
-| Month | Raw | Independent | Qualified A/B | High confidence A | Long | Short |
-|---|---:|---:|---:|---:|---:|---:|
-| 2025-01 | 2328 | 1234 | 0 | 0 | 526 | 708 |
-| 2025-02 | 2029 | 1046 | 1 | 0 | 440 | 606 |
-| 2025-03 | 2373 | 1208 | 2 | 0 | 575 | 633 |
-| 2025-04 | 2645 | 1256 | 2 | 0 | 652 | 604 |
-| 2025-05 | 2797 | 1373 | 2 | 0 | 764 | 609 |
-| 2025-06 | 3066 | 1692 | 1 | 0 | 703 | 989 |
-| 2025-07 | 3649 | 1705 | 5 | 0 | 1028 | 677 |
-| 2025-08 | 3602 | 1763 | 2 | 0 | 978 | 785 |
-| 2025-09 | 3938 | 2002 | 5 | 0 | 1016 | 986 |
-| 2025-10 | 4439 | 2219 | 6 | 0 | 999 | 1220 |
-| 2025-11 | 4374 | 2126 | 0 | 0 | 896 | 1230 |
-| 2025-12 | 3958 | 2113 | 1 | 0 | 916 | 1197 |
+| Month | Raw | Independent | Standalone executable | OOF qualified | OOF high confidence | Long | Short |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| 2025-01 | 2328 | 1234 | 842 | 0 | 0 | 526 | 708 |
+| 2025-02 | 2029 | 1046 | 635 | 0 | 0 | 440 | 606 |
+| 2025-03 | 2373 | 1208 | 843 | 0 | 0 | 575 | 633 |
+| 2025-04 | 2645 | 1256 | 874 | 0 | 0 | 652 | 604 |
+| 2025-05 | 2797 | 1373 | 966 | 27 | 0 | 764 | 609 |
+| 2025-06 | 3066 | 1692 | 1299 | 73 | 0 | 703 | 989 |
+| 2025-07 | 3649 | 1705 | 1249 | 6 | 0 | 1028 | 677 |
+| 2025-08 | 3602 | 1763 | 1346 | 7 | 0 | 978 | 785 |
+| 2025-09 | 3938 | 2002 | 1431 | 10 | 0 | 1016 | 986 |
+| 2025-10 | 4439 | 2219 | 1469 | 9 | 0 | 999 | 1220 |
+| 2025-11 | 4374 | 2126 | 1414 | 17 | 0 | 896 | 1230 |
+| 2025-12 | 3958 | 2113 | 1515 | 10 | 0 | 916 | 1197 |
+
+The monthly standaloneExecutable and OOF columns are the formal research denominators; the legacy qualified/high-confidence columns remain available as ex-ante opportunity counts.
 
 ## Frozen baseline comparison
 
@@ -51,28 +53,44 @@ V8.1 combined = frozen V8 Shadow ranked signals plus only Development Alpha rows
 - Net PnL: -185.26 USDT (-1.85%); max DD: 379.55 USDT / 3.76%
 - Unique symbols: 15; ranked signal increase vs V8: 0.00%
 
-## Alpha attribution
+## Standalone Alpha Outcomes (tier-independent)
 
-| Alpha | Independent observations | Qualified | Trades | Net PnL | Exp R | PF | Status |
+| Alpha | Observations | Executable outcomes | Symbols | Trades | Net PnL | Exp R | PF |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| trend_pullback_continuation | 3036 | 2445 | 119 | 2408 | 2108.25 | 0.015 | 1.022 |
+| volatility_expansion | 4272 | 2220 | 115 | 2117 | 7903.28 | 0.062 | 1.096 |
+| failed_breakout_reversal | 5197 | 4203 | 119 | 4182 | -2876.77 | -0.011 | 0.983 |
+| mean_reversion_extreme | 15 | 7 | 6 | 7 | 338.89 | 0.807 | 3.741 |
+| funding_price_divergence | 2149 | 1566 | 119 | 1542 | -2148.13 | -0.023 | 0.965 |
+| relative_strength_btc_rotation | 5068 | 3442 | 118 | 3369 | 5086.66 | 0.025 | 1.039 |
+
+## Purged walk-forward OOF Alpha decisions
+
+| Alpha | OOF observations | OOF qualified | OOF trades | Net PnL | Exp R | PF | Decision |
 |---|---:|---:|---:|---:|---:|---:|---|
-| trend_pullback_continuation | 3036 | 0 | 0 | 0.00 | n/a | n/a | WATCH |
-| volatility_expansion | 4272 | 5 | 0 | 0.00 | n/a | n/a | WATCH |
-| failed_breakout_reversal | 5197 | 0 | 0 | 0.00 | n/a | n/a | WATCH |
-| mean_reversion_extreme | 15 | 0 | 0 | 0.00 | n/a | n/a | WATCH |
-| funding_price_divergence | 2149 | 27 | 1 | -55.37 | -0.923 | 0.000 | WATCH |
-| relative_strength_btc_rotation | 5068 | 1 | 0 | 0.00 | n/a | n/a | WATCH |
+| trend_pullback_continuation | 2339 | 6 | 1850 | 2822.32 | 0.025 | 1.038 | REJECT |
+| volatility_expansion | 3195 | 113 | 1632 | 3611.59 | 0.037 | 1.056 | REJECT |
+| failed_breakout_reversal | 3926 | 1 | 3128 | -2316.16 | -0.012 | 0.981 | REJECT |
+| mean_reversion_extreme | 10 | 0 | 5 | 151.41 | 0.505 | 2.225 | WATCH |
+| funding_price_divergence | 1620 | 32 | 1187 | -1373.94 | -0.019 | 0.971 | REJECT |
+| relative_strength_btc_rotation | 3903 | 7 | 2629 | 3151.74 | 0.020 | 1.031 | REJECT |
+
+- Folds: 4; purge/embargo: 72h
+- Time ordered: true; purge enforced: true; frozen validation: true; complete OOF coverage: true
 
 ## Gate
 
 - Decision: **RESEARCH_FAIL**
-- Positive families with sufficient sample: 0; KEEP families: 0
-- Tier monotonicity: PASS (insufficient-sample)
-- Provenance: strategy tree 9328aa7e33cec1c52b07931566dd208a8888d2587fb88db67a38fbc9ca7a4092; frozen config a9aceecce64298d153b61812752161dc30900124047e47d6181283868d937cd3
+- Standalone executable outcomes: 13883; OOF qualified outcomes: 71
+- Positive standalone families with sufficient sample: 3; OOF KEEP families: 0
+- Tier monotonicity: PASS (insufficient-sample; sufficient=false)
+- Provenance: strategy tree 40abc2094510c8635c77a9eb58d244f29daa5f14b2576551f9dd9a7a660f7511; frozen config cc604b88e7aa6f8b569cbc010459298f71c8d32822e5f98df26707880136f4e0
 
 ## Limitations
 
 - M4 strict formal dataset remains incomplete; this Development replay does not upgrade M4 or remove survivorship/lifecycle/data continuity limitations.
 - The selected universe is the deterministic 150-symbol fallback from the 388-symbol eligible input; the full 388-symbol Development replay was not run in this artifact.
 - V7.5 and V8 baseline event sets are generated by the frozen backtest and re-evaluated through the shared local acceptance/fill contract for comparability.
-- V8.1 all-new Alpha rows are an audit sleeve; only KEEP rows are included in the V8.1 combined result. WATCH and REJECT are excluded.
+- Standalone Alpha outcomes are tier-independent; only OOF KEEP rows are included in the V8.1 combined result. WATCH and REJECT are excluded.
+- Purged walk-forward calibration uses only preregistered feature buckets and freezes each fold model before validation; no random split, ML, or grid search was used.
 - No parameter optimization, strategy threshold change, Holdout, Production deployment, or real order path was run.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "engineVersion": "V8.1-research-2",
+  "engineVersion": "V8.1-research-3",
   "alphaRegistry": {
     "trend_pullback_continuation": {
       "id": "trend_pullback_continuation",
@@ -220,12 +220,96 @@
     "sourceManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a"
   },
   "provenance": {
-    "strategyTreeSha256": "9328aa7e33cec1c52b07931566dd208a8888d2587fb88db67a38fbc9ca7a4092",
-    "developmentRunCodeCommit": "935c5baea770552ca1e4cb83c2f846b5f899ba1f",
-    "reportCommit": "935c5baea770552ca1e4cb83c2f846b5f899ba1f",
-    "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a"
+    "strategyTreeSha256": "40abc2094510c8635c77a9eb58d244f29daa5f14b2576551f9dd9a7a660f7511",
+    "developmentRunCodeCommit": "9f3e01c72205d86cb6cca90664fc4da3e9cccba0",
+    "reportCommit": "9f3e01c72205d86cb6cca90664fc4da3e9cccba0",
+    "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
+    "walkForwardSpec": {
+      "method": "purged-walk-forward",
+      "purgeDurationMs": 259200000,
+      "purgeDurationHours": 72,
+      "noRandomSplit": true,
+      "outcomeLabelsUsedOnlyInTraining": true,
+      "inferenceFeatures": [
+        "adx",
+        "fundingZ",
+        "volumeRatio",
+        "rangeRatio",
+        "stopPct",
+        "relativeReturn12",
+        "distanceEmaAtr",
+        "rsi",
+        "return3",
+        "regime",
+        "btcRegime",
+        "localTrend"
+      ]
+    },
+    "purgeDurationMs": 259200000,
+    "folds": [
+      {
+        "id": "fold-1",
+        "train": {
+          "start": 1735689600000,
+          "end": 1746057600000
+        },
+        "trainUsed": {
+          "start": 1735689600000,
+          "end": 1745798400000
+        },
+        "validation": {
+          "start": 1746057600000,
+          "end": 1751328000000
+        }
+      },
+      {
+        "id": "fold-2",
+        "train": {
+          "start": 1735689600000,
+          "end": 1751328000000
+        },
+        "trainUsed": {
+          "start": 1735689600000,
+          "end": 1751068800000
+        },
+        "validation": {
+          "start": 1751328000000,
+          "end": 1756684800000
+        }
+      },
+      {
+        "id": "fold-3",
+        "train": {
+          "start": 1735689600000,
+          "end": 1756684800000
+        },
+        "trainUsed": {
+          "start": 1735689600000,
+          "end": 1756425600000
+        },
+        "validation": {
+          "start": 1756684800000,
+          "end": 1761955200000
+        }
+      },
+      {
+        "id": "fold-4",
+        "train": {
+          "start": 1735689600000,
+          "end": 1761955200000
+        },
+        "trainUsed": {
+          "start": 1735689600000,
+          "end": 1761696000000
+        },
+        "validation": {
+          "start": 1761955200000,
+          "end": 1767225600000
+        }
+      }
+    ]
   },
   "noOrderMode": true,
-  "frozenConfigSha256": "a9aceecce64298d153b61812752161dc30900124047e47d6181283868d937cd3",
+  "frozenConfigSha256": "cc604b88e7aa6f8b569cbc010459298f71c8d32822e5f98df26707880136f4e0",
   "hashScope": "SHA256 of canonical config before report-only fingerprint fields"
 }

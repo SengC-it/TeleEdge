@@ -27,6 +27,10 @@ export function candidateFromPoint(point, market, alpha, side, {targetR = alpha.
     regime: point.regime,
     btcRouter: point.btcRegime,
     features: {
+      close: point.close,
+      ema20: point.ema20,
+      ema50: point.ema50,
+      previousEma50: point.previousEma50,
       regime: point.regime,
       btcRegime: point.btcRegime,
       fundingRate: point.fundingRate,

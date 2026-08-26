@@ -1,13 +1,13 @@
 {
   "status": "BLOCKED_RESEARCH_FAIL",
   "holdoutStatus": "NOT RUN",
-  "lockedAt": "2026-08-26T04:03:21.323Z",
+  "lockedAt": "2026-08-26T07:22:29.577Z",
   "holdout": {
     "status": "NOT RUN",
     "start": 1767225600000,
     "end": 1784073600000
   },
-  "frozenConfigSha256": "a9aceecce64298d153b61812752161dc30900124047e47d6181283868d937cd3",
-  "strategyTreeSha256": "9328aa7e33cec1c52b07931566dd208a8888d2587fb88db67a38fbc9ca7a4092",
-  "developmentRunCodeCommit": "935c5baea770552ca1e4cb83c2f846b5f899ba1f"
+  "frozenConfigSha256": "cc604b88e7aa6f8b569cbc010459298f71c8d32822e5f98df26707880136f4e0",
+  "strategyTreeSha256": "40abc2094510c8635c77a9eb58d244f29daa5f14b2576551f9dd9a7a660f7511",
+  "developmentRunCodeCommit": "9f3e01c72205d86cb6cca90664fc4da3e9cccba0"
 }

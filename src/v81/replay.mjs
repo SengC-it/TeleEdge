@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import {DAY, H1} from '../config.mjs';
-import {directionalOutcome, fourHourBars, prepareFeatureSeries} from './features.mjs';
+import {fourHourBars, prepareFeatureSeries} from './features.mjs';
 import {ALPHA_REGISTRY, RESEARCH_ALPHA_IDS, validateAlphaRegistry} from './alpha-registry.mjs';
 import {scoreCandidate} from './scoring.mjs';
 import {SCORING_CONFIG} from './scoring.mjs';
@@ -13,6 +13,7 @@ import {createMonthlyFrequency, frequencySummary, recordMonthlyObservation} from
 import {dedupeResearchEpisodes} from './episodes.mjs';
 import {simulatePortfolio, PORTFOLIO_CONFIG} from './portfolio.mjs';
 import {evaluateCandidateAcceptance} from '../portfolio.mjs';
+import {priceAtOrBefore, settleOnCompletedBars} from '../backtest.mjs';
 import {detectTrendPullback} from './alphas/trend-pullback.mjs';
 import {detectVolatilityExpansion} from './alphas/volatility-expansion.mjs';
 import {detectFailedBreakout} from './alphas/failed-breakout.mjs';
@@ -201,6 +202,211 @@ function queryTouchProfile(position, query, endTime) {
   };
 }
 
+const DECISION_LATENCY_MS = 20 * 60_000;
+const MINUTE_INTERVAL_MS = H1 / 60;
+
+function firstExecutableMinute(rows, decisionTime, endTime) {
+  for (const row of rows || []) {
+    const t = Number(row.t);
+    const price = Number(row.o) > 0 ? Number(row.o) : Number(row.c);
+    if (t < decisionTime || t + MINUTE_INTERVAL_MS > endTime || !(price > 0)) continue;
+    return {t, o: price, c: Number(row.c)};
+  }
+  return null;
+}
+
+function syntheticTouchBar(position, touch) {
+  const both = Boolean(touch.ambiguous);
+  const entry = Number(position.entry);
+  const stop = Number(position.stop);
+  const target = Number(position.target);
+  const long = position.side === 'long';
+  const isStop = touch.reason === 'sl';
+  const high = long
+    ? (isStop ? (both ? target : entry) : target)
+    : (isStop ? stop : (both ? stop : entry));
+  const low = long
+    ? (isStop ? stop : (both ? stop : entry))
+    : (isStop ? (both ? target : entry) : target);
+  return {t: Number(touch.time) - MINUTE_INTERVAL_MS, o: entry, h: high, l: low, c: Number(touch.price)};
+}
+
+function outcomeBase(candidate, decisionTime) {
+  return {
+    outcomeType: 'researchTradeOutcome',
+    observationId: candidate.id,
+    episodeId: candidate.episodeId || null,
+    marketId: candidate.marketId,
+    symbol: candidate.symbol || candidate.marketId,
+    side: candidate.side,
+    alpha: candidate.alpha,
+    alphaSources: candidate.alphaSources || [candidate.alpha],
+    family: candidate.family,
+    regime: candidate.regime || candidate.features?.regime || 'unknown',
+    btcRouter: candidate.btcRouter || candidate.features?.btcRegime || 'unknown',
+    signalTime: Number(candidate.t),
+    decisionTime,
+    fillTime: null,
+    fillPrice: null,
+    stop: null,
+    target: null,
+    targetR: Number.isFinite(Number(candidate.targetR)) ? Number(candidate.targetR) : null,
+    effectiveTargetR: null,
+    stopPct: null,
+    riskUsdt: null,
+    quantity: null,
+    exitReason: null,
+    exitTime: null,
+    exitPrice: null,
+    grossPnlUsdt: null,
+    fundingPnlUsdt: null,
+    modeledCostUsdt: null,
+    netPnlUsdt: null,
+    netR: null,
+    mfe: null,
+    mae: null,
+    executable: false,
+    outcomeStatus: 'not-executable',
+    rejectionReason: null,
+    features: {...(candidate.features || {})},
+    edgeScore: candidate.edgeScore ?? null,
+    originalEdgeScore: candidate.originalEdgeScore ?? candidate.edgeScore ?? null,
+    commonScore: candidate.commonScore ?? null,
+    alphaEvidenceScore: candidate.alphaEvidenceScore ?? null,
+    confidenceScore: candidate.confidenceScore ?? null,
+    calibratedScore: candidate.calibratedScore ?? null,
+    tier: candidate.tier ?? 'C',
+  };
+}
+
+function finishedOutcome(base, position, trade, profile, {fundingEvents = 0, fallbackMarkPriceRows = 0} = {}) {
+  return {
+    ...base,
+    executable: true,
+    outcomeStatus: 'closed',
+    fillTime: position.fillTime,
+    fillPrice: position.fillPrice,
+    stop: position.stop,
+    target: position.target,
+    targetR: position.targetR,
+    effectiveTargetR: position.effectiveTargetR,
+    stopPct: position.stopPct,
+    riskUsdt: position.riskUsdt,
+    quantity: position.quantity,
+    exitReason: trade.exitReason,
+    exitTime: trade.exitTime,
+    exitPrice: trade.exitPrice,
+    grossPnlUsdt: trade.grossPnlUsdt,
+    fundingPnlUsdt: trade.fundingPnlUsdt,
+    modeledCostUsdt: trade.modeledCostUsdt,
+    netPnlUsdt: trade.netPnlUsdt,
+    netR: trade.netR,
+    mfe: profile.mfe,
+    mae: profile.mae,
+    fundingEvents,
+    fallbackMarkPriceRows,
+    touch: profile.touch || null,
+  };
+}
+
+export function simulateStandaloneObservation(candidate, {
+  market,
+  minuteRows = [],
+  fundingRows = [],
+  activeEnd = Infinity,
+  equityUsdt = PORTFOLIO_CONFIG.initialEquityUsdt,
+  costRate = PORTFOLIO_CONFIG.costRate,
+  positionCap = PORTFOLIO_CONFIG.positionCap,
+  sideCap = PORTFOLIO_CONFIG.sideCap,
+} = {}) {
+  const signalTime = Number(candidate.t ?? candidate.signalTime);
+  const decisionTime = signalTime + DECISION_LATENCY_MS;
+  const endTime = Number(activeEnd);
+  const base = outcomeBase(candidate, decisionTime);
+  const firstMinute = firstExecutableMinute(minuteRows, decisionTime, endTime);
+  if (!firstMinute) return {...base, rejectionReason: 'fill-price-unavailable'};
+  const acceptance = evaluateCandidateAcceptance(candidate, {
+    activePositions: [],
+    cooldowns: {},
+    equityUsdt,
+    market,
+    decisionTime,
+    fillTime: firstMinute.t,
+    fillPrice: firstMinute.o,
+    strictFill: true,
+    positionCap,
+    sideCap,
+  });
+  if (!acceptance.accepted) {
+    return {
+      ...base,
+      fillTime: firstMinute.t,
+      fillPrice: firstMinute.o,
+      rejectionReason: acceptance.reason || 'acceptance-rejected',
+      acceptanceRules: acceptance.rules || null,
+    };
+  }
+  const position = {
+    id: candidate.id,
+    marketId: candidate.marketId,
+    symbol: candidate.symbol || candidate.marketId,
+    side: candidate.side,
+    alpha: candidate.alpha,
+    family: candidate.family,
+    signalTime,
+    decisionTime,
+    fillTime: acceptance.fillTime,
+    fillPrice: acceptance.fillPrice,
+    entry: acceptance.fillPrice,
+    stop: acceptance.filledRisk.stop,
+    target: acceptance.filledRisk.target,
+    targetR: acceptance.filledRisk.targetR,
+    effectiveTargetR: acceptance.filledRisk.effectiveTargetR,
+    stopPct: acceptance.filledRisk.stopPct,
+    quantity: acceptance.quantity,
+    riskUsdt: acceptance.riskUsdt,
+    fundingPnlUsdt: 0,
+    lastFundingTime: acceptance.fillTime,
+  };
+  const query = buildMinuteQuery(minuteRows);
+  const profile = queryTouchProfile(position, query, endTime);
+  const priceAt = timestamp => priceAtOrBefore(minuteRows, timestamp, position.entry);
+  if (profile.touch) {
+    const settled = settleOnCompletedBars(position, [syntheticTouchBar(position, profile.touch)], fundingRows, {
+      now: endTime + 1,
+      costRate,
+      barIntervalMs: MINUTE_INTERVAL_MS,
+      priceAt,
+    });
+    return finishedOutcome(base, position, settled.trade, profile, settled);
+  }
+  const accrued = settleOnCompletedBars(position, [], fundingRows, {
+    now: endTime + 1,
+    costRate,
+    barIntervalMs: MINUTE_INTERVAL_MS,
+    priceAt,
+  });
+  const completed = (minuteRows || []).filter(row => Number(row.t) >= position.fillTime && Number(row.t) + MINUTE_INTERVAL_MS <= endTime);
+  const last = completed.at(-1);
+  const exitPrice = Number(last?.c) > 0 ? Number(last.c) : Number(position.entry);
+  const exitTime = last ? Number(last.t) + MINUTE_INTERVAL_MS : Math.max(position.fillTime, endTime - 1);
+  const direction = position.side === 'long' ? 1 : -1;
+  const grossPnlUsdt = direction * (exitPrice - Number(position.entry)) * Number(position.quantity);
+  const modeledCostUsdt = costRate * Number(position.entry) * Number(position.quantity);
+  const netPnlUsdt = grossPnlUsdt + Number(accrued.position.fundingPnlUsdt || 0) - modeledCostUsdt;
+  const trade = {
+    ...accrued.position,
+    exitReason: 'end-of-window',
+    exitTime,
+    exitPrice,
+    grossPnlUsdt,
+    modeledCostUsdt,
+    netPnlUsdt,
+    netR: Number(position.riskUsdt) > 0 ? netPnlUsdt / Number(position.riskUsdt) : null,
+  };
+  return finishedOutcome(base, position, trade, profile, accrued);
+}
+
 function baseAsset(symbol, exchangeMarket) {
   return exchangeMarket?.baseAsset || symbol.replace(/USDT$/, '');
 }
@@ -345,7 +551,7 @@ function buildDataAccess(dataRoot, marketBySymbol, start, end, fillDir = null) {
         else high = middle;
       }
       const indexed = rows[low];
-      return indexed && indexed.t + H1 / 60 <= endTime ? indexed : null;
+      return indexed && Number.isFinite(Number(indexed.t)) && Number(indexed.t) + H1 / 60 <= endTime ? indexed : null;
     }
     const rows = loadMinute(symbol);
     let low = 0;
@@ -420,11 +626,6 @@ function writePartition(file, rows) {
   fs.writeFileSync(file, rows.map(row => JSON.stringify(row)).join('\n') + (rows.length ? '\n' : ''), 'utf8');
 }
 
-function outcomeRecord(candidate, h1Rows) {
-  const outcome = directionalOutcome(h1Rows, candidate.t, candidate.side);
-  return {...candidate, outcome};
-}
-
 function generateForSymbol({symbol, market, universe, dataRoot, start, end, btcSeries}) {
   const window = activeWindow(universe, symbol, start, end);
   if (!window.active) return {rows: [], status: 'no-development-window'};
@@ -440,7 +641,7 @@ function generateForSymbol({symbol, market, universe, dataRoot, start, end, btcS
     for (const alphaId of RESEARCH_ALPHA_IDS) {
       const detector = DETECTORS[alphaId];
       const alpha = ALPHA_REGISTRY[alphaId];
-      for (const candidate of detector(point, market, alpha)) rows.push(outcomeRecord(scoreCandidate(candidate), h1Rows));
+      for (const candidate of detector(point, market, alpha)) rows.push(scoreCandidate(candidate));
     }
   }
   rows.sort((a, b) => Number(a.t) - Number(b.t) || String(a.side).localeCompare(String(b.side)) || String(a.id).localeCompare(String(b.id)));
@@ -586,49 +787,89 @@ function collectResearchStats(rawFiles, independentFiles, start, end) {
   return {monthly, observations};
 }
 
-function buildFillIndex({partitionFiles, symbols, marketBySymbol, dataRoot, outputDir, start, end, resume = false}) {
+function symbolFromPartition(file) {
+  return path.basename(file).replace(/\.ndjson$/, '');
+}
+
+function symbolActiveEnd(market, end) {
+  const deliveryDate = Number(market?.deliveryDate);
+  return Number.isFinite(deliveryDate) && deliveryDate > 0 ? Math.min(end, deliveryDate) : end;
+}
+
+function readStandaloneFiles(files) {
+  const rows = [];
+  for (const file of files || []) rows.push(...readPartition(file));
+  return rows.sort((a, b) => Number(a.signalTime) - Number(b.signalTime) || String(a.observationId).localeCompare(String(b.observationId)));
+}
+
+export function buildStandaloneOutcomes({independentFiles, symbols, marketBySymbol, dataRoot, outputDir, start, end, resume = false} = {}) {
+  const standaloneDir = path.join(outputDir, 'standalone');
+  fs.mkdirSync(standaloneDir, {recursive: true});
+  const bySymbol = new Map((independentFiles || []).map(file => [symbolFromPartition(file), file]));
+  const files = [];
+  for (const symbol of symbols || [...bySymbol.keys()].sort()) {
+    const file = path.join(standaloneDir, `${symbol}.ndjson`);
+    files.push(file);
+    if (resume && fs.existsSync(file)) continue;
+    const candidates = bySymbol.has(symbol) ? [...readPartition(bySymbol.get(symbol))]
+      .sort((a, b) => Number(a.t) - Number(b.t) || String(a.id).localeCompare(String(b.id))) : [];
+    const market = marketBySymbol.get(symbol);
+    const activeEnd = symbolActiveEnd(market, end);
+    const minuteRows = candidates.length ? loadRows(dataRoot, 'minute', symbol, start - H1, activeEnd + H1) : [];
+    const fundingRows = candidates.length ? loadRows(dataRoot, 'funding', symbol, start - DAY, activeEnd + H1) : [];
+    const outcomes = candidates.map(candidate => simulateStandaloneObservation(candidate, {
+      market,
+      minuteRows,
+      fundingRows,
+      activeEnd,
+    }));
+    writePartition(file, outcomes);
+  }
+  const rows = readStandaloneFiles(files);
+  const byReason = {};
+  for (const row of rows) {
+    if (!row.executable) byReason[row.rejectionReason || 'unknown'] = (byReason[row.rejectionReason || 'unknown'] || 0) + 1;
+  }
+  return {
+    dir: standaloneDir,
+    files,
+    rows,
+    counts: {
+      total: rows.length,
+      executable: rows.filter(row => row.executable).length,
+      rejected: rows.filter(row => !row.executable).length,
+      byReason,
+    },
+  };
+}
+
+function buildFillIndex({standaloneFiles, symbols, outputDir}) {
   const fillDir = path.join(outputDir, 'fills');
   fs.mkdirSync(fillDir, {recursive: true});
   let built = 0;
   for (const symbol of symbols) {
     const file = path.join(fillDir, `${symbol}.json`);
-    if (resume && fs.existsSync(file)) continue;
-    const partition = partitionFiles.find(candidate => path.basename(candidate) === `${symbol}.ndjson`);
-    const candidates = [];
-    if (partition && fs.existsSync(partition)) {
-      for (const candidate of readPartition(partition)) {
-        if (candidate.tier === 'A' || candidate.tier === 'B') candidates.push({candidate, decisionTime: Number(candidate.t) + 20 * 60_000});
-      }
-    }
-    const minuteRows = candidates.length ? loadRows(dataRoot, 'minute', symbol, start - H1, end + H1) : [];
-    const minuteQuery = candidates.length ? buildMinuteQuery(minuteRows) : null;
+    const standaloneFile = standaloneFiles.find(candidate => path.basename(candidate) === `${symbol}.ndjson`);
     const indexed = [];
-    candidates.sort((left, right) => left.decisionTime - right.decisionTime || String(left.candidate.id).localeCompare(String(right.candidate.id)));
-    let cursor = 0;
-    for (const {candidate, decisionTime} of candidates) {
-      while (cursor < minuteRows.length && minuteRows[cursor].t < decisionTime) cursor++;
-      const row = minuteRows[cursor];
-      if (!row || row.t + H1 / 60 > end) continue;
-      const indexedRow = {candidateId: candidate.id, decisionTime, t: row.t, o: row.o, c: row.c};
-      const acceptance = evaluateCandidateAcceptance(candidate, {
-        activePositions: [], cooldowns: {}, equityUsdt: PORTFOLIO_CONFIG.initialEquityUsdt,
-        market: marketBySymbol.get(symbol), decisionTime, fillTime: row.t,
-        fillPrice: row.o ?? row.c, strictFill: true,
-        positionCap: PORTFOLIO_CONFIG.positionCap, sideCap: PORTFOLIO_CONFIG.sideCap,
-      });
-      if (acceptance.accepted) {
-        const position = {
-          id: candidate.id, marketId: symbol, side: candidate.side, fillTime: acceptance.fillTime,
-          entry: acceptance.fillPrice, stop: acceptance.filledRisk.stop,
-          target: acceptance.filledRisk.target,
+    if (standaloneFile && fs.existsSync(standaloneFile)) {
+      for (const outcome of readPartition(standaloneFile)) {
+        if (!(Number(outcome.fillTime) > 0) || !(Number(outcome.fillPrice) > 0)) continue;
+        const indexedRow = {
+          candidateId: outcome.observationId,
+          decisionTime: Number(outcome.decisionTime),
+          t: Number(outcome.fillTime),
+          o: Number(outcome.fillPrice),
+          c: Number(outcome.fillPrice),
         };
-        const profile = queryTouchProfile(position, minuteQuery, end);
-        indexedRow.touch = profile.touch;
-        indexedRow.mfe = profile.mfe;
-        indexedRow.mae = profile.mae;
+        if (outcome.executable) {
+          indexedRow.touch = outcome.touch || null;
+          indexedRow.mfe = outcome.mfe ?? null;
+          indexedRow.mae = outcome.mae ?? null;
+        }
+        indexed.push(indexedRow);
       }
-      indexed.push(indexedRow);
     }
+    indexed.sort((left, right) => left.decisionTime - right.decisionTime || String(left.candidateId).localeCompare(String(right.candidateId)));
     fs.writeFileSync(file, `${JSON.stringify(indexed)}\n`, 'utf8');
     built++;
   }
@@ -678,7 +919,10 @@ export async function runDevelopmentReplay({dataRoot, appDir, start, end, output
   }
   const independentFiles = writeIndependentPartitions(partitionFiles, outputDir);
   const researchStats = collectResearchStats(partitionFiles, independentFiles, start, end);
-  const fillIndex = buildFillIndex({partitionFiles: independentFiles, symbols: universe.symbols, marketBySymbol, dataRoot, outputDir, start, end, resume});
+  const independentObservations = [];
+  for (const file of independentFiles) independentObservations.push(...readPartition(file));
+  const standalone = buildStandaloneOutcomes({independentFiles, symbols: universe.symbols, marketBySymbol, dataRoot, outputDir, start, end, resume});
+  const fillIndex = buildFillIndex({standaloneFiles: standalone.files, symbols: universe.symbols, outputDir});
   const cycles = candidateCycles(independentFiles, candidate => candidate.tier === 'A' || candidate.tier === 'B');
   const data = buildDataAccess(dataRoot, marketBySymbol, start, end, fillIndex.dir);
   const portfolio = await simulatePortfolio(cycles, data, {endTime: end, ranker: rankResearchCandidates});
@@ -688,6 +932,9 @@ export async function runDevelopmentReplay({dataRoot, appDir, start, end, output
     dataAccess: data,
     portfolio,
     observations: researchStats.observations,
+    independentObservations,
+    standaloneOutcomes: standalone.rows,
+    standalone,
     monthly: researchStats.monthly,
     frequency: frequencySummary(researchStats.monthly),
     partitionFiles,
@@ -704,7 +951,7 @@ export async function runDevelopmentReplay({dataRoot, appDir, start, end, output
 export function researchConfig({start, end, sourceManifestSha256, universeCount, universeMode = 'full-clean-eligible', requestedUniverseCount = universeCount, provenance = {}}) {
   return {
     schemaVersion: 1,
-    engineVersion: 'V8.1-research-2',
+    engineVersion: 'V8.1-research-3',
     alphaRegistry: Object.fromEntries(RESEARCH_ALPHA_IDS.map(id => [id, ALPHA_REGISTRY[id]])),
     baselineAnchors: ['v8_daily_breakout_long', 'v8_funding_crowding_short', 'v8_volume_shock_short', 'v8_bear_trend_short'],
     enabledAlphaIds: RESEARCH_ALPHA_IDS,

@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {DAY, H4} from '../src/config.mjs';
+import {DAY, H1, H4} from '../src/config.mjs';
 import {ALPHA_REGISTRY, RESEARCH_ALPHA_IDS, validateAlphaRegistry} from '../src/v81/alpha-registry.mjs';
 import {fourHourBars, prepareFeatureSeries} from '../src/v81/features.mjs';
 import {detectRelativeStrength} from '../src/v81/alphas/relative-strength.mjs';
 import {scoreCandidate} from '../src/v81/scoring.mjs';
-import {createMonthlyFrequency, frequencySummary, calculateResearchMetrics, validateTierMonotonicity, classifyAlphaAttribution} from '../src/v81/metrics.mjs';
+import {createMonthlyFrequency, frequencySummary, calculateResearchMetrics, alphaAttribution, validateTierMonotonicity, classifyAlphaAttribution} from '../src/v81/metrics.mjs';
 import {mergeResearchCandidates, rankResearchCandidates} from '../src/v81/dedupe.mjs';
 import {dedupeResearchEpisodes} from '../src/v81/episodes.mjs';
-import {validateDevelopmentUniverse} from '../src/v81/replay.mjs';
+import {simulateStandaloneObservation, validateDevelopmentUniverse} from '../src/v81/replay.mjs';
+import {applyCalibratedScore, runPurgedWalkForward} from '../src/v81/walk-forward.mjs';
 import {validateProvenance} from '../src/v81/provenance.mjs';
 import {simulatePortfolio} from '../src/v81/portfolio.mjs';
 import {settleOnCompletedBars} from '../src/backtest.mjs';
@@ -161,6 +162,110 @@ test('same-minute TP and SL resolves to SL and later minutes preserve first touc
   assert.equal(same.trade.exitReason, 'sl');
   const later = settleOnCompletedBars(position, [{t: 0, o: 100, h: 101, l: 99, c: 100}, {t: 60_000, o: 100, h: 106, l: 99, c: 105}], [], {now: 180_000, costRate: 0, barIntervalMs: 60_000});
   assert.equal(later.trade.exitReason, 'tp');
+});
+
+test('standalone research outcome uses the 20-minute decision clock and first 1m touch', () => {
+  const signalTime = Date.parse('2025-06-01T16:00:00Z');
+  const decisionTime = signalTime + 20 * 60_000;
+  const endTime = Date.parse('2025-06-01T17:00:00Z');
+  const rows = [
+    {t: decisionTime - 60_000, o: 100, h: 100, l: 100, c: 100},
+    {t: decisionTime, o: 100, h: 100, l: 100, c: 100},
+    {t: Date.parse('2025-06-01T16:32:00Z'), o: 100, h: 111, l: 99, c: 110},
+    {t: Date.parse('2025-06-01T16:51:00Z'), o: 110, h: 111, l: 94, c: 95},
+  ];
+  const result = simulateStandaloneObservation(candidate('BTCUSDT', signalTime, 'standalone-touch'), {
+    market: {symbol: 'BTCUSDT', filters: [
+      {filterType: 'PRICE_FILTER', tickSize: '0.01'},
+      {filterType: 'LOT_SIZE', stepSize: '0.001', minQty: '0.001'},
+    ]},
+    minuteRows: rows,
+    activeEnd: endTime,
+    costRate: 0,
+  });
+  assert.equal(result.executable, true);
+  assert.equal(result.fillTime, decisionTime);
+  assert.equal(result.exitReason, 'tp');
+  assert.equal(result.touch.time, Date.parse('2025-06-01T16:33:00Z'));
+  assert.equal(result.stop, 95);
+  assert.equal(result.target, 110);
+});
+
+test('standalone funding PnL falls back to price and never treats interval as mark price', () => {
+  const signalTime = Date.parse('2025-06-01T00:00:00Z');
+  const decisionTime = signalTime + 20 * 60_000;
+  const result = simulateStandaloneObservation(candidate('BTCUSDT', signalTime, 'standalone-funding'), {
+    market: {symbol: 'BTCUSDT', filters: [
+      {filterType: 'PRICE_FILTER', tickSize: '0.01'},
+      {filterType: 'LOT_SIZE', stepSize: '0.001', minQty: '0.001'},
+    ]},
+    minuteRows: [
+      {t: decisionTime, o: 100, h: 101, l: 99, c: 100},
+      {t: Date.parse('2025-06-01T01:00:00Z'), o: 102, h: 103, l: 101, c: 102},
+    ],
+    fundingRows: [{t: Date.parse('2025-06-01T01:00:00Z'), rate: 0.01, fundingIntervalHours: 8, markPrice: null}],
+    activeEnd: Date.parse('2025-06-01T02:00:00Z'),
+    costRate: 0,
+  });
+  assert.equal(result.executable, true);
+  assert.equal(result.fillTime, decisionTime);
+  assert.equal(result.fallbackMarkPriceRows, 1);
+  assert.equal(result.fundingPnlUsdt, -12.24);
+});
+
+test('purged walk-forward produces frozen OOF rows without outcome leakage', () => {
+  const folds = [
+    {id: 'fold-a', trainStart: Date.parse('2025-01-01T00:00:00Z'), trainEnd: Date.parse('2025-05-01T00:00:00Z'), validationStart: Date.parse('2025-05-01T00:00:00Z'), validationEnd: Date.parse('2025-07-01T00:00:00Z')},
+    {id: 'fold-b', trainStart: Date.parse('2025-01-01T00:00:00Z'), trainEnd: Date.parse('2025-07-01T00:00:00Z'), validationStart: Date.parse('2025-07-01T00:00:00Z'), validationEnd: Date.parse('2025-09-01T00:00:00Z')},
+  ];
+  const observations = [
+    candidate('AUSDT', Date.parse('2025-02-01T00:00:00Z'), 'train-a'),
+    candidate('BUSDT', Date.parse('2025-06-01T00:00:00Z'), 'oof-a'),
+    candidate('CUSDT', Date.parse('2025-08-01T00:00:00Z'), 'oof-b'),
+  ];
+  const outcomes = observations.map((row, index) => ({
+    observationId: row.id, signalTime: row.t, executable: true, netR: index + 0.1, netPnlUsdt: (index + 0.1) * 10,
+  }));
+  const result = runPurgedWalkForward({observations, outcomes, folds});
+  assert.equal(result.checks.timeOrdered, true);
+  assert.equal(result.checks.purgeEnforced, true);
+  assert.equal(result.checks.validationFrozen, true);
+  assert.equal(result.checks.completeValidationCoverage, true);
+  assert.equal(result.folds[0].trainUsed.end, folds[0].validationStart - 72 * H1);
+  assert.deepEqual(result.oofRows.map(row => row.id), ['oof-a', 'oof-b']);
+  assert.equal(result.oofRows.some(row => Object.hasOwn(row, 'outcome')), false);
+  assert.equal(result.oofOutcomes.every(row => row.oof === true), true);
+});
+
+test('walk-forward inference is invariant to candidate outcome fields', () => {
+  const base = candidate('AUSDT', 1_000, 'inference');
+  const model = {alpha: base.alpha, featureBuckets: {regime: {bull: {sufficientSample: true, liftNet: 0.1}}}};
+  const withOutcome = applyCalibratedScore({...base, outcome: {netR: 999}}, model);
+  const withoutOutcome = applyCalibratedScore(base, model);
+  assert.equal(Object.hasOwn(withOutcome, 'outcome'), false);
+  assert.equal(withOutcome.edgeScore, withoutOutcome.edgeScore);
+  assert.equal(withOutcome.tier, withoutOutcome.tier);
+});
+
+test('OOF alpha attribution applies the preregistered KEEP gate without tier quotas', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const observations = Array.from({length: 30}, (_, index) => candidate(`S${index}USDT`, start + index * DAY, `keep-${index}`));
+  const outcomes = observations.map((row, index) => ({
+    observationId: row.id,
+    alpha: row.alpha,
+    marketId: row.marketId,
+    signalTime: row.t,
+    exitTime: row.t + H1,
+    executable: true,
+    netR: index < 28 ? 0.4 + (index % 2) * 0.02 : -0.05,
+    netPnlUsdt: index < 28 ? 4 + (index % 2) * 0.2 : -0.5,
+  }));
+  const attribution = alphaAttribution(['trend_pullback_continuation'], observations, outcomes, {
+    initialEquity: 10_000, start, end: start + 40 * DAY,
+  });
+  assert.equal(attribution.trend_pullback_continuation.trades, 30);
+  assert.equal(attribution.trend_pullback_continuation.uniqueSymbols, 30);
+  assert.equal(attribution.trend_pullback_continuation.status, 'KEEP');
 });
 
 test('empty research metrics are finite and explicit', () => {

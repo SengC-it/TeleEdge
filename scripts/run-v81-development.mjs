@@ -5,13 +5,14 @@ import {execFileSync} from 'node:child_process';
 import {APP_DIR, DAY} from '../src/config.mjs';
 import {RESEARCH_ALPHA_IDS} from '../src/v81/alpha-registry.mjs';
 import {dedupeResearchEpisodes} from '../src/v81/episodes.mjs';
-import {breakdownMetrics, calculateResearchMetrics, alphaAttribution, validateTierMonotonicity} from '../src/v81/metrics.mjs';
+import {breakdownMetrics, calculateResearchMetrics, alphaAttribution, frequencySummary, recordMonthlyObservation, validateTierMonotonicity} from '../src/v81/metrics.mjs';
 import {rankResearchCandidates} from '../src/v81/dedupe.mjs';
 import {simulatePortfolio} from '../src/v81/portfolio.mjs';
 import {rankCandidates} from '../src/portfolio.mjs';
-import {candidateCycles, createDevelopmentDataAccess, researchConfig, runDevelopmentReplay} from '../src/v81/replay.mjs';
+import {createDevelopmentDataAccess, researchConfig, runDevelopmentReplay} from '../src/v81/replay.mjs';
 import {jsonSha256, strategyTreeSha256} from '../src/v81/provenance.mjs';
 import {runBacktest} from './backtest.mjs';
+import {featureBucketMetrics, PURGE_DURATION_MS, runPurgedWalkForward} from '../src/v81/walk-forward.mjs';
 
 const defaultStart = Date.parse('2025-01-01T00:00:00Z');
 const defaultEnd = Date.parse('2026-01-01T00:00:00Z');
@@ -136,6 +137,34 @@ function modelMetrics(portfolio, options) {
   return calculateResearchMetrics(portfolio?.closedTrades || [], [], options);
 }
 
+function standaloneAlphaReport(alphaId, observations, outcomes, options) {
+  const observed = observations.filter(row => row.alpha === alphaId);
+  const executable = outcomes.filter(row => row.executable && row.alpha === alphaId);
+  const metrics = calculateResearchMetrics(executable, observed, options);
+  return {
+    alpha: alphaId,
+    tierIndependent: true,
+    observations: observed.length,
+    executableOutcomes: executable.length,
+    uniqueSymbols: new Set(executable.map(row => row.marketId || row.symbol)).size,
+    metrics,
+    bySide: breakdownMetrics(executable, row => row.side || 'unknown', options),
+    byRegime: breakdownMetrics(executable, row => row.regime || row.btcRouter || 'unknown', options),
+    monthlyPnl: metrics.monthlyPnl,
+  };
+}
+
+function addMonthlyField(monthly, rows, field) {
+  for (const row of rows || []) {
+    recordMonthlyObservation(monthly, {
+      t: row.signalTime ?? row.t,
+      side: row.side,
+      alpha: row.alpha,
+      regime: row.regime || row.btcRouter || row.features?.regime,
+    }, field);
+  }
+}
+
 function positiveFamily(row) {
   return row.trades >= 30
     && Number(row.netPnlUsdt) > 0
@@ -161,9 +190,12 @@ function reusableBaseline(file, {symbols, start, end, dataRoot}) {
 
 function markdownReport(report) {
   const months = Object.entries(report.monthlyFrequency.months)
-    .map(([month, row]) => `| ${month} | ${row.rawEvents} | ${row.independentResearchObservations} | ${row.qualified} | ${row.highConfidence} | ${row.long} | ${row.short} |`)
+    .map(([month, row]) => `| ${month} | ${row.rawEvents} | ${row.independentResearchObservations} | ${row.standaloneExecutable} | ${row.oofQualified} | ${row.oofHighConfidence} | ${row.long} | ${row.short} |`)
     .join('\n');
-  const alphaRows = Object.entries(report.alphaAttribution)
+  const standaloneAlphaRows = Object.entries(report.standaloneAlphaAttribution)
+    .map(([alpha, row]) => `| ${alpha} | ${row.observations} | ${row.executableOutcomes} | ${row.uniqueSymbols} | ${row.metrics.trades} | ${number(row.metrics.netPnlUsdt, 2)} | ${number(row.metrics.expectancyR)} | ${number(row.metrics.profitFactor)} |`)
+    .join('\n');
+  const oofAlphaRows = Object.entries(report.oofAlphaAttribution)
     .map(([alpha, row]) => `| ${alpha} | ${row.observations} | ${row.qualified} | ${row.trades} | ${number(row.netPnlUsdt, 2)} | ${number(row.expectancyR)} | ${number(row.profitFactor)} | ${row.status} |`)
     .join('\n');
   const comparisonRows = Object.entries(report.baselineComparison)
@@ -188,11 +220,13 @@ Status: **${report.gate.decision}**. Research-only paper simulation; no Holdout 
 - Formal universe gate: ${report.gate.checks.formalUniverse ? 'PASS' : 'FAIL'} (minimum ${report.gate.minimumFormalUniverse})
 - M4 remains: **${report.dataIntegrity.m4Status}**
 
-## Monthly opportunity counts
+## Monthly research counts
 
-| Month | Raw | Independent | Qualified A/B | High confidence A | Long | Short |
-|---|---:|---:|---:|---:|---:|---:|
+| Month | Raw | Independent | Standalone executable | OOF qualified | OOF high confidence | Long | Short |
+|---|---:|---:|---:|---:|---:|---:|---:|
 ${months}
+
+The monthly standaloneExecutable and OOF columns are the formal research denominators; the legacy qualified/high-confidence columns remain available as ex-ante opportunity counts.
 
 ## Frozen baseline comparison
 
@@ -208,17 +242,27 @@ V8.1 combined = frozen V8 Shadow ranked signals plus only Development Alpha rows
 - Net PnL: ${number(report.v81.metrics.netPnlUsdt, 2)} USDT (${pct(report.v81.metrics.netReturn)}); max DD: ${number(report.v81.metrics.maxDrawdownUsdt, 2)} USDT / ${pct(report.v81.metrics.maxDrawdownPct)}
 - Unique symbols: ${report.v81.metrics.uniqueSymbols}; ranked signal increase vs V8: ${pct(report.comparison.v81VsV8.signalIncreasePct)}
 
-## Alpha attribution
+## Standalone Alpha Outcomes (tier-independent)
 
-| Alpha | Independent observations | Qualified | Trades | Net PnL | Exp R | PF | Status |
+| Alpha | Observations | Executable outcomes | Symbols | Trades | Net PnL | Exp R | PF |
+|---|---:|---:|---:|---:|---:|---:|---:|
+${standaloneAlphaRows}
+
+## Purged walk-forward OOF Alpha decisions
+
+| Alpha | OOF observations | OOF qualified | OOF trades | Net PnL | Exp R | PF | Decision |
 |---|---:|---:|---:|---:|---:|---:|---|
-${alphaRows}
+${oofAlphaRows}
+
+- Folds: ${report.walkForward.folds.length}; purge/embargo: ${report.walkForward.spec.purgeDurationHours}h
+- Time ordered: ${report.walkForward.checks.timeOrdered}; purge enforced: ${report.walkForward.checks.purgeEnforced}; frozen validation: ${report.walkForward.checks.validationFrozen}; complete OOF coverage: ${report.walkForward.checks.completeValidationCoverage}
 
 ## Gate
 
 - Decision: **${report.gate.decision}**
-- Positive families with sufficient sample: ${report.gate.positiveAlphaFamilies}; KEEP families: ${report.gate.keepAlphaIds.length}
-- Tier monotonicity: ${report.tierMonotonicity.valid ? 'PASS' : 'FAIL'} (${report.tierMonotonicity.reason})
+- Standalone executable outcomes: ${report.standalone.executableOutcomes}; OOF qualified outcomes: ${report.oofQualified.trades}
+- Positive standalone families with sufficient sample: ${report.gate.positiveStandaloneAlphaFamilies}; OOF KEEP families: ${report.gate.keepAlphaIds.length}
+- Tier monotonicity: ${report.tierMonotonicity.valid ? 'PASS' : 'FAIL'} (${report.tierMonotonicity.reason}; sufficient=${report.tierMonotonicity.sufficientSample})
 - Provenance: strategy tree ${report.provenance.strategyTreeSha256}; frozen config ${report.provenance.frozenConfigSha256}
 
 ## Limitations
@@ -244,13 +288,37 @@ async function main() {
   if (mode === 'smoke') throw new Error('Smoke mode is diagnostic only and cannot produce V8.1 freeze artifacts');
 
   const options = {initialEquity: 10_000, start, end};
-  const allNewTrades = replay.portfolio.closedTrades;
-  const allNewMetrics = calculateResearchMetrics(allNewTrades, replay.observations, options);
-  const alpha = alphaAttribution(RESEARCH_ALPHA_IDS, replay.observations, allNewTrades, options);
-  const keepAlphaIds = RESEARCH_ALPHA_IDS.filter(id => alpha[id].status === 'KEEP');
-  const allNewQualifiedRows = [...candidateCycles(replay.independentFiles, candidate => candidate.tier === 'A' || candidate.tier === 'B')].flat();
-  const keepRows = allNewQualifiedRows.filter(candidate => keepAlphaIds.includes(candidate.alpha));
+  const standaloneOutcomes = replay.standaloneOutcomes || [];
+  const standaloneExecutable = standaloneOutcomes.filter(row => row.executable);
+  const allNewMetrics = calculateResearchMetrics(standaloneExecutable, replay.independentObservations, options);
+  const standaloneAlpha = Object.fromEntries(RESEARCH_ALPHA_IDS.map(alphaId => [
+    alphaId,
+    standaloneAlphaReport(alphaId, replay.independentObservations, standaloneOutcomes, options),
+  ]));
+  const allNewQualifiedRows = replay.independentObservations.filter(candidate => candidate.tier === 'A' || candidate.tier === 'B');
+
+  const walkForward = runPurgedWalkForward({
+    observations: replay.independentObservations,
+    outcomes: standaloneOutcomes,
+    purgeDurationMs: PURGE_DURATION_MS,
+  });
+  const oofRows = walkForward.oofRows;
+  const oofOutcomes = walkForward.oofOutcomes;
+  const oofExecutable = oofOutcomes.filter(row => row.executable);
+  const oofAlpha = alphaAttribution(RESEARCH_ALPHA_IDS, oofRows, oofExecutable, options);
+  const keepAlphaIds = RESEARCH_ALPHA_IDS.filter(id => oofAlpha[id].status === 'KEEP');
+  const oofQualifiedRows = oofRows.filter(candidate => candidate.tier === 'A' || candidate.tier === 'B');
+  const oofQualifiedOutcomes = oofExecutable.filter(row => row.tier === 'A' || row.tier === 'B');
+  const oofHighConfidenceRows = oofRows.filter(candidate => candidate.tier === 'A');
+  const oofHighConfidenceOutcomes = oofExecutable.filter(row => row.tier === 'A');
+  const keepRows = oofQualifiedRows.filter(candidate => keepAlphaIds.includes(candidate.alpha));
   const incrementalPortfolio = await simulatePortfolio(cyclesFromRows(keepRows), replay.dataAccess, {endTime: end, ranker: rankResearchCandidates});
+
+  const monthly = JSON.parse(JSON.stringify(replay.monthly));
+  addMonthlyField(monthly, standaloneExecutable, 'standaloneExecutable');
+  addMonthlyField(monthly, oofQualifiedRows, 'oofQualified');
+  addMonthlyField(monthly, oofHighConfidenceRows, 'oofHighConfidence');
+  const monthlyFrequency = frequencySummary(monthly);
 
   const baselineOutput = path.join(outputDir, 'frozen-baseline');
   const baselineFile = `${baselineOutput}.json`;
@@ -283,23 +351,23 @@ async function main() {
   const v81Portfolio = await simulatePortfolio(cyclesFromRows([...v8Rows, ...keepRows]), baselineData, {endTime: end, ranker: rankCandidates});
   const v81Metrics = modelMetrics(v81Portfolio, options);
   const incrementalMetrics = modelMetrics(incrementalPortfolio, options);
-  const tierMetrics = Object.fromEntries(['A', 'B', 'C'].map(tier => [tier, calculateResearchMetrics(allNewTrades.filter(row => row.tier === tier), [], options)]));
-  const tierMonotonicity = validateTierMonotonicity(tierMetrics, {minimumSamples: 10});
+  const tierMetrics = Object.fromEntries(['A', 'B', 'C'].map(tier => [tier, calculateResearchMetrics(oofExecutable.filter(row => row.tier === tier), [], options)]));
+  const tierMonotonicity = validateTierMonotonicity(tierMetrics, {minimumSamples: 30});
   const bySide = breakdownMetrics(v81Portfolio.closedTrades, row => row.side || 'unknown', options);
   const byRegime = breakdownMetrics(v81Portfolio.closedTrades, row => row.regime || row.btcRouter || 'unknown', options);
-  const positiveAlphaFamilies = Object.values(alpha).filter(positiveFamily).length;
-  const qualifiedCount = sumMonthly(replay.monthly, 'qualified');
-  const highConfidenceCount = sumMonthly(replay.monthly, 'highConfidence');
+  const positiveStandaloneAlphaFamilies = Object.values(standaloneAlpha).filter(row => positiveFamily(row.metrics)).length;
+  const qualifiedCount = sumMonthly(monthly, 'qualified');
+  const highConfidenceCount = sumMonthly(monthly, 'highConfidence');
   const rawCount = replay.observations.rawTotal;
   const independentCount = replay.observations.independentTotal;
   const combinedRanked = v81Portfolio.rankedCount;
   const signalIncreasePct = v8Summary.rankedSignals > 0 ? (combinedRanked - v8Summary.rankedSignals) / v8Summary.rankedSignals : null;
+  const oofQualifiedCount = oofQualifiedOutcomes.length;
   const gateChecks = {
     formalUniverse: replay.universe.symbols.length >= 150,
-    researchMean: replay.frequency.independentResearchObservations.mean >= 30,
-    qualifiedMean: replay.frequency.qualified.mean >= 10,
-    positiveAlphaFamilies: positiveAlphaFamilies >= 3,
     incrementalAlphaFamilies: keepAlphaIds.length >= 2,
+    oofQualified: oofQualifiedCount >= 60,
+    qualifiedMean: monthlyFrequency.oofQualified.mean >= 5,
     tierMonotonicity: tierMonotonicity.sufficientSample && tierMonotonicity.valid,
     portfolioProfitFactor: Number(v81Metrics.profitFactor) >= 1.5,
     portfolioExpectancy: Number(v81Metrics.expectancyR) >= 0.20,
@@ -309,13 +377,17 @@ async function main() {
     tradesIncrease: v81Metrics.trades > v8Summary.metrics.trades,
     pnlIncrease: v81Metrics.netPnlUsdt > v8Summary.metrics.netPnlUsdt,
     noExecutionProxy: baseline.data.executionProxy === false,
+    noLookAheadOrLeakage: Object.values(walkForward.checks).every(Boolean),
+    noOrderPath: true,
   };
   const gate = {
     decision: Object.values(gateChecks).every(Boolean) ? 'GO_TO_HOLDOUT' : 'RESEARCH_FAIL',
     checks: gateChecks,
     minimumFormalUniverse: 150,
-    positiveAlphaFamilies,
+    positiveStandaloneAlphaFamilies,
     keepAlphaIds,
+    oofQualifiedCount,
+    oofQualifiedMean: monthlyFrequency.oofQualified.mean,
   };
   const configBase = researchConfig({
     start,
@@ -329,14 +401,22 @@ async function main() {
       developmentRunCodeCommit: codeCommit,
       reportCommit: codeCommit,
       datasetManifestSha256: replay.sourceManifestSha256,
+      walkForwardSpec: walkForward.spec,
+      purgeDurationMs: PURGE_DURATION_MS,
+      folds: walkForward.folds.map(fold => ({
+        id: fold.id,
+        train: fold.requestedTrain,
+        trainUsed: fold.trainUsed,
+        validation: fold.validation,
+      })),
     },
   });
   const frozenConfigSha256 = jsonSha256(configBase);
   const report = {
-    reportVersion: 'v81-development-2',
+    reportVersion: 'v81-development-3',
     status: 'DEVELOPMENT_ONLY',
     generatedAt: new Date().toISOString(),
-    engine: {version: 'V8.1-research-2', codeSha: codeCommit, researchOnly: true},
+    engine: {version: 'V8.1-research-3', codeSha: codeCommit, researchOnly: true},
     boundary: {start, end, durationDays: (end - start) / DAY},
     holdout: {status: 'NOT RUN', start: holdoutStart, end: holdoutEnd},
     universe: {
@@ -353,6 +433,12 @@ async function main() {
     counts: {
       rawEvents: rawCount,
       independentResearchObservations: independentCount,
+      standaloneExecutableOutcomes: standaloneExecutable.length,
+      standaloneRejectedOutcomes: standaloneOutcomes.length - standaloneExecutable.length,
+      oofRows: oofRows.length,
+      oofExecutableOutcomes: oofExecutable.length,
+      oofQualified: oofQualifiedCount,
+      oofHighConfidence: oofHighConfidenceOutcomes.length,
       qualified: qualifiedCount,
       highConfidence: highConfidenceCount,
       accepted: v81Portfolio.accepted.length,
@@ -362,14 +448,42 @@ async function main() {
       v81IncrementalTrades: incrementalMetrics.trades,
       v81CombinedRankedSignals: combinedRanked,
     },
-    monthlyFrequency: replay.frequency,
+    monthlyFrequency,
+    standalone: {
+      observations: replay.independentObservations.length,
+      executableOutcomes: standaloneExecutable.length,
+      rejectedOutcomes: standaloneOutcomes.length - standaloneExecutable.length,
+      rejectionByReason: replay.standalone.counts.byReason,
+      metrics: allNewMetrics,
+    },
+    standaloneAlphaAttribution: standaloneAlpha,
+    featureEfficacy: featureBucketMetrics(standaloneExecutable, options),
+    walkForward: {
+      spec: walkForward.spec,
+      folds: walkForward.folds,
+      checks: walkForward.checks,
+      oofRows: oofRows.length,
+      oofOutcomes: oofOutcomes.length,
+      oofExecutableOutcomes: oofExecutable.length,
+    },
+    oofQualified: {
+      rows: oofQualifiedRows.length,
+      trades: oofQualifiedOutcomes.length,
+      metrics: calculateResearchMetrics(oofQualifiedOutcomes, oofQualifiedRows, options),
+    },
+    oofHighConfidence: {
+      rows: oofHighConfidenceRows.length,
+      trades: oofHighConfidenceOutcomes.length,
+      metrics: calculateResearchMetrics(oofHighConfidenceOutcomes, oofHighConfidenceRows, options),
+    },
+    oofAlphaAttribution: oofAlpha,
     baselineComparison: {
       v75: v75Summary,
       v8: v8Summary,
       v81Incremental: {rankedSignals: incrementalPortfolio.rankedCount, acceptedSignals: incrementalPortfolio.accepted.length, trades: incrementalMetrics.trades, metrics: incrementalMetrics},
       v81: {rankedSignals: combinedRanked, acceptedSignals: v81Portfolio.accepted.length, trades: v81Metrics.trades, metrics: v81Metrics},
     },
-    v81AllNewAudit: {qualifiedRows: allNewQualifiedRows.length, trades: allNewMetrics.trades, metrics: allNewMetrics, alphaAttribution: alpha},
+    v81AllNewAudit: {qualifiedRows: allNewQualifiedRows.length, observations: replay.independentObservations.length, executableOutcomes: standaloneExecutable.length, trades: allNewMetrics.trades, metrics: allNewMetrics, alphaAttribution: standaloneAlpha},
     v81Incremental: {includedAlphaIds: keepAlphaIds, excludedAlphaIds: RESEARCH_ALPHA_IDS.filter(id => !keepAlphaIds.includes(id)), trades: incrementalMetrics.trades, metrics: incrementalMetrics},
     v81: {model: 'V8 frozen baseline + KEEP-only incremental sleeve', metrics: v81Metrics, trades: v81Portfolio.closedTrades},
     comparison: {
@@ -385,9 +499,18 @@ async function main() {
     breakdowns: {bySide, byRegime},
     tierMetrics,
     tierMonotonicity,
-    alphaAttribution: alpha,
+    alphaAttribution: oofAlpha,
     gate,
-    provenance: {strategyTreeSha256: strategyHash, developmentRunCodeCommit: codeCommit, reportCommit: codeCommit, frozenConfigSha256, datasetManifestSha256: replay.sourceManifestSha256},
+    provenance: {
+      strategyTreeSha256: strategyHash,
+      developmentRunCodeCommit: codeCommit,
+      reportCommit: codeCommit,
+      frozenConfigSha256,
+      datasetManifestSha256: replay.sourceManifestSha256,
+      walkForwardSpec: walkForward.spec,
+      purgeDurationMs: PURGE_DURATION_MS,
+      folds: configBase.provenance.folds,
+    },
     frozenConfigSha256,
     dataIntegrity: {sourceManifestSha256: replay.sourceManifestSha256, m4Status: 'M4-INCOMPLETE', artifactDir: path.relative(APP_DIR, outputDir).replaceAll('\\', '/')},
     baselineAnchors: {v75: 'V7.5 CONTROL frozen; replayed in the same Development universe and execution contract', v8: 'V8 SHADOW frozen; replayed in the same Development universe and execution contract'},
@@ -396,7 +519,8 @@ async function main() {
       'M4 strict formal dataset remains incomplete; this Development replay does not upgrade M4 or remove survivorship/lifecycle/data continuity limitations.',
       'The selected universe is the deterministic 150-symbol fallback from the 388-symbol eligible input; the full 388-symbol Development replay was not run in this artifact.',
       'V7.5 and V8 baseline event sets are generated by the frozen backtest and re-evaluated through the shared local acceptance/fill contract for comparability.',
-      'V8.1 all-new Alpha rows are an audit sleeve; only KEEP rows are included in the V8.1 combined result. WATCH and REJECT are excluded.',
+      'Standalone Alpha outcomes are tier-independent; only OOF KEEP rows are included in the V8.1 combined result. WATCH and REJECT are excluded.',
+      'Purged walk-forward calibration uses only preregistered feature buckets and freezes each fold model before validation; no random split, ML, or grid search was used.',
       'No parameter optimization, strategy threshold change, Holdout, Production deployment, or real order path was run.',
     ],
   };

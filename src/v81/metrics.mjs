@@ -54,6 +54,9 @@ export function createMonthlyFrequency(start, end) {
     research: 0,
     qualified: 0,
     highConfidence: 0,
+    standaloneExecutable: 0,
+    oofQualified: 0,
+    oofHighConfidence: 0,
     uniqueAlerts: 0,
     long: 0,
     short: 0,
@@ -113,6 +116,9 @@ export function frequencySummary(monthly) {
     research: independent,
     qualified: field('qualified'),
     highConfidence: field('highConfidence'),
+    standaloneExecutable: field('standaloneExecutable'),
+    oofQualified: field('oofQualified'),
+    oofHighConfidence: field('oofHighConfidence'),
     uniqueAlerts: field('uniqueAlerts'),
     monthlyConcentration: total > 0
       ? {topMonthShare: (sorted[0] || 0) / total, top3MonthShare: sorted.slice(0, 3).reduce((sum, value) => sum + value, 0) / total}
