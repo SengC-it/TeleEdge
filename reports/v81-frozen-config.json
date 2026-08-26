@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "engineVersion": "V8.1-research-1",
+  "alphaRegistry": {
+    "trend_pullback_continuation": {
+      "id": "trend_pullback_continuation",
+      "version": "v81-primary-1",
+      "family": "trend_pullback",
+      "supportedSides": [
+        "long",
+        "short"
+      ],
+      "supportedRegimes": [
+        "bull",
+        "bear"
+      ],
+      "requiredInputs": [
+        "ema20",
+        "ema50",
+        "adx",
+        "atr",
+        "pullback"
+      ],
+      "targetR": 2,
+      "riskConstraints": {
+        "minStopPct": 0.02,
+        "maxStopPct": 0.12,
+        "minAdx": 18
+      },
+      "description": "Continuation after a completed-bar pullback to the fast trend average."
+    },
+    "volatility_expansion": {
+      "id": "volatility_expansion",
+      "version": "v81-primary-1",
+      "family": "volatility_expansion",
+      "supportedSides": [
+        "long",
+        "short"
+      ],
+      "supportedRegimes": [
+        "bull",
+        "bear",
+        "sideways"
+      ],
+      "requiredInputs": [
+        "atr",
+        "range_ratio",
+        "volume_ratio",
+        "breakout"
+      ],
+      "targetR": 2,
+      "riskConstraints": {
+        "minStopPct": 0.02,
+        "maxStopPct": 0.12,
+        "minRangeRatio": 1.5,
+        "minVolumeRatio": 1.4
+      },
+      "description": "Range and volume expansion confirmed by a close beyond the prior range."
+    },
+    "failed_breakout_reversal": {
+      "id": "failed_breakout_reversal",
+      "version": "v81-primary-1",
+      "family": "failed_breakout",
+      "supportedSides": [
+        "long",
+        "short"
+      ],
+      "supportedRegimes": [
+        "bull",
+        "bear",
+        "sideways"
+      ],
+      "requiredInputs": [
+        "prior_range",
+        "wick_rejection",
+        "atr"
+      ],
+      "targetR": 1.8,
+      "riskConstraints": {
+        "minStopPct": 0.02,
+        "maxStopPct": 0.12
+      },
+      "description": "Reversal after an intrabar range breach closes back inside the prior range."
+    },
+    "mean_reversion_extreme": {
+      "id": "mean_reversion_extreme",
+      "version": "v81-primary-1",
+      "family": "mean_reversion",
+      "supportedSides": [
+        "long",
+        "short"
+      ],
+      "supportedRegimes": [
+        "sideways"
+      ],
+      "requiredInputs": [
+        "rsi",
+        "ema20",
+        "atr",
+        "distance_to_mean"
+      ],
+      "targetR": 1.6,
+      "riskConstraints": {
+        "minStopPct": 0.02,
+        "maxStopPct": 0.12,
+        "maxAdx": 25
+      },
+      "description": "Extreme displacement from the mean with a completed-bar momentum turn."
+    },
+    "funding_price_divergence": {
+      "id": "funding_price_divergence",
+      "version": "v81-primary-1",
+      "family": "funding_divergence",
+      "supportedSides": [
+        "long",
+        "short"
+      ],
+      "supportedRegimes": [
+        "bull",
+        "bear",
+        "sideways"
+      ],
+      "requiredInputs": [
+        "funding_z",
+        "return_3",
+        "volume_ratio"
+      ],
+      "targetR": 1.8,
+      "riskConstraints": {
+        "minStopPct": 0.02,
+        "maxStopPct": 0.12,
+        "minFundingZ": 1.5
+      },
+      "description": "Contrarian funding pressure confirmed by short-horizon price resilience or weakness."
+    },
+    "relative_strength_btc_rotation": {
+      "id": "relative_strength_btc_rotation",
+      "version": "v81-primary-1",
+      "family": "relative_strength",
+      "supportedSides": [
+        "long",
+        "short"
+      ],
+      "supportedRegimes": [
+        "bull",
+        "bear",
+        "sideways"
+      ],
+      "requiredInputs": [
+        "return_12",
+        "btc_return_12",
+        "btc_context",
+        "ema50"
+      ],
+      "targetR": 1.8,
+      "riskConstraints": {
+        "minStopPct": 0.02,
+        "maxStopPct": 0.12,
+        "minRelativeReturn": 0.05
+      },
+      "description": "Cross-sectional rotation relative to BTC with a local trend confirmation."
+    }
+  },
+  "baselineAnchors": [
+    "v8_daily_breakout_long",
+    "v8_funding_crowding_short",
+    "v8_volume_shock_short",
+    "v8_bear_trend_short"
+  ],
+  "enabledAlphaIds": [
+    "trend_pullback_continuation",
+    "volatility_expansion",
+    "failed_breakout_reversal",
+    "mean_reversion_extreme",
+    "funding_price_divergence",
+    "relative_strength_btc_rotation"
+  ],
+  "scoring": {
+    "version": "v81-score-1",
+    "tierThresholds": {
+      "qualified": 62,
+      "highConfidence": 78
+    }
+  },
+  "riskSettings": {
+    "minStopPct": 0.02,
+    "maxStopPct": 0.12,
+    "riskFraction": 0.006
+  },
+  "dedupeRules": {
+    "key": "symbol|side|signalTime",
+    "sameTimePerSide": 3,
+    "deterministicTieBreak": "edgeScore,confidenceScore,eventScore,dayVolume,id"
+  },
+  "portfolioSettings": {
+    "positionCap": 10,
+    "sideCap": 8,
+    "cooldownHours": 72,
+    "decisionLatencyMinutes": 20,
+    "fillInterval": "1m",
+    "settlementInterval": "1m",
+    "sameMinuteTpSl": "sl"
+  },
+  "costModel": {
+    "roundTripCostRate": 0.0015,
+    "funding": "event-rate × priceAtOrBefore fallback when markPrice is null"
+  },
+  "datasetBoundary": {
+    "start": 1735689600000,
+    "end": 1767225600000,
+    "holdoutStart": 1767225600000,
+    "holdoutEnd": 1784073600000
+  },
+  "universeSpecification": {
+    "source": "reports/fast-oos-universe.json",
+    "mode": "stratified-fallback",
+    "requestedSymbols": 388,
+    "symbols": 50,
+    "sourceManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a"
+  },
+  "noOrderMode": true,
+  "codeSha": "6873171499057c5696f6bdb67dea0a72f1a54a9e"
+}

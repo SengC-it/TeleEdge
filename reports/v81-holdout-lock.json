@@ -1,0 +1,11 @@
+{
+  "status": "HOLDOUT_NOT_RUN",
+  "lockedAt": "2026-08-25T13:40:17.191Z",
+  "holdout": {
+    "status": "NOT RUN",
+    "start": 1767225600000,
+    "end": 1784073600000
+  },
+  "frozenConfigSha256": "0f9d9b9674ae8214622c48250311c2815aeb60cbf27a73ba6d4c4cb10bd53d5b",
+  "codeSha": "6873171499057c5696f6bdb67dea0a72f1a54a9e"
+}

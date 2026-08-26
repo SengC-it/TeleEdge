@@ -1,0 +1,784 @@
+{
+  "reportVersion": "v81-development-1",
+  "status": "DEVELOPMENT_ONLY",
+  "generatedAt": "2026-08-25T13:40:17.183Z",
+  "engine": {
+    "version": "V8.1-research-1",
+    "codeSha": "6873171499057c5696f6bdb67dea0a72f1a54a9e",
+    "researchOnly": true
+  },
+  "boundary": {
+    "start": 1735689600000,
+    "end": 1767225600000,
+    "durationDays": 365
+  },
+  "holdout": {
+    "status": "NOT RUN",
+    "start": 1767225600000,
+    "end": 1784073600000
+  },
+  "universe": {
+    "source": "reports/fast-oos-universe.json",
+    "mode": "stratified-fallback",
+    "requested": 388,
+    "symbols": 50,
+    "core": 20,
+    "expanded": 30,
+    "processed": 50,
+    "btcContextRows": 15961,
+    "btcContextPoints": 3990
+  },
+  "execution": {
+    "scanCadenceHours": 4,
+    "decisionLatencyMinutes": 20,
+    "fillInterval": "1m",
+    "settlementInterval": "1m",
+    "executionProxy": false,
+    "sameMinuteTpSl": "sl",
+    "feesFundingModeled": true
+  },
+  "counts": {
+    "researchObservations": 13551,
+    "qualified": 10988,
+    "highConfidence": 2596,
+    "accepted": 870,
+    "rejected": 5894,
+    "trades": 870,
+    "uniqueAlerts": 10988
+  },
+  "monthlyFrequency": {
+    "months": {
+      "2025-01": {
+        "research": 883,
+        "qualified": 691,
+        "highConfidence": 174,
+        "uniqueAlerts": 691,
+        "long": 327,
+        "short": 556,
+        "byAlpha": {
+          "failed_breakout_reversal": 198,
+          "relative_strength_btc_rotation": 264,
+          "trend_pullback_continuation": 183,
+          "volatility_expansion": 202,
+          "funding_price_divergence": 36
+        },
+        "byRegime": {
+          "bear": 482,
+          "bull": 97,
+          "sideways": 304
+        }
+      },
+      "2025-02": {
+        "research": 694,
+        "qualified": 585,
+        "highConfidence": 142,
+        "uniqueAlerts": 585,
+        "long": 224,
+        "short": 470,
+        "byAlpha": {
+          "funding_price_divergence": 42,
+          "trend_pullback_continuation": 179,
+          "relative_strength_btc_rotation": 185,
+          "volatility_expansion": 157,
+          "failed_breakout_reversal": 131
+        },
+        "byRegime": {
+          "bear": 518,
+          "bull": 18,
+          "sideways": 158
+        }
+      },
+      "2025-03": {
+        "research": 808,
+        "qualified": 661,
+        "highConfidence": 165,
+        "uniqueAlerts": 661,
+        "long": 329,
+        "short": 479,
+        "byAlpha": {
+          "failed_breakout_reversal": 199,
+          "relative_strength_btc_rotation": 228,
+          "trend_pullback_continuation": 184,
+          "funding_price_divergence": 58,
+          "volatility_expansion": 137,
+          "mean_reversion_extreme": 2
+        },
+        "byRegime": {
+          "bear": 480,
+          "sideways": 263,
+          "bull": 65
+        }
+      },
+      "2025-04": {
+        "research": 846,
+        "qualified": 678,
+        "highConfidence": 167,
+        "uniqueAlerts": 678,
+        "long": 415,
+        "short": 431,
+        "byAlpha": {
+          "funding_price_divergence": 52,
+          "trend_pullback_continuation": 253,
+          "relative_strength_btc_rotation": 210,
+          "volatility_expansion": 152,
+          "failed_breakout_reversal": 179
+        },
+        "byRegime": {
+          "bear": 380,
+          "bull": 212,
+          "sideways": 254
+        }
+      },
+      "2025-05": {
+        "research": 878,
+        "qualified": 725,
+        "highConfidence": 177,
+        "uniqueAlerts": 725,
+        "long": 530,
+        "short": 348,
+        "byAlpha": {
+          "trend_pullback_continuation": 184,
+          "relative_strength_btc_rotation": 279,
+          "failed_breakout_reversal": 208,
+          "volatility_expansion": 169,
+          "funding_price_divergence": 38
+        },
+        "byRegime": {
+          "bull": 458,
+          "sideways": 353,
+          "bear": 67
+        }
+      },
+      "2025-06": {
+        "research": 1012,
+        "qualified": 809,
+        "highConfidence": 167,
+        "uniqueAlerts": 809,
+        "long": 398,
+        "short": 614,
+        "byAlpha": {
+          "failed_breakout_reversal": 230,
+          "relative_strength_btc_rotation": 249,
+          "trend_pullback_continuation": 270,
+          "funding_price_divergence": 68,
+          "volatility_expansion": 194,
+          "mean_reversion_extreme": 1
+        },
+        "byRegime": {
+          "sideways": 314,
+          "bear": 557,
+          "bull": 141
+        }
+      },
+      "2025-07": {
+        "research": 1139,
+        "qualified": 941,
+        "highConfidence": 219,
+        "uniqueAlerts": 941,
+        "long": 765,
+        "short": 374,
+        "byAlpha": {
+          "failed_breakout_reversal": 238,
+          "relative_strength_btc_rotation": 354,
+          "trend_pullback_continuation": 293,
+          "funding_price_divergence": 57,
+          "volatility_expansion": 197
+        },
+        "byRegime": {
+          "bull": 573,
+          "sideways": 383,
+          "bear": 183
+        }
+      },
+      "2025-08": {
+        "research": 1193,
+        "qualified": 980,
+        "highConfidence": 174,
+        "uniqueAlerts": 980,
+        "long": 656,
+        "short": 537,
+        "byAlpha": {
+          "relative_strength_btc_rotation": 354,
+          "failed_breakout_reversal": 336,
+          "funding_price_divergence": 79,
+          "trend_pullback_continuation": 270,
+          "volatility_expansion": 153,
+          "mean_reversion_extreme": 1
+        },
+        "byRegime": {
+          "sideways": 475,
+          "bear": 373,
+          "bull": 345
+        }
+      },
+      "2025-09": {
+        "research": 1379,
+        "qualified": 1097,
+        "highConfidence": 303,
+        "uniqueAlerts": 1097,
+        "long": 794,
+        "short": 585,
+        "byAlpha": {
+          "relative_strength_btc_rotation": 383,
+          "trend_pullback_continuation": 403,
+          "failed_breakout_reversal": 252,
+          "funding_price_divergence": 84,
+          "volatility_expansion": 257
+        },
+        "byRegime": {
+          "sideways": 423,
+          "bear": 319,
+          "bull": 637
+        }
+      },
+      "2025-10": {
+        "research": 1628,
+        "qualified": 1324,
+        "highConfidence": 320,
+        "uniqueAlerts": 1324,
+        "long": 706,
+        "short": 922,
+        "byAlpha": {
+          "failed_breakout_reversal": 314,
+          "relative_strength_btc_rotation": 455,
+          "trend_pullback_continuation": 481,
+          "volatility_expansion": 274,
+          "funding_price_divergence": 104
+        },
+        "byRegime": {
+          "bull": 346,
+          "sideways": 490,
+          "bear": 792
+        }
+      },
+      "2025-11": {
+        "research": 1636,
+        "qualified": 1338,
+        "highConfidence": 318,
+        "uniqueAlerts": 1338,
+        "long": 581,
+        "short": 1055,
+        "byAlpha": {
+          "relative_strength_btc_rotation": 468,
+          "trend_pullback_continuation": 470,
+          "volatility_expansion": 253,
+          "failed_breakout_reversal": 317,
+          "funding_price_divergence": 127,
+          "mean_reversion_extreme": 1
+        },
+        "byRegime": {
+          "sideways": 382,
+          "bull": 119,
+          "bear": 1135
+        }
+      },
+      "2025-12": {
+        "research": 1455,
+        "qualified": 1159,
+        "highConfidence": 270,
+        "uniqueAlerts": 1159,
+        "long": 610,
+        "short": 845,
+        "byAlpha": {
+          "failed_breakout_reversal": 283,
+          "relative_strength_btc_rotation": 430,
+          "trend_pullback_continuation": 342,
+          "volatility_expansion": 284,
+          "funding_price_divergence": 116
+        },
+        "byRegime": {
+          "bull": 159,
+          "bear": 895,
+          "sideways": 401
+        }
+      }
+    },
+    "research": {
+      "mean": 1129.25,
+      "median": 1075.5,
+      "min": 694,
+      "max": 1636,
+      "zeroMonths": 0
+    },
+    "qualified": {
+      "mean": 915.6666666666666,
+      "median": 875,
+      "min": 585,
+      "max": 1338,
+      "zeroMonths": 0
+    },
+    "highConfidence": {
+      "mean": 216.33333333333334,
+      "median": 175.5,
+      "min": 142,
+      "max": 320,
+      "zeroMonths": 0
+    },
+    "uniqueAlerts": {
+      "mean": 915.6666666666666,
+      "median": 875,
+      "min": 585,
+      "max": 1338,
+      "zeroMonths": 0
+    },
+    "monthlyConcentration": {
+      "topMonthShare": 0.12072909748358054,
+      "top3MonthShare": 0.34823998228912995
+    }
+  },
+  "metrics": {
+    "trades": 870,
+    "wins": 294,
+    "losses": 576,
+    "winRate": 0.33793103448275863,
+    "grossPnlUsdt": -1799.0886029299934,
+    "fundingPnlUsdt": -59.61286113404412,
+    "feesAndCostsUsdt": 1343.2273275713992,
+    "netPnlUsdt": -3201.9287916354383,
+    "netReturn": -0.32019287916354383,
+    "profitFactor": 0.9003072613425863,
+    "expectancyR": -0.06746732325727345,
+    "expectancyR95CI": [
+      -0.15676764208708782,
+      0.02183299557254091
+    ],
+    "maxDrawdownUsdt": 5040.742291702599,
+    "maxDrawdownPct": 0.5040742291702599,
+    "mfe": 0.07087586911420897,
+    "mae": -0.05535427265725183,
+    "positiveMonths": 6,
+    "negativeMonths": 7,
+    "uniqueSymbols": 42,
+    "alphaBreadth": 6,
+    "regimeBreadth": 3,
+    "topSymbolConcentration": 0.31213259297175383,
+    "topTradeConcentration": 0.043014976126462094,
+    "period": {
+      "start": 1735689600000,
+      "end": 1767225600000
+    },
+    "observations": 13551,
+    "endingEquity": 6798.071208364558
+  },
+  "breakdowns": {
+    "bySide": {
+      "long": {
+        "trades": 463,
+        "wins": 150,
+        "losses": 313,
+        "winRate": 0.32397408207343414,
+        "grossPnlUsdt": -1891.2112800599994,
+        "fundingPnlUsdt": -172.05086512997485,
+        "feesAndCostsUsdt": 700.2462419464504,
+        "netPnlUsdt": -2763.5083871364245,
+        "netReturn": -0.27635083871364247,
+        "profitFactor": 0.8331521196220477,
+        "expectancyR": -0.1155194495871916,
+        "expectancyR95CI": [
+          -0.23603106450102646,
+          0.004992165326643275
+        ],
+        "maxDrawdownUsdt": 3090.3377176300964,
+        "maxDrawdownPct": 0.30903377176300967,
+        "mfe": 0.06941436994995111,
+        "mae": -0.05611782140516479,
+        "positiveMonths": 5,
+        "negativeMonths": 8,
+        "uniqueSymbols": 42,
+        "alphaBreadth": 5,
+        "regimeBreadth": 3,
+        "topSymbolConcentration": 0.19965842163316413,
+        "topTradeConcentration": 0.04983914330491617,
+        "period": {
+          "start": 1735689600000,
+          "end": 1767225600000
+        },
+        "observations": 0,
+        "endingEquity": 7236.49161286357
+      },
+      "short": {
+        "trades": 407,
+        "wins": 144,
+        "losses": 263,
+        "winRate": 0.3538083538083538,
+        "grossPnlUsdt": 92.12267713000216,
+        "fundingPnlUsdt": 112.43800399593077,
+        "feesAndCostsUsdt": 642.9810856249503,
+        "netPnlUsdt": -438.4204044990156,
+        "netReturn": -0.04384204044990156,
+        "profitFactor": 0.9805709697922294,
+        "expectancyR": -0.012803602149774437,
+        "expectancyR95CI": [
+          -0.14559150041071345,
+          0.11998429611116457
+        ],
+        "maxDrawdownUsdt": 3863.5073886585724,
+        "maxDrawdownPct": 0.38635073886585725,
+        "mfe": 0.07253845907256586,
+        "mae": -0.05448566560495777,
+        "positiveMonths": 5,
+        "negativeMonths": 8,
+        "uniqueSymbols": 41,
+        "alphaBreadth": 6,
+        "regimeBreadth": 3,
+        "topSymbolConcentration": 1.6339191641601016,
+        "topTradeConcentration": 0.3017326576264975,
+        "period": {
+          "start": 1735689600000,
+          "end": 1767225600000
+        },
+        "observations": 0,
+        "endingEquity": 9561.579595500998
+      }
+    },
+    "byRegime": {
+      "bear": {
+        "trades": 355,
+        "wins": 119,
+        "losses": 236,
+        "winRate": 0.3352112676056338,
+        "grossPnlUsdt": -673.5058566899955,
+        "fundingPnlUsdt": 24.04440463614822,
+        "feesAndCostsUsdt": 544.1314556875503,
+        "netPnlUsdt": -1193.5929077413975,
+        "netReturn": -0.11935929077413976,
+        "profitFactor": 0.9066038072362854,
+        "expectancyR": -0.06302328010784054,
+        "expectancyR95CI": [
+          -0.20329623967342741,
+          0.07724967945774631
+        ],
+        "maxDrawdownUsdt": 2874.8696976595093,
+        "maxDrawdownPct": 0.28748696976595095,
+        "mfe": 0.07060147596414898,
+        "mae": -0.05603038571671162,
+        "positiveMonths": 5,
+        "negativeMonths": 8,
+        "uniqueSymbols": 40,
+        "alphaBreadth": 5,
+        "regimeBreadth": 1,
+        "topSymbolConcentration": 0.6332605888081115,
+        "topTradeConcentration": 0.11082987587241334,
+        "period": {
+          "start": 1735689600000,
+          "end": 1767225600000
+        },
+        "observations": 0,
+        "endingEquity": 8806.40709225862
+      },
+      "bull": {
+        "trades": 205,
+        "wins": 64,
+        "losses": 141,
+        "winRate": 0.3121951219512195,
+        "grossPnlUsdt": -1465.21776428,
+        "fundingPnlUsdt": -52.47908629207263,
+        "feesAndCostsUsdt": 316.0995070615501,
+        "netPnlUsdt": -1833.7963576336222,
+        "netReturn": -0.18337963576336222,
+        "profitFactor": 0.7798870617838626,
+        "expectancyR": -0.15649584376431974,
+        "expectancyR95CI": [
+          -0.3372301494654111,
+          0.02423846193677162
+        ],
+        "maxDrawdownUsdt": 2263.3091750406056,
+        "maxDrawdownPct": 0.22633091750406056,
+        "mfe": 0.06765189611943492,
+        "mae": -0.057991733111773094,
+        "positiveMonths": 4,
+        "negativeMonths": 9,
+        "uniqueSymbols": 35,
+        "alphaBreadth": 5,
+        "regimeBreadth": 1,
+        "topSymbolConcentration": 0.2695541658199692,
+        "topTradeConcentration": 0.07510697136979892,
+        "period": {
+          "start": 1735689600000,
+          "end": 1767225600000
+        },
+        "observations": 0,
+        "endingEquity": 8166.203642366371
+      },
+      "sideways": {
+        "trades": 310,
+        "wins": 111,
+        "losses": 199,
+        "winRate": 0.3580645161290323,
+        "grossPnlUsdt": 339.6350180400001,
+        "fundingPnlUsdt": -31.178179478119695,
+        "feesAndCostsUsdt": 482.99636482229954,
+        "netPnlUsdt": -174.5395262604199,
+        "netReturn": -0.01745395262604199,
+        "profitFactor": 0.9791535715756731,
+        "expectancyR": -0.013682770399544866,
+        "expectancyR95CI": [
+          -0.16455769247255508,
+          0.13719215167346538
+        ],
+        "maxDrawdownUsdt": 1288.5485314335892,
+        "maxDrawdownPct": 0.12885485314335893,
+        "mfe": 0.07332207566969233,
+        "mae": -0.052835887078912874,
+        "positiveMonths": 6,
+        "negativeMonths": 7,
+        "uniqueSymbols": 42,
+        "alphaBreadth": 5,
+        "regimeBreadth": 1,
+        "topSymbolConcentration": 2.662241426207882,
+        "topTradeConcentration": 0.7284064802960589,
+        "period": {
+          "start": 1735689600000,
+          "end": 1767225600000
+        },
+        "observations": 0,
+        "endingEquity": 9825.460473739577
+      }
+    }
+  },
+  "alphaAttribution": {
+    "trend_pullback_continuation": {
+      "observations": 3512,
+      "qualified": 3109,
+      "trades": 188,
+      "wins": 55,
+      "losses": 133,
+      "winRate": 0.2925531914893617,
+      "grossPnlUsdt": -1573.7058152199997,
+      "fundingPnlUsdt": 5.911567792852058,
+      "feesAndCostsUsdt": 317.72598048615004,
+      "netPnlUsdt": -1885.5202279132964,
+      "netReturn": -0.18855202279132963,
+      "profitFactor": 0.7772208561511776,
+      "expectancyR": -0.16208244132037283,
+      "expectancyR95CI": [
+        -0.3562519608119925,
+        0.03208707817124684
+      ],
+      "maxDrawdownUsdt": 2576.156302242436,
+      "maxDrawdownPct": 0.2576156302242436,
+      "mfe": 0.06344115124944025,
+      "mae": -0.05306126899894636,
+      "positiveMonths": 4,
+      "negativeMonths": 9,
+      "uniqueSymbols": 37,
+      "alphaBreadth": 1,
+      "regimeBreadth": 2,
+      "topSymbolConcentration": 0.19420252351841844,
+      "topTradeConcentration": 0.07304662580218334,
+      "period": {
+        "start": 1735689600000,
+        "end": 1767225600000
+      },
+      "endingEquity": 8114.479772086703,
+      "status": "REJECT"
+    },
+    "volatility_expansion": {
+      "observations": 2429,
+      "qualified": 2421,
+      "trades": 96,
+      "wins": 30,
+      "losses": 66,
+      "winRate": 0.3125,
+      "grossPnlUsdt": -687.3235548400006,
+      "fundingPnlUsdt": -1.5437440805544265,
+      "feesAndCostsUsdt": 111.02367896460002,
+      "netPnlUsdt": -799.8909778851545,
+      "netReturn": -0.07998909778851544,
+      "profitFactor": 0.8200563512373021,
+      "expectancyR": -0.12392992620326189,
+      "expectancyR95CI": [
+        -0.3915741153654264,
+        0.14371426295890266
+      ],
+      "maxDrawdownUsdt": 1306.3741752462938,
+      "maxDrawdownPct": 0.13063741752462937,
+      "mfe": 0.08058817609466168,
+      "mae": -0.06823778371256496,
+      "positiveMonths": 6,
+      "negativeMonths": 7,
+      "uniqueSymbols": 33,
+      "alphaBreadth": 1,
+      "regimeBreadth": 3,
+      "topSymbolConcentration": 0.5013542209741341,
+      "topTradeConcentration": 0.1607145515109801,
+      "period": {
+        "start": 1735689600000,
+        "end": 1767225600000
+      },
+      "endingEquity": 9200.10902211485,
+      "status": "REJECT"
+    },
+    "failed_breakout_reversal": {
+      "observations": 2885,
+      "qualified": 2218,
+      "trades": 221,
+      "wins": 76,
+      "losses": 145,
+      "winRate": 0.3438914027149321,
+      "grossPnlUsdt": -1.1495086799979075,
+      "fundingPnlUsdt": 43.21004902677158,
+      "feesAndCostsUsdt": 425.23622120880003,
+      "netPnlUsdt": -383.1756808620267,
+      "netReturn": -0.038317568086202666,
+      "profitFactor": 0.9042977693990825,
+      "expectancyR": -0.0644511528672458,
+      "expectancyR95CI": [
+        -0.24034269528150887,
+        0.11144038954701728
+      ],
+      "maxDrawdownUsdt": 1767.6920872721184,
+      "maxDrawdownPct": 0.17676920872721186,
+      "mfe": 0.055364819139072464,
+      "mae": -0.04556095541122549,
+      "positiveMonths": 5,
+      "negativeMonths": 8,
+      "uniqueSymbols": 41,
+      "alphaBreadth": 1,
+      "regimeBreadth": 3,
+      "topSymbolConcentration": 1.8282901923657362,
+      "topTradeConcentration": 0.3382569487654173,
+      "period": {
+        "start": 1735689600000,
+        "end": 1767225600000
+      },
+      "endingEquity": 9616.824319137964,
+      "status": "REJECT"
+    },
+    "mean_reversion_extreme": {
+      "observations": 5,
+      "qualified": 4,
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "winRate": 0,
+      "grossPnlUsdt": -59.232930000000174,
+      "fundingPnlUsdt": 0.363157188,
+      "feesAndCostsUsdt": 1.5417983249999998,
+      "netPnlUsdt": -60.41157113700017,
+      "netReturn": -0.006041157113700017,
+      "profitFactor": 0,
+      "expectancyR": -1.0198984101748807,
+      "expectancyR95CI": null,
+      "maxDrawdownUsdt": 60.411571136999555,
+      "maxDrawdownPct": 0.006041157113699956,
+      "mfe": 0.036921667430142024,
+      "mae": -0.06129180027485126,
+      "positiveMonths": 0,
+      "negativeMonths": 1,
+      "uniqueSymbols": 1,
+      "alphaBreadth": 1,
+      "regimeBreadth": 1,
+      "topSymbolConcentration": 1,
+      "topTradeConcentration": 1,
+      "period": {
+        "start": 1735689600000,
+        "end": 1767225600000
+      },
+      "endingEquity": 9939.588428863,
+      "status": "WATCH"
+    },
+    "funding_price_divergence": {
+      "observations": 861,
+      "qualified": 688,
+      "trades": 48,
+      "wins": 21,
+      "losses": 27,
+      "winRate": 0.4375,
+      "grossPnlUsdt": 587.3777088000007,
+      "fundingPnlUsdt": 17.512743759534306,
+      "feesAndCostsUsdt": 69.27266910344999,
+      "netPnlUsdt": 535.6177834560849,
+      "netReturn": 0.05356177834560849,
+      "profitFactor": 1.3683560433169109,
+      "expectancyR": 0.20820942809413642,
+      "expectancyR95CI": [
+        -0.1855360233019203,
+        0.6019548794901931
+      ],
+      "maxDrawdownUsdt": 437.5369500099623,
+      "maxDrawdownPct": 0.04375369500099623,
+      "mfe": 0.09049100983112479,
+      "mae": -0.048716131449627754,
+      "positiveMonths": 7,
+      "negativeMonths": 4,
+      "uniqueSymbols": 25,
+      "alphaBreadth": 1,
+      "regimeBreadth": 3,
+      "topSymbolConcentration": 0.29678722696118626,
+      "topTradeConcentration": 0.2292375427727378,
+      "period": {
+        "start": 1735689600000,
+        "end": 1767225600000
+      },
+      "endingEquity": 10535.617783456082,
+      "status": "KEEP"
+    },
+    "relative_strength_btc_rotation": {
+      "observations": 3859,
+      "qualified": 3615,
+      "trades": 316,
+      "wins": 112,
+      "losses": 204,
+      "winRate": 0.35443037974683544,
+      "grossPnlUsdt": -65.05450298999824,
+      "fundingPnlUsdt": -125.06663482064769,
+      "feesAndCostsUsdt": 418.4269794834001,
+      "netPnlUsdt": -608.5481172940457,
+      "netReturn": -0.06085481172940457,
+      "profitFactor": 0.9470629217539992,
+      "expectancyR": -0.03499445792647771,
+      "expectancyR95CI": [
+        -0.18263923431531648,
+        0.11265031846236107
+      ],
+      "maxDrawdownUsdt": 1474.5493976652033,
+      "maxDrawdownPct": 0.14745493976652033,
+      "mfe": 0.08032433424151973,
+      "mae": -0.0606431460375415,
+      "positiveMonths": 6,
+      "negativeMonths": 7,
+      "uniqueSymbols": 40,
+      "alphaBreadth": 1,
+      "regimeBreadth": 3,
+      "topSymbolConcentration": 1.031329895761843,
+      "topTradeConcentration": 0.20331899106938653,
+      "period": {
+        "start": 1735689600000,
+        "end": 1767225600000
+      },
+      "endingEquity": 9391.451882705966,
+      "status": "REJECT"
+    }
+  },
+  "gate": {
+    "decision": "RESEARCH_FAIL",
+    "checks": {
+      "researchMean": true,
+      "qualifiedMean": true,
+      "positiveAlphaFamilies": false,
+      "portfolioProfitFactor": false,
+      "portfolioExpectancy": false,
+      "drawdown": false,
+      "symbolBreadth": true,
+      "noExecutionProxy": true
+    },
+    "positiveAlphaFamilies": 1
+  },
+  "frozenConfigSha256": "0f9d9b9674ae8214622c48250311c2815aeb60cbf27a73ba6d4c4cb10bd53d5b",
+  "dataIntegrity": {
+    "sourceManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
+    "artifacts": "existing verified manifest; raw partitions are local and ignored",
+    "researchArtifactDir": "data/v81-development"
+  },
+  "baselineAnchors": {
+    "v75": "V7.5 CONTROL frozen; not changed",
+    "v8": "V8 SHADOW / EXPERIMENTAL frozen; anchor metadata only in this replay"
+  },
+  "knownLimitations": [
+    "M4 strict formal dataset remains a separate gate and is not upgraded by Development replay.",
+    "V7.5/V8 production semantics are not recalibrated or modified.",
+    "No final Holdout was run.",
+    "Portfolio results are paper simulation, not a deployment or profitability conclusion."
+  ]
+}
