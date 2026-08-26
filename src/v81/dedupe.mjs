@@ -4,7 +4,6 @@ function candidateKey(candidate) {
 
 function compare(a, b) {
   return Number(b.edgeScore || 0) - Number(a.edgeScore || 0)
-    || Number(b.confidenceScore || 0) - Number(a.confidenceScore || 0)
     || Number(b.eventScore || 0) - Number(a.eventScore || 0)
     || Number(b.dayVolume || 0) - Number(a.dayVolume || 0)
     || String(a.id || '').localeCompare(String(b.id || ''));

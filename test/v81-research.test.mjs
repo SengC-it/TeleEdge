@@ -1,11 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {H4} from '../src/config.mjs';
+import {DAY, H4} from '../src/config.mjs';
 import {ALPHA_REGISTRY, RESEARCH_ALPHA_IDS, validateAlphaRegistry} from '../src/v81/alpha-registry.mjs';
 import {fourHourBars, prepareFeatureSeries} from '../src/v81/features.mjs';
+import {detectRelativeStrength} from '../src/v81/alphas/relative-strength.mjs';
 import {scoreCandidate} from '../src/v81/scoring.mjs';
-import {createMonthlyFrequency, frequencySummary, calculateResearchMetrics} from '../src/v81/metrics.mjs';
+import {createMonthlyFrequency, frequencySummary, calculateResearchMetrics, validateTierMonotonicity, classifyAlphaAttribution} from '../src/v81/metrics.mjs';
 import {mergeResearchCandidates, rankResearchCandidates} from '../src/v81/dedupe.mjs';
+import {dedupeResearchEpisodes} from '../src/v81/episodes.mjs';
+import {validateDevelopmentUniverse} from '../src/v81/replay.mjs';
+import {validateProvenance} from '../src/v81/provenance.mjs';
 import {simulatePortfolio} from '../src/v81/portfolio.mjs';
 import {settleOnCompletedBars} from '../src/backtest.mjs';
 
@@ -59,6 +63,38 @@ test('research dedupe merges alpha sources into one notifiable alert', () => {
   assert.deepEqual(merged[0].alphaSources, ['trend_pullback_continuation', 'volatility_expansion']);
   assert.equal(merged[0].alpha, 'trend_pullback_continuation');
   assert.equal(merged[0].alphaOverlap, true);
+});
+
+test('research episode observations are independent of future outcomes and use deterministic refractory dedupe', () => {
+  const rows = [
+    {id: 'late', marketId: 'XUSDT', side: 'long', alpha: 'trend_pullback_continuation', t: 121 * 3_600_000, outcome: {return24: 999}},
+    {id: 'early-2', marketId: 'XUSDT', side: 'long', alpha: 'trend_pullback_continuation', t: 4 * 3_600_000, outcome: {return24: -999}},
+    {id: 'early-1', marketId: 'XUSDT', side: 'long', alpha: 'trend_pullback_continuation', t: 0, outcome: {return24: 999}},
+    {id: 'other-alpha', marketId: 'XUSDT', side: 'long', alpha: 'mean_reversion_extreme', t: 4 * 3_600_000, outcome: {return24: -999}},
+  ];
+  const independent = dedupeResearchEpisodes(rows);
+  assert.deepEqual(independent.map(row => row.id), ['early-1', 'other-alpha', 'late']);
+  assert.equal(independent.every(row => row.episodeEntry === true), true);
+  assert.equal(independent.some(row => row.outcome?.return24 === 999), true);
+});
+
+test('global research ranking keeps the same top three under symbol input order changes', () => {
+  const rows = Array.from({length: 5}, (_, index) => ({
+    id: `candidate-${index}`, marketId: `M${index}USDT`, side: 'short', t: 1234,
+    edgeScore: 100 - index * 10, eventScore: index, dayVolume: 1_000 - index,
+  }));
+  assert.deepEqual(rankResearchCandidates(rows).map(row => row.id), ['candidate-0', 'candidate-1', 'candidate-2']);
+  assert.deepEqual(rankResearchCandidates([...rows].reverse()).map(row => row.id), ['candidate-0', 'candidate-1', 'candidate-2']);
+});
+
+test('relative strength requires local EMA50 direction confirmation', () => {
+  const market = {symbol: 'XUSDT', baseAsset: 'X', core: true};
+  const alpha = ALPHA_REGISTRY.relative_strength_btc_rotation;
+  const base = {signalTime: 1, close: 110, ema50: 105, previousEma50: 104, atr: 2, priorLow4: 100, priorHigh4: 112, return12: 0.1, btcReturn12: 0, previousRelativeReturn12: 0.02, relativeReturn12: 0.1, regime: 'bull'};
+  assert.equal(detectRelativeStrength(base, market, alpha).length, 1);
+  assert.equal(detectRelativeStrength({...base, previousEma50: 106}, market, alpha).length, 0);
+  const short = {...base, close: 90, ema50: 95, previousEma50: 96, priorLow4: 88, priorHigh4: 100, return12: -0.1, previousRelativeReturn12: -0.02, relativeReturn12: -0.1, regime: 'bear'};
+  assert.equal(detectRelativeStrength(short, market, alpha).length, 1);
 });
 
 test('monthly frequency keeps zero months and deterministic summary statistics', () => {
@@ -133,4 +169,46 @@ test('empty research metrics are finite and explicit', () => {
   assert.equal(metrics.netPnlUsdt, 0);
   assert.equal(metrics.profitFactor, null);
   assert.equal(Number.isNaN(metrics.maxDrawdownPct), false);
+});
+
+test('research metrics use net-PnL profit factor, peak-relative drawdown, and end-exclusive months', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const end = Date.parse('2026-01-01T00:00:00Z');
+  const metrics = calculateResearchMetrics([
+    {marketId: 'AUSDT', exitTime: start + 10 * DAY, netPnlUsdt: 100, netR: 0.2},
+    {marketId: 'BUSDT', exitTime: start + 20 * DAY, netPnlUsdt: -50, netR: -1},
+    {marketId: 'CUSDT', exitTime: end, netPnlUsdt: 900, netR: 9},
+  ], [], {initialEquity: 10_000, start, end});
+  assert.equal(metrics.profitFactor, 2);
+  assert.equal(metrics.maxDrawdownUsdt, 50);
+  assert.equal(metrics.monthlyPnl['2025-01'], 50);
+  assert.equal(metrics.monthlyPnl['2026-01'], undefined);
+  assert.equal(metrics.positiveMonths, 1);
+  assert.equal(metrics.zeroMonths, 11);
+});
+
+test('tier monotonicity and strict alpha gate do not pass undersampled results', () => {
+  const a = {trades: 10, expectancyR: 0.4, profitFactor: 2};
+  const b = {trades: 10, expectancyR: 0.2, profitFactor: 1.5};
+  assert.deepEqual(validateTierMonotonicity({A: a, B: b}), {valid: true, sufficientSample: true, reason: 'monotonic'});
+  assert.equal(validateTierMonotonicity({A: {...a, expectancyR: 0.1}, B: b}).valid, false);
+  assert.equal(classifyAlphaAttribution({trades: 29, uniqueSymbols: 20, netPnlUsdt: 100, expectancyR: 0.2, profitFactor: 2, expectancyR95CI: [0.1, 0.3], maxDrawdownPct: 0.1}), 'WATCH');
+});
+
+test('formal Development universe gate rejects smoke-sized universes', () => {
+  assert.throws(() => validateDevelopmentUniverse({symbols: Array.from({length: 149}, () => 'XUSDT')}, {mode: 'formal'}), /at least 150/);
+  assert.equal(validateDevelopmentUniverse({symbols: Array.from({length: 150}, () => 'XUSDT')}, {mode: 'formal'}).valid, true);
+  assert.equal(validateDevelopmentUniverse({symbols: ['XUSDT']}, {mode: 'smoke'}).valid, true);
+});
+
+test('holdout provenance requires the frozen strategy, code, report, config, and dataset fingerprints', () => {
+  const provenance = {
+    strategyTreeSha256: 'strategy',
+    developmentRunCodeCommit: 'development',
+    reportCommit: 'report',
+    frozenConfigSha256: 'config',
+    datasetManifestSha256: 'dataset',
+  };
+  assert.equal(validateProvenance(provenance, {currentStrategyTreeSha256: 'strategy'}).valid, true);
+  assert.equal(validateProvenance({...provenance, strategyTreeSha256: 'stale'}, {currentStrategyTreeSha256: 'strategy'}).valid, false);
 });

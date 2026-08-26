@@ -6,8 +6,11 @@ import {DAY, H1} from '../config.mjs';
 import {directionalOutcome, fourHourBars, prepareFeatureSeries} from './features.mjs';
 import {ALPHA_REGISTRY, RESEARCH_ALPHA_IDS, validateAlphaRegistry} from './alpha-registry.mjs';
 import {scoreCandidate} from './scoring.mjs';
+import {SCORING_CONFIG} from './scoring.mjs';
 import {mergeResearchCandidates, rankResearchCandidates} from './dedupe.mjs';
+import {TIER_THRESHOLDS} from './tiers.mjs';
 import {createMonthlyFrequency, frequencySummary, recordMonthlyObservation} from './metrics.mjs';
+import {dedupeResearchEpisodes} from './episodes.mjs';
 import {simulatePortfolio, PORTFOLIO_CONFIG} from './portfolio.mjs';
 import {evaluateCandidateAcceptance} from '../portfolio.mjs';
 import {detectTrendPullback} from './alphas/trend-pullback.mjs';
@@ -408,6 +411,10 @@ function buildDataAccess(dataRoot, marketBySymbol, start, end, fillDir = null) {
   };
 }
 
+export function createDevelopmentDataAccess(dataRoot, marketBySymbol, start, end) {
+  return buildDataAccess(dataRoot, marketBySymbol, start, end);
+}
+
 function writePartition(file, rows) {
   fs.mkdirSync(path.dirname(file), {recursive: true});
   fs.writeFileSync(file, rows.map(row => JSON.stringify(row)).join('\n') + (rows.length ? '\n' : ''), 'utf8');
@@ -509,20 +516,57 @@ function* mergeCandidatePartitions(files) {
   }
 }
 
-function* qualifiedCycles(files, monthly, observations) {
+export function* candidateCycles(files, predicate = () => true) {
   let currentTime = null;
   let batch = [];
   const flush = function* () {
     if (!batch.length) return;
+    yield batch.filter(predicate);
+    batch = [];
+  };
+  for (const candidate of mergeCandidatePartitions(files)) {
+    if (!predicate(candidate)) continue;
+    if (currentTime != null && Number(candidate.t) !== currentTime) yield* flush();
+    currentTime = Number(candidate.t);
+    batch.push(candidate);
+  }
+  yield* flush();
+}
+
+function writeIndependentPartitions(partitionFiles, outputDir) {
+  const independentDir = path.join(outputDir, 'independent');
+  fs.mkdirSync(independentDir, {recursive: true});
+  const files = [];
+  for (const partition of partitionFiles) {
+    const rows = dedupeResearchEpisodes([...readPartition(partition)]);
+    const file = path.join(independentDir, path.basename(partition));
+    writePartition(file, rows);
+    files.push(file);
+  }
+  return files;
+}
+
+function collectResearchStats(rawFiles, independentFiles, start, end) {
+  const monthly = createMonthlyFrequency(start, end);
+  const observations = {rawTotal: 0, independentTotal: 0, byAlpha: {}};
+  for (const file of rawFiles) {
+    for (const candidate of readPartition(file)) {
+      observations.rawTotal++;
+      recordMonthlyObservation(monthly, candidate, 'rawEvents');
+    }
+  }
+  let currentTime = null;
+  let batch = [];
+  const flush = () => {
+    if (!batch.length) return;
     for (const candidate of batch) {
-      observations.total++;
+      observations.independentTotal++;
       observations.byAlpha[candidate.alpha] ||= {observations: 0, qualified: 0};
       observations.byAlpha[candidate.alpha].observations++;
-      recordMonthlyObservation(monthly, candidate, 'research');
+      recordMonthlyObservation(monthly, candidate, 'independentResearchObservations');
     }
     const merged = mergeResearchCandidates(batch);
-    const qualified = merged.filter(candidate => candidate.tier === 'A' || candidate.tier === 'B');
-    for (const candidate of qualified) {
+    for (const candidate of merged.filter(row => row.tier === 'A' || row.tier === 'B')) {
       recordMonthlyObservation(monthly, candidate, 'qualified');
       for (const source of candidate.alphaSources || [candidate.alpha]) {
         observations.byAlpha[source] ||= {observations: 0, qualified: 0};
@@ -531,15 +575,15 @@ function* qualifiedCycles(files, monthly, observations) {
       if (candidate.tier === 'A') recordMonthlyObservation(monthly, candidate, 'highConfidence');
       recordMonthlyObservation(monthly, candidate, 'uniqueAlerts');
     }
-    yield rankResearchCandidates(qualified);
     batch = [];
   };
-  for (const candidate of mergeCandidatePartitions(files)) {
-    if (currentTime != null && Number(candidate.t) !== currentTime) yield* flush();
+  for (const candidate of mergeCandidatePartitions(independentFiles)) {
+    if (currentTime != null && Number(candidate.t) !== currentTime) flush();
     currentTime = Number(candidate.t);
     batch.push(candidate);
   }
-  yield* flush();
+  flush();
+  return {monthly, observations};
 }
 
 function buildFillIndex({partitionFiles, symbols, marketBySymbol, dataRoot, outputDir, start, end, resume = false}) {
@@ -591,10 +635,19 @@ function buildFillIndex({partitionFiles, symbols, marketBySymbol, dataRoot, outp
   return {dir: fillDir, built};
 }
 
-export async function runDevelopmentReplay({dataRoot, appDir, start, end, outputDir, resume = false, maxSymbols = 0} = {}) {
+export function validateDevelopmentUniverse(universe, {minimum = 150, mode = 'formal'} = {}) {
+  const count = Number(universe?.symbols?.length || 0);
+  if (mode === 'formal' && count < minimum) {
+    throw new Error(`Formal Development requires at least ${minimum} symbols; selected ${count}`);
+  }
+  return {valid: mode !== 'formal' || count >= minimum, count, minimum, mode};
+}
+
+export async function runDevelopmentReplay({dataRoot, appDir, start, end, outputDir, resume = false, maxSymbols = 0, mode = 'formal'} = {}) {
   const registryCheck = validateAlphaRegistry();
   if (!registryCheck.valid) throw new Error(`Invalid V8.1 registry: ${registryCheck.errors.join(',')}`);
   const universe = loadUniverse(dataRoot, appDir, {start, end, maxSymbols});
+  validateDevelopmentUniverse(universe, {mode});
   const marketBySymbol = marketMap(universe);
   const btcRows = loadRows(dataRoot, 'price', 'BTCUSDT', Math.max(0, start - 300 * DAY), end + H1);
   const btcSeries = prepareFeatureSeries(fourHourBars(btcRows, end + H1), {funding: loadRows(dataRoot, 'funding', 'BTCUSDT', start - DAY, end + H1)});
@@ -623,20 +676,22 @@ export async function runDevelopmentReplay({dataRoot, appDir, start, end, output
     completed.add(symbol);
     atomicWriteJson(progressFile, {schemaVersion: 1, boundary: {start, end}, symbols: [...completed].sort(), updatedAt: new Date().toISOString()});
   }
-  const fillIndex = buildFillIndex({partitionFiles, symbols: universe.symbols, marketBySymbol, dataRoot, outputDir, start, end, resume});
-  const monthly = createMonthlyFrequency(start, end);
-  const observations = {total: 0, byAlpha: {}};
-  const cycles = qualifiedCycles(partitionFiles, monthly, observations);
+  const independentFiles = writeIndependentPartitions(partitionFiles, outputDir);
+  const researchStats = collectResearchStats(partitionFiles, independentFiles, start, end);
+  const fillIndex = buildFillIndex({partitionFiles: independentFiles, symbols: universe.symbols, marketBySymbol, dataRoot, outputDir, start, end, resume});
+  const cycles = candidateCycles(independentFiles, candidate => candidate.tier === 'A' || candidate.tier === 'B');
   const data = buildDataAccess(dataRoot, marketBySymbol, start, end, fillIndex.dir);
-  const portfolio = await simulatePortfolio(cycles, data, {endTime: end});
+  const portfolio = await simulatePortfolio(cycles, data, {endTime: end, ranker: rankResearchCandidates});
   return {
     universe,
     marketBySymbol,
+    dataAccess: data,
     portfolio,
-    observations,
-    monthly,
-    frequency: frequencySummary(monthly),
+    observations: researchStats.observations,
+    monthly: researchStats.monthly,
+    frequency: frequencySummary(researchStats.monthly),
     partitionFiles,
+    independentFiles,
     symbolStatus,
     btcContext: {rows: btcRows.length, points: btcSeries.points.length},
     fillIndex,
@@ -646,20 +701,21 @@ export async function runDevelopmentReplay({dataRoot, appDir, start, end, output
   };
 }
 
-export function researchConfig({start, end, sourceManifestSha256, universeCount, universeMode = 'full-clean-eligible', requestedUniverseCount = universeCount}) {
+export function researchConfig({start, end, sourceManifestSha256, universeCount, universeMode = 'full-clean-eligible', requestedUniverseCount = universeCount, provenance = {}}) {
   return {
     schemaVersion: 1,
     engineVersion: 'V8.1-research-1',
     alphaRegistry: Object.fromEntries(RESEARCH_ALPHA_IDS.map(id => [id, ALPHA_REGISTRY[id]])),
     baselineAnchors: ['v8_daily_breakout_long', 'v8_funding_crowding_short', 'v8_volume_shock_short', 'v8_bear_trend_short'],
     enabledAlphaIds: RESEARCH_ALPHA_IDS,
-    scoring: {version: 'v81-score-1', tierThresholds: {qualified: 62, highConfidence: 78}},
+    scoring: {version: SCORING_CONFIG.version, tierThresholds: TIER_THRESHOLDS},
     riskSettings: {minStopPct: 0.02, maxStopPct: 0.12, riskFraction: PORTFOLIO_CONFIG.riskFraction},
-    dedupeRules: {key: 'symbol|side|signalTime', sameTimePerSide: 3, deterministicTieBreak: 'edgeScore,confidenceScore,eventScore,dayVolume,id'},
+    dedupeRules: {key: 'symbol|side|signalTime', episodeKey: 'symbol|side|alpha', deterministicTieBreak: 'edgeScore,eventScore,dayVolume,id', sameTimePerSide: 3},
     portfolioSettings: {positionCap: 10, sideCap: 8, cooldownHours: 72, decisionLatencyMinutes: 20, fillInterval: '1m', settlementInterval: '1m', sameMinuteTpSl: 'sl'},
     costModel: {roundTripCostRate: PORTFOLIO_CONFIG.costRate, funding: 'event-rate × priceAtOrBefore fallback when markPrice is null'},
     datasetBoundary: {start, end, holdoutStart: Date.parse('2026-01-01T00:00:00Z'), holdoutEnd: Date.parse('2026-07-15T00:00:00Z')},
     universeSpecification: {source: 'reports/fast-oos-universe.json', mode: universeMode, requestedSymbols: requestedUniverseCount, symbols: universeCount, sourceManifestSha256},
+    provenance,
     noOrderMode: true,
   };
 }

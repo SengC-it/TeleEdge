@@ -21,7 +21,12 @@ function sourceFiles(directory) {
 }
 
 test('V8.1 research layer has no real execution path', () => {
-  const files = [...sourceFiles(path.join(APP_DIR, 'src', 'v81')), path.join(APP_DIR, 'scripts', 'run-v81-development.mjs')];
+  const files = [
+    ...sourceFiles(path.join(APP_DIR, 'src')),
+    ...sourceFiles(path.join(APP_DIR, 'api')),
+    ...sourceFiles(path.join(APP_DIR, 'supabase', 'functions', 'teleeg-worker')),
+    path.join(APP_DIR, 'scripts', 'run-v81-development.mjs'),
+  ];
   for (const file of files) {
     const source = fs.readFileSync(file, 'utf8');
     for (const term of forbidden) assert.equal(source.includes(term), false, `${term} found in ${path.relative(APP_DIR, file)}`);

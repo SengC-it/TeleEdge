@@ -73,6 +73,7 @@ export function prepareFeatureSeries(rows, {funding = [], btcSeries = null} = {}
     const slow = finite(ema50[index]);
     const longTrend = finite(ema200[index]);
     const previousFast = finite(ema20[index - 3]);
+    const previousSlow = finite(ema50[index - 3]);
     const priorHigh20 = prior.length ? Math.max(...prior.map(item => item.h)) : null;
     const priorLow20 = prior.length ? Math.min(...prior.map(item => item.l)) : null;
     const averageVolume = mean(prior.map(item => item.q));
@@ -94,6 +95,7 @@ export function prepareFeatureSeries(rows, {funding = [], btcSeries = null} = {}
     return {
       index, t: bar.t, signalTime, o: bar.o, h: bar.h, l: bar.l, c: bar.c, q: bar.q,
       close: bar.c, ema20: fast, ema50: slow, ema200: longTrend, previousEma20: previousFast,
+      previousEma50: previousSlow,
       atr: atrValue, adx: finite(valuesAdx[index]), rsi: finite(valuesRsi[index]), regime,
       fundingRate: fundingState.rate, fundingZ: fundingState.z, fundingValid: fundingState.valid,
       previousFundingZ: previousFundingState.z,

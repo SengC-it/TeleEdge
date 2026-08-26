@@ -1,6 +1,7 @@
 import {H1, modelConfig} from '../config.mjs';
 import {firstCompletedTouch, settleOnCompletedBars} from '../backtest.mjs';
 import {evaluateCandidateAcceptance} from '../portfolio.mjs';
+import {rankResearchCandidates} from './dedupe.mjs';
 
 const DECISION_LATENCY_MS = 20 * 60_000;
 const STATIC_REJECTIONS = new Set(['symbol-already-open', 'symbol-cooldown', 'portfolio-cap', 'side-cap', 'market-data-unavailable', 'invalid-market-tick', 'invalid-market-step']);
@@ -123,7 +124,7 @@ function closeAtEnd(state, endTime, data, costRate) {
     const trade = {
       ...marked,
       status: 'closed', exitReason: 'end_of_sample', exitPrice,
-      exitTime: Number(endTime), grossPnlUsdt, modeledCostUsdt, netPnlUsdt,
+      exitTime: Math.max(Number(endTime) - 1, Number(marked.fillTime)), grossPnlUsdt, modeledCostUsdt, netPnlUsdt,
       netR: Number(marked.riskUsdt) > 0 ? netPnlUsdt / Number(marked.riskUsdt) : null,
     };
     state.closedTrades.push(tradeSummary(trade));
@@ -167,12 +168,15 @@ export async function simulatePortfolio(cycles, data, {
   positionCap = PORTFOLIO_CONFIG.positionCap,
   sideCap = PORTFOLIO_CONFIG.sideCap,
   costRate = PORTFOLIO_CONFIG.costRate,
+  ranker = rankResearchCandidates,
 } = {}) {
   const state = createResearchPortfolioState(initialEquityUsdt);
   let rankedCount = 0;
   for await (const cycle of cycles) {
-    const ranked = Array.isArray(cycle) ? cycle : [cycle];
+    const candidates = Array.isArray(cycle) ? cycle : [cycle];
+    const ranked = ranker ? ranker(candidates) : candidates;
     if (!ranked.length) continue;
+    rankedCount += ranked.length;
     const decisionTime = Number(ranked[0].t) + DECISION_LATENCY_MS;
     settleOpenPositions(state, decisionTime, data, costRate);
     for (const candidate of ranked) {
@@ -206,7 +210,6 @@ export async function simulatePortfolio(cycles, data, {
         positionCap,
         sideCap,
       });
-      rankedCount++;
       if (!acceptance.accepted) {
         state.rejected.push({candidate: candidateSummary(candidate), reason: acceptance.reason});
         if (!state.positions.some(position => position.marketId === candidate.marketId)) data.release(candidate.marketId, {keep: true});

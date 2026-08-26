@@ -1,6 +1,6 @@
 export const TIER_THRESHOLDS = Object.freeze({
-  highConfidence: 78,
-  qualified: 62,
+  highConfidence: 88,
+  qualified: 76,
 });
 
 export const TIER_LABELS = Object.freeze({
