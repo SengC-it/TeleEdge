@@ -84,7 +84,7 @@ V8.1 combined = frozen V8 Shadow ranked signals plus only Development Alpha rows
 - Standalone executable outcomes: 13883; OOF qualified outcomes: 71
 - Positive standalone families with sufficient sample: 3; OOF KEEP families: 0
 - Tier monotonicity: PASS (insufficient-sample; sufficient=false)
-- Provenance: strategy tree 40abc2094510c8635c77a9eb58d244f29daa5f14b2576551f9dd9a7a660f7511; frozen config cc604b88e7aa6f8b569cbc010459298f71c8d32822e5f98df26707880136f4e0
+- Provenance: strategy tree 43e57071c09ee529d7fa152744e999d61969e7fa76f48de17da848e8d757fa55; frozen config ba27f6b79c0b16d467e2c20a73ae4a4ce950f633bc828194d17538c48e3d0a20
 
 ## Limitations
 

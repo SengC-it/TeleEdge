@@ -1,10 +1,10 @@
 {
   "reportVersion": "v81-development-3",
   "status": "DEVELOPMENT_ONLY",
-  "generatedAt": "2026-08-26T07:22:28.189Z",
+  "generatedAt": "2026-08-26T08:59:34.539Z",
   "engine": {
     "version": "V8.1-research-3",
-    "codeSha": "9f3e01c72205d86cb6cca90664fc4da3e9cccba0",
+    "codeSha": "98a347817b7dc64a3105a474b3ee4b07ba529745",
     "researchOnly": true
   },
   "boundary": {
@@ -7256,10 +7256,10 @@
     "oofQualifiedMean": 13.25
   },
   "provenance": {
-    "strategyTreeSha256": "40abc2094510c8635c77a9eb58d244f29daa5f14b2576551f9dd9a7a660f7511",
-    "developmentRunCodeCommit": "9f3e01c72205d86cb6cca90664fc4da3e9cccba0",
-    "reportCommit": "9f3e01c72205d86cb6cca90664fc4da3e9cccba0",
-    "frozenConfigSha256": "cc604b88e7aa6f8b569cbc010459298f71c8d32822e5f98df26707880136f4e0",
+    "strategyTreeSha256": "43e57071c09ee529d7fa152744e999d61969e7fa76f48de17da848e8d757fa55",
+    "developmentRunCodeCommit": "98a347817b7dc64a3105a474b3ee4b07ba529745",
+    "reportCommit": "98a347817b7dc64a3105a474b3ee4b07ba529745",
+    "frozenConfigSha256": "ba27f6b79c0b16d467e2c20a73ae4a4ce950f633bc828194d17538c48e3d0a20",
     "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
     "walkForwardSpec": {
       "method": "purged-walk-forward",
@@ -7346,7 +7346,7 @@
       }
     ]
   },
-  "frozenConfigSha256": "cc604b88e7aa6f8b569cbc010459298f71c8d32822e5f98df26707880136f4e0",
+  "frozenConfigSha256": "ba27f6b79c0b16d467e2c20a73ae4a4ce950f633bc828194d17538c48e3d0a20",
   "dataIntegrity": {
     "sourceManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
     "m4Status": "M4-INCOMPLETE",
