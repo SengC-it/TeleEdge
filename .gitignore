@@ -12,4 +12,5 @@ data/backtest/funding/
 data/backtest/
 data/formal-validation/
 data/v81-development/
+data/v9-development/
 reports/.final-signal-trade-backtest*
