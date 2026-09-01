@@ -33,7 +33,7 @@ function readGzipJson(file) {
 
 function writeGzipJsonAtomic(file, value) {
   fs.mkdirSync(path.dirname(file), {recursive: true});
-  const temporary = `${file}.${process.pid}.tmp`;
+  const temporary = `${file}.${process.pid}.${crypto.randomBytes(6).toString('hex')}.tmp`;
   fs.writeFileSync(temporary, zlib.gzipSync(JSON.stringify(value), {level: 1}));
   fs.renameSync(temporary, file);
 }
@@ -370,6 +370,8 @@ export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end,
   const candidatesBySymbol = {};
   const symbolStatus = {};
   const featureAvailability = {takerBuyVolume: 0, metrics: 0, openInterest: 0, premiumIndex: 0, markPrice: 0, indexPrice: 0, funding: 0};
+  const metricsRejectionCounts = {};
+  const metricsPITBySymbol = {};
   const metricsArtifacts = metricsArtifactBySymbol(enhancedRoot);
   for (const symbol of universe.symbols) {
     const lifecycle = universe.markets.get(symbol) || {};
@@ -391,17 +393,26 @@ export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end,
     const funding = loadGzipRows(dataRoot, 'funding', symbol, historyStart - DAY, window.activeEnd + H1)
       .map(row => ({t: finite(row.t ?? row.fundingTime), rate: finite(row.rate ?? row.fundingRate)})).filter(row => row.t != null);
     const metricsArtifact = metricsArtifacts.get(symbol);
-    const metricsComplete = Boolean(metricsArtifact?.rows > 0 && metricsArtifact.invalidArchiveDates?.length === 0 && metricsArtifact.continuity?.complete);
-    // OI/ratio alphas are fail-closed when the per-symbol PIT metrics grid is
-    // incomplete. A partial row stream must never become a silent feature
-    // proxy for a missing interval.
-    const metrics = metricsComplete ? loadOptionalRows(enhancedRoot, 'metrics', symbol, historyStart, window.activeEnd + H1) : [];
+    const metricsAvailable = Boolean(metricsArtifact?.rows > 0 && (metricsArtifact.invalidArchiveDates || []).length === 0);
+    // Metrics are admitted when official rows exist. Continuity is evaluated
+    // at each signal time by metrics.mjs; a local gap can reject that signal
+    // without disabling the symbol for the rest of the development window.
+    const metrics = metricsAvailable ? loadOptionalRows(enhancedRoot, 'metrics', symbol, historyStart, window.activeEnd + H1) : [];
     const openInterest = loadOptionalRows(enhancedRoot, 'open-interest-1h', symbol, historyStart, window.activeEnd + H1);
     const premium = loadOptionalRows(enhancedRoot, 'premium-1h', symbol, historyStart, window.activeEnd + H1);
     const mark = loadOptionalRows(enhancedRoot, 'mark-1h', symbol, historyStart, window.activeEnd + H1);
     const index = loadOptionalRows(enhancedRoot, 'index-1h', symbol, historyStart, window.activeEnd + H1);
     const series = buildV9FeatureSeries(rows, {funding, btcSeries, metricsRows: metrics, openInterest, premium, mark, index, endTime: window.activeEnd + H1});
     const points = series.points.filter(point => point.signalTime >= window.activeStart && point.signalTime < window.activeEnd);
+    metricsPITBySymbol[symbol] = points.filter(point => point.metricsAvailable).length;
+    for (const point of points) for (const reason of point.metricsRejections || []) metricsRejectionCounts[reason] = (metricsRejectionCounts[reason] || 0) + 1;
+    // Diagnostics are aggregated above; do not retain a per-point object in
+    // every candidate feature because the formal replay may contain millions
+    // of feature points.
+    for (const point of points) {
+      delete point.metricsRejections;
+      delete point.metricsDiagnostics;
+    }
     pointsBySymbol.set(symbol, points);
     if (series.dataAvailability.takerBuyVolume) featureAvailability.takerBuyVolume++;
     if (series.dataAvailability.metrics) featureAvailability.metrics++;
@@ -418,7 +429,7 @@ export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end,
     const points = rankedPoints.get(symbol) || [];
     candidatesBySymbol[symbol] = points.flatMap(point => generateV9Candidates(point, market));
   }
-  return {pointsBySymbol: rankedPoints, candidatesBySymbol, symbolStatus, featureAvailability};
+  return {pointsBySymbol: rankedPoints, candidatesBySymbol, symbolStatus, featureAvailability, metricsRejectionCounts, metricsPITBySymbol};
 }
 
 async function processStandaloneAssignment({candidateGroups, marketRows, dataRoot, start, end, cacheDir}) {
@@ -558,7 +569,7 @@ export function createV9OutcomeDataAccess(dataRoot, marketBySymbol, start, end, 
   };
 }
 
-export async function runV9Replay({dataRoot, enhancedRoot, appDir, start, end, maxSymbols = 150, workerCount = 2} = {}) {
+export async function runV9Replay({dataRoot, enhancedRoot, appDir, start, end, maxSymbols = 150, workerCount = 2, standaloneCacheDir} = {}) {
   const progress = label => { if (process.env.V9_PROGRESS === '1') console.error(`[v9] ${label}`); };
   progress('universe');
   const universe = loadV9Universe(dataRoot, appDir, {start, end, limit: maxSymbols});
@@ -583,7 +594,8 @@ export async function runV9Replay({dataRoot, enhancedRoot, appDir, start, end, m
   rawCandidates = null;
   progress(`candidates:done independent=${independentObservations.length} ranked=${rankedCandidates.length}`);
   const dataAccess = createV9DataAccess(dataRoot, marketBySymbol, start, end);
-  const standaloneOutcomes = await buildStandaloneOutcomes({independentObservations, marketBySymbol, dataAccess, dataRoot, start, end, cacheDir: path.join(enhancedRoot, 'standalone-cache-v4'), workerCount});
+  const cacheDir = standaloneCacheDir === undefined ? path.join(enhancedRoot, 'standalone-cache-v4') : standaloneCacheDir;
+  const standaloneOutcomes = await buildStandaloneOutcomes({independentObservations, marketBySymbol, dataAccess, dataRoot, start, end, cacheDir, workerCount});
   progress('standalone:done');
   const qualifiedRanked = rankedCandidates.filter(candidate => candidate.tier === 'A' || candidate.tier === 'B');
   // Portfolio simulation is performed after purged OOF selection by the
@@ -595,6 +607,7 @@ export async function runV9Replay({dataRoot, enhancedRoot, appDir, start, end, m
     universe, marketBySymbol, dataAccess, btcContext: {rows: btcRows.length, points: btcSeries.points.length, market: btcMarket?.symbol || null},
     rawCandidates: rawCandidateSummary, independentObservations, rankedCandidates, standaloneOutcomes, portfolio,
     symbolStatus: features.symbolStatus, featureAvailability: features.featureAvailability,
+    metricsDiagnostics: {rejectionCounts: features.metricsRejectionCounts, pitObservationsBySymbol: features.metricsPITBySymbol},
     counts: {
       rawCandidates: rawCandidateSummary.length, independentObservations: independentObservations.length,
       rankedCandidates: rankedCandidates.length, qualifiedRanked: qualifiedRanked.length,

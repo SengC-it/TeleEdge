@@ -7,6 +7,7 @@ import {APP_DIR, DAY, H1} from '../src/config.mjs';
 import {runBacktest} from './backtest.mjs';
 import {createV9DataAccess, createV9OutcomeDataAccess, runV9Replay, mergeV9RankedWithBaseline} from '../src/v9/replay.mjs';
 import {V9_ALPHA_IDS, V9_SCORECARD} from '../src/v9/registry.mjs';
+import {METRICS_MIN_PIT_OBSERVATIONS} from '../src/v9/metrics.mjs';
 import {calculateResearchMetrics, breakdownMetrics, alphaAttribution, createMonthlyFrequency, frequencySummary, recordMonthlyObservation, validateTierMonotonicity} from '../src/v81/metrics.mjs';
 import {mergeResearchCandidates, rankResearchCandidates} from '../src/v81/dedupe.mjs';
 import {simulatePortfolio} from '../src/v81/portfolio.mjs';
@@ -226,6 +227,19 @@ function markdown(report) {
   return `# TeleEdge V9 Multi-Factor Derivatives Research\n\nStatus: **${report.status}**. Research-only Development package; no V8.1 Holdout and no Production change.\n\n## Boundary and provenance\n\n- Development: ${report.boundary.start} → ${report.boundary.end} (end exclusive)\n- Holdout: **NOT RUN** (${report.holdout.start} → ${report.holdout.end})\n- Scan: ${report.execution.scanCadenceHours}h; decision latency: ${report.execution.decisionLatencyMinutes}m; fill/settlement: ${report.execution.fillInterval} / ${report.execution.settlementInterval}; proxy=${report.execution.executionProxy}\n- Universe: ${report.universe.selected} selected (${report.universe.core} core / ${report.universe.expanded} expanded), hash ${report.universe.symbolsHash}\n- M4: **${report.dataIntegrity.m4Status}**\n- No-order audit: ${report.noOrderAudit}\n- Strategy tree SHA256: ${report.provenance.strategyTreeSha256}; V9 code SHA256: ${report.provenance.v9CodeSha256}; data manifest SHA256: ${report.provenance.datasetManifestSha256}\n\n## Data availability\n\n${report.dataAvailability.map(row => `- ${row.name}: ${row.available ? 'available' : 'unavailable'} — ${row.reason}`).join('\n')}\n\n## Monthly counts\n\n| Month | Raw | Independent | Standalone executable | OOF candidate | OOF executable | Long | Short |\n|---|---:|---:|---:|---:|---:|---:|---:|\n${Object.entries(report.monthlyFrequency.months).map(([month, row]) => `| ${month} | ${row.rawEvents} | ${row.independentResearchObservations} | ${row.standaloneExecutable} | ${row.oofQualifiedCandidates} | ${row.oofQualifiedExecutable} | ${row.long} | ${row.short} |`).join('\n')}\n\n## Alpha standalone\n\n| Alpha | Observations | Executable | Symbols | Trades | Net PnL | Exp R | PF |\n|---|---:|---:|---:|---:|---:|---:|---:|\n${alphaRows || '| none | 0 | 0 | 0 | 0 | — | — | — |'}\n\n## Purged OOF\n\n| Alpha | Status | Qualified executable | Exp R | PF |\n|---|---|---:|---:|---:|\n${oofRows || '| none | WATCH | 0 | — | — |'}\n\nFolds: ${report.walkForward.folds.length}; purge: ${report.walkForward.spec.purgeDurationHours}h; checks: ${JSON.stringify(report.walkForward.checks)}.\n\n## Model comparison\n\n| Model | Ranked | Accepted | Trades | Net PnL | Exp R | PF | DD |\n|---|---:|---:|---:|---:|---:|---:|---:|\n${comparisonRows}\n\n## Gate\n\nDecision: **${report.gate.decision}**\n\n| Check | Result |\n|---|---|\n${gateRows}\n\nThe selection rule is preregistered: a V9 alpha may enter the future Holdout candidate set only when its purged OOF qualified executable attribution is KEEP; if the Development Gate fails, no Holdout candidate is selected. No ad-hoc best-profit selection is permitted.\n\n## Limitations\n\n${report.knownLimitations.map(row => `- ${row}`).join('\n')}\n`;
 }
 
+function renderMarkdown(report) {
+  const metrics = report.dataIntegrity.metrics;
+  const integrity = [
+    '## PIT metrics integrity',
+    '',
+    `- Symbols with rows: ${metrics.metricsSymbolsWithRows}; valid-archive symbols: ${metrics.metricsSymbolsWithValidArchives}; symbols with any gap: ${metrics.metricsSymbolsWithAnyGap}; zero-gap symbols: ${metrics.metricsSymbolsZeroGap}; PIT-usable symbols: ${metrics.metricsSymbolsPITUsable}.`,
+    `- Total rows: ${metrics.rows}; expected rows: ${metrics.expectedRows}; missing timestamps: ${metrics.missingTimestamps}; duplicate timestamps: ${metrics.duplicateTimestamps}.`,
+    `- Source-order irregularities: ${metrics.sourceOrderIrregularities}; largest gap: ${metrics.largestGapMs}ms; coverage: ${metrics.coveragePct}%.`,
+    `- Signal rejection counts: current stale ${metrics.signalRejectionCounts.staleCurrentMetric}; 1h gap ${metrics.signalRejectionCounts.lookback1hGap}; 4h gap ${metrics.signalRejectionCounts.lookback4hGap}; 12h gap ${metrics.signalRejectionCounts.lookback12hGap}; rolling-history gap ${metrics.signalRejectionCounts.rollingHistoryGap}.`,
+  ].join('\n');
+  return markdown(report).replace('\n\n## Monthly counts', `\n\n${integrity}\n\n## Monthly counts`).replace(/\n+$/, '');
+}
+
 async function main() {
   const progress = label => { if (process.env.V9_PROGRESS === '1') console.error(`[v9] ${label}`); };
   const start = dateValue(cliValue('--start', null), DEFAULT_START);
@@ -237,8 +251,11 @@ async function main() {
   const reportsDir = path.resolve(cliValue('--reports-dir', path.join(APP_DIR, 'reports')));
   const maxSymbols = Number(cliValue('--max-symbols', 150)) || 150;
   const workerCount = Math.max(1, Number(cliValue('--workers', 2)) || 2);
+  const standaloneCacheDir = process.argv.includes('--no-standalone-cache')
+    ? null
+    : path.resolve(cliValue('--standalone-cache-dir', path.join(outputDir, 'standalone-cache-v4')));
   progress('replay:start');
-  const replay = await runV9Replay({dataRoot, enhancedRoot, appDir: APP_DIR, start, end, maxSymbols, workerCount});
+  const replay = await runV9Replay({dataRoot, enhancedRoot, appDir: APP_DIR, start, end, maxSymbols, workerCount, standaloneCacheDir});
   progress('replay:done');
   const options = {initialEquity: 10_000, start, end};
   const standaloneExecutable = replay.standaloneOutcomes.filter(row => row.executable);
@@ -315,18 +332,58 @@ async function main() {
     const last = artifactTimestamp(row.lastTimestamp ?? row.lastObserved ?? row.activeEnd);
     return Number(row.rows) > 0 && row.sha256 && Number.isFinite(first) && Number.isFinite(last) && first < end && last >= start;
   };
-  const usableDevelopmentSymbols = new Set((dataManifest.artifacts || []).filter(row => row.kind === 'taker-1h' && overlappingArtifact(row)).map(row => row.symbol)).size;
-  const usableMetricsSymbols = new Set((dataManifest.artifacts || []).filter(row => row.kind === 'metrics' && overlappingArtifact(row) && row.invalidArchiveDates?.length === 0 && row.continuity?.complete).map(row => row.symbol)).size;
-  const metricsArtifacts = (dataManifest.artifacts || []).filter(row => row.kind === 'metrics');
+  const selectedSymbols = replay.universe.symbols;
+  const usableDevelopmentSymbols = new Set((dataManifest.artifacts || []).filter(row => row.kind === 'taker-1h' && overlappingArtifact(row) && selectedSymbols.includes(row.symbol)).map(row => row.symbol)).size;
+  const metricsArtifacts = (dataManifest.artifacts || []).filter(row => row.kind === 'metrics' && selectedSymbols.includes(row.symbol));
+  const metricsArtifactBySymbol = new Map(metricsArtifacts.map(row => [row.symbol, row]));
+  const metricsSymbolsWithRows = selectedSymbols.filter(symbol => Number(metricsArtifactBySymbol.get(symbol)?.rows || 0) > 0).length;
+  const metricsSymbolsWithValidArchives = selectedSymbols.filter(symbol => {
+    const artifact = metricsArtifactBySymbol.get(symbol);
+    return Number(artifact?.rows || 0) > 0 && (artifact?.invalidArchiveDates || []).length === 0 && (artifact?.missingArchiveDates || []).length === 0;
+  }).length;
+  const metricsSymbolsWithAnyGap = selectedSymbols.filter(symbol => {
+    const continuity = metricsArtifactBySymbol.get(symbol)?.continuity || {};
+    return Number(continuity.missingTimestamps || 0) > 0 || Number(continuity.duplicates || 0) > 0;
+  }).length;
+  const metricsSymbolsZeroGap = selectedSymbols.filter(symbol => metricsArtifactBySymbol.get(symbol)?.continuity?.complete === true).length;
+  const metricsPITBySymbol = replay.metricsDiagnostics?.pitObservationsBySymbol || {};
+  const metricsSymbolsPITUsable = selectedSymbols.filter(symbol => Number(metricsPITBySymbol[symbol] || 0) >= METRICS_MIN_PIT_OBSERVATIONS).length;
+  const usableMetricsSymbols = metricsSymbolsPITUsable;
+  const metricsExpectedRows = metricsArtifacts.reduce((sum, row) => sum + Number(row.continuity?.expectedRows || 0), 0);
+  const metricsMissingTimestamps = metricsArtifacts.reduce((sum, row) => sum + Number(row.continuity?.missingTimestamps || 0), 0);
+  const metricsCoveragePct = metricsExpectedRows > 0 ? Number((((metricsExpectedRows - metricsMissingTimestamps) / metricsExpectedRows) * 100).toFixed(6)) : 0;
+  const metricsRejectionCounts = replay.metricsDiagnostics?.rejectionCounts || {};
   const metricsData = {
-    symbolsWithRows: metricsArtifacts.filter(row => Number(row.rows) > 0).length,
-    usableSymbols: usableMetricsSymbols,
+    metricsSymbolsWithRows,
+    metricsSymbolsWithValidArchives,
+    metricsSymbolsWithAnyGap,
+    metricsSymbolsZeroGap,
+    metricsSymbolsPITUsable,
+    symbolsWithRows: metricsSymbolsWithRows,
+    symbolsWithValidArchives: metricsSymbolsWithValidArchives,
+    symbolsWithAnyGap: metricsSymbolsWithAnyGap,
+    symbolsZeroGap: metricsSymbolsZeroGap,
+    symbolsPITUsable: metricsSymbolsPITUsable,
+    usableSymbols: metricsSymbolsPITUsable,
+    minimumPITObservations: METRICS_MIN_PIT_OBSERVATIONS,
     rows: metricsArtifacts.reduce((sum, row) => sum + Number(row.rows || 0), 0),
     missingArchiveDates: metricsArtifacts.reduce((sum, row) => sum + (row.missingArchiveDates?.length || 0), 0),
     invalidArchiveDates: metricsArtifacts.reduce((sum, row) => sum + (row.invalidArchiveDates?.length || 0), 0),
     outOfOrderArchiveDates: metricsArtifacts.reduce((sum, row) => sum + (row.outOfOrderArchiveDates?.length || 0), 0),
-    missingTimestamps: metricsArtifacts.reduce((sum, row) => sum + Number(row.continuity?.missingTimestamps || 0), 0),
+    duplicateTimestamps: metricsArtifacts.reduce((sum, row) => sum + Number(row.continuity?.duplicates || 0), 0),
+    missingTimestamps: metricsMissingTimestamps,
+    sourceOrderIrregularities: metricsArtifacts.reduce((sum, row) => sum + Number(row.outOfOrderArchiveDates?.length || 0), 0),
     largestGapMs: Math.max(0, ...metricsArtifacts.map(row => Number(row.continuity?.largestGapMs || 0))),
+    expectedRows: metricsExpectedRows,
+    coveragePct: metricsCoveragePct,
+    signalRejectionCounts: {
+      staleCurrentMetric: Number(metricsRejectionCounts['current-stale'] || 0),
+      lookback1hGap: Number(metricsRejectionCounts['lookback-1h-gap'] || 0),
+      lookback4hGap: Number(metricsRejectionCounts['lookback-4h-gap'] || 0),
+      lookback12hGap: Number(metricsRejectionCounts['lookback-12h-gap'] || 0),
+      rollingHistoryGap: Number(metricsRejectionCounts['rolling-history-gap'] || 0),
+    },
+    rejectionCounts: metricsRejectionCounts,
   };
   const qualifiedExecutableFrequency = oofQualifiedExecutable.length / Math.max(1, Object.keys(monthly).length);
   const gate = gateReport({oofAlpha: alphaOof, oofQualifiedExecutable, rankedCandidates: replay.rankedCandidates, candidateMetrics: v9CandidateMetrics, v8Metrics, tierMonotonicity, walkForward, executionProxy: false, noOrderAudit, keepAlphaIds, trades: v9Portfolio.closedTrades, usableMetricsSymbols, qualifiedExecutableFrequency});
@@ -340,11 +397,11 @@ async function main() {
     dataAvailability: [
       {name: 'taker-buy volume / enhanced 1h klines', available: Boolean(dataManifest.dataAvailability?.takerBuyVolume?.available), reason: 'required by FLOW and cross-sectional families'},
       {name: 'premiumIndex / mark / index 1h archives', available: Boolean(dataManifest.dataAvailability?.premiumIndex?.available && dataManifest.dataAvailability?.markPrice?.available && dataManifest.dataAvailability?.indexPrice?.available), reason: 'required only by PREMIUM_DISLOCATION'},
-      {name: 'historical open interest', available: metricsData.usableSymbols > 0, reason: `${metricsData.usableSymbols}/150 symbols have complete official 5m metrics; symbols with gaps fail closed`},
-      {name: 'global/top/taker long-short ratios', available: metricsData.usableSymbols > 0, reason: `${metricsData.usableSymbols}/150 symbols have complete official 5m metrics; symbols with gaps fail closed`},
+      {name: 'historical open interest', available: metricsData.symbolsPITUsable > 0, reason: `${metricsData.symbolsPITUsable}/150 symbols have at least ${metricsData.minimumPITObservations} fresh PIT metric observations; each signal checks local continuity`},
+      {name: 'global/top/taker long-short ratios', available: metricsData.symbolsPITUsable > 0, reason: `${metricsData.symbolsPITUsable}/150 symbols enter the local PIT metrics pipeline; stale and gapped lookbacks fail closed per signal`},
       {name: 'funding / 1m execution / first-touch', available: true, reason: 'reused local normalized M4 artifacts; inherited M4 limitations remain'},
     ],
-    counts: {rawCandidates: replay.counts.rawCandidates, independentObservations: replay.counts.independentObservations, rankedCandidates: replay.counts.rankedCandidates, standaloneExecutableOutcomes: standaloneExecutable.length, standaloneRejectedOutcomes: replay.counts.standaloneRejected, oofRows: oofRows.length, oofExecutableOutcomes: oofExecutable.length, oofQualifiedCandidates: oofQualifiedRows.length, oofQualifiedExecutable: oofQualifiedExecutable.length, qualifiedExecutablePerMonth: number(qualifiedExecutableFrequency, 4), keepAlphaIds: keepAlphaIds.length, v9PortfolioAccepted: v9Portfolio.accepted.length, v9PortfolioTrades: v9Portfolio.closedTrades.length, usableMetricsSymbols, metricsRows: metricsData.rows, metricsMissingTimestamps: metricsData.missingTimestamps},
+    counts: {rawCandidates: replay.counts.rawCandidates, independentObservations: replay.counts.independentObservations, rankedCandidates: replay.counts.rankedCandidates, standaloneExecutableOutcomes: standaloneExecutable.length, standaloneRejectedOutcomes: replay.counts.standaloneRejected, oofRows: oofRows.length, oofExecutableOutcomes: oofExecutable.length, oofQualifiedCandidates: oofQualifiedRows.length, oofQualifiedExecutable: oofQualifiedExecutable.length, qualifiedExecutablePerMonth: number(qualifiedExecutableFrequency, 4), keepAlphaIds: keepAlphaIds.length, v9PortfolioAccepted: v9Portfolio.accepted.length, v9PortfolioTrades: v9Portfolio.closedTrades.length, usableMetricsSymbols, metricsRows: metricsData.rows, metricsMissingTimestamps: metricsData.missingTimestamps, metricsSymbolsWithRows, metricsSymbolsWithValidArchives, metricsSymbolsWithAnyGap, metricsSymbolsZeroGap, metricsSymbolsPITUsable},
     monthlyFrequency: frequencySummary(monthly),
     alphaStandalone: Object.fromEntries(Object.entries(alphaStandalone).map(([alpha, row]) => [alpha, {...row, metrics: compactMetrics(row.metrics)}])),
     alphaOof,
@@ -367,14 +424,14 @@ async function main() {
       'M4 remains incomplete: inherited universe/lifecycle manifest is not point-in-time and historical delisting/survivorship resolution is not complete.',
       'Development uses 150 deterministic V8.1 symbols; it does not run the 388-symbol universe.',
       `${usableDevelopmentSymbols} of 150 selected symbols have overlapping enhanced Development data; this exceeds the 100-symbol minimum but is below the preferred 150.`,
-      `${usableMetricsSymbols} of 150 selected symbols have complete official 5m metrics continuity for the Development window; ${metricsData.missingTimestamps} timestamps are missing across the downloaded metrics artifacts and any gapped symbol is fail-closed for OI/crowding features.`,
+      `${metricsData.symbolsPITUsable} of 150 selected symbols have at least ${metricsData.minimumPITObservations} fresh local PIT metrics observations; ${metricsData.symbolsWithAnyGap} symbols contain continuity gaps, which are handled per signal rather than disabling the whole symbol.`,
       'The 2026-01-01 through 2026-07-15 Holdout was not run. No profitability or production-readiness conclusion is made.',
       'V7.5/V8 baselines are frozen same-window paper backtest references; V9 is research-only and does not alter Production.',
     ],
   };
   fs.mkdirSync(reportsDir, {recursive: true});
   writeJson(path.join(reportsDir, 'v9-development.json'), report);
-  atomicWrite(path.join(reportsDir, 'v9-development.md'), `${markdown(report)}\n`);
+  atomicWrite(path.join(reportsDir, 'v9-development.md'), `${renderMarkdown(report)}\n`);
   progress('report:done');
   console.log(JSON.stringify({status: report.status, universe: report.universe, counts: report.counts, v75Baseline: report.v75Baseline, v8Baseline: report.v8Baseline, v9Standalone: report.v9Standalone, v9CandidatePortfolio: report.v9CandidatePortfolio, v8PlusV9: report.v8PlusV9, gate: report.gate, holdout: report.holdout}, null, 2));
 }

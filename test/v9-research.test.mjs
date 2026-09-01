@@ -9,7 +9,7 @@ import {detectV9Alpha} from '../src/v9/alphas.mjs';
 import {scoreV9Candidate} from '../src/v9/scoring.mjs';
 import {V9_ALPHA_IDS, V9_ALPHA_REGISTRY, validateV9Registry} from '../src/v9/registry.mjs';
 import {buildFundingQuery, simulateV9StandaloneObservation} from '../src/v9/replay.mjs';
-import {auditMetricsContinuity, aggregateMetricsAt, parseBinanceMetricsCsv} from '../src/v9/metrics.mjs';
+import {auditMetricsContinuity, auditMetricsPIT, aggregateMetricsAt, parseBinanceMetricsCsv} from '../src/v9/metrics.mjs';
 import {rankResearchCandidates} from '../src/v81/dedupe.mjs';
 import {createProgressStore, dayList, metricsArchiveUrl} from '../scripts/fetch-v9-development-data.mjs';
 import {classifyV9Alpha, gateReport} from '../scripts/run-v9-development.mjs';
@@ -142,6 +142,70 @@ test('metrics z-score history excludes the current observation', () => {
   assert.equal(result.state.t, rows.at(-1).t);
   assert.equal(result.oiHistoryAvailable, true);
   assert.equal(result.ratioHistoryAvailable, true);
+});
+
+function metricRows(count, skipped = []) {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const skip = new Set(skipped);
+  return Array.from({length: count}, (_, index) => {
+    if (skip.has(index)) return null;
+    return {
+      t: start + index * 5 * 60_000, openInterest: 100 + index, openInterestValue: 1_000 + index,
+      topTraderAccountRatio: 1.1, topTraderPositionRatio: 1.1,
+      globalLongShortRatio: 1.1, takerLongShortRatio: 1.1,
+    };
+  }).filter(Boolean);
+}
+
+test('one historical metrics gap does not globally disable a symbol', () => {
+  const rows = metricRows(300, [100, 101, 102]);
+  const result = aggregateMetricsAt(rows, rows.at(-1).t, {priceMove: 0.01});
+  assert.equal(result.available, true);
+  assert.equal(result.oiHistoryAvailable, true);
+  assert.equal(result.ratioHistoryAvailable, true);
+});
+
+test('stale current metrics fail closed without future interpolation', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const rows = metricRows(2);
+  const stale = aggregateMetricsAt(rows, start + 16 * 60_000);
+  assert.equal(stale.available, false);
+  assert.deepEqual(stale.diagnostics.rejections, ['current-stale']);
+  const futureOnly = aggregateMetricsAt([{...rows[0], t: start + 20 * 60_000}], start + 10 * 60_000);
+  assert.equal(futureOnly.available, false);
+  assert.deepEqual(futureOnly.diagnostics.rejections, ['current-stale']);
+});
+
+test('1h, 4h, and 12h metrics lookbacks fail closed across local gaps', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const signalTime = start + 300 * 5 * 60_000;
+  const oneHour = aggregateMetricsAt(metricRows(400, [286, 287, 288]), signalTime);
+  assert.equal(oneHour.available, true);
+  assert.equal(oneHour.oiChange1h, null);
+  assert.ok(oneHour.diagnostics.rejections.includes('lookback-1h-gap'));
+  const fourHour = aggregateMetricsAt(metricRows(400, [250, 251, 252]), signalTime);
+  assert.equal(fourHour.oiChange4h, null);
+  assert.ok(fourHour.diagnostics.rejections.includes('lookback-4h-gap'));
+  const twelveHour = aggregateMetricsAt(metricRows(400, [154, 155, 156]), signalTime);
+  assert.equal(twelveHour.oiChange12h, null);
+  assert.ok(twelveHour.diagnostics.rejections.includes('lookback-12h-gap'));
+});
+
+test('rolling metric history resets at a gap and fails closed until minimum history returns', () => {
+  const rows = metricRows(300, [290, 291, 292]);
+  const result = aggregateMetricsAt(rows, rows.at(-1).t);
+  assert.equal(result.available, true);
+  assert.equal(result.oiHistoryAvailable, false);
+  assert.equal(result.ratioHistoryAvailable, false);
+  assert.ok(result.diagnostics.rejections.includes('rolling-history-gap'));
+});
+
+test('PIT metrics audit counts valid local observations rather than whole-window continuity', () => {
+  const rows = metricRows(300, [100, 101, 102]);
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const audit = auditMetricsPIT(rows, {signalTimes: [start + 250 * 5 * 60_000, start + 290 * 5 * 60_000]});
+  assert.equal(audit.validObservations, 2);
+  assert.equal(audit.usable, true);
 });
 
 test('metrics archive URLs and day windows are deterministic', () => {

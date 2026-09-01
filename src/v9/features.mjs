@@ -205,6 +205,8 @@ function buildDerivativePoint(enhanced, index, signalTime, optional, priceMove =
     ratioZ: metrics.available ? metrics.ratioZ : null,
     ratioHistoryAvailable: metrics.available ? metrics.ratioHistoryAvailable : false,
     metricsAvailable: metrics.available,
+    metricsRejections: metrics.diagnostics?.rejections || [],
+    metricsDiagnostics: metrics.diagnostics || null,
     premiumHistoryAvailable: premium != null && premiumPrior.length >= 8,
     markIndexHistoryAvailable: mark != null && indexPrice != null,
   };

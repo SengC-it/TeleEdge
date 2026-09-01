@@ -2,6 +2,11 @@ import {H1} from '../config.mjs';
 
 export const METRICS_INTERVAL_MS = 5 * 60_000;
 export const METRICS_MAX_OBSERVATION_AGE_MS = 10 * 60_000;
+// A symbol is PIT-usable when the frozen signal grid can find at least one
+// fresh, local observation.  Availability is still checked independently for
+// every signal and every lookback below; this is not a whole-window quality
+// exemption and is deliberately kept separate from alpha history minimums.
+export const METRICS_MIN_PIT_OBSERVATIONS = 1;
 
 const REQUIRED_COLUMNS = Object.freeze([
   'create_time',
@@ -201,6 +206,28 @@ function rowAtOrBefore(rows, timestamp) {
   return low > 0 ? rows[low - 1] : null;
 }
 
+function upperBound(rows, timestamp) {
+  let low = 0;
+  let high = rows.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle].t <= timestamp) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function rowAtOrBeforeWithin(rows, timestamp, maxAgeMs) {
+  const observed = rowAtOrBefore(rows, Number(timestamp));
+  if (!observed) return {row: null, observed: null, ageMs: null};
+  const ageMs = Number(timestamp) - Number(observed.t);
+  return {
+    row: ageMs >= 0 && ageMs <= maxAgeMs ? observed : null,
+    observed,
+    ageMs,
+  };
+}
+
 function ratioChange(current, previous) {
   return current != null && previous > 0 ? current / previous - 1 : null;
 }
@@ -219,33 +246,61 @@ function zScore(value, prior) {
   return deviation > 1e-12 ? (current - average) / deviation : 0;
 }
 
-function changesBefore(rows, timestamp, horizonMs, limit = 48) {
-  const result = [];
-  const current = rowAtOrBefore(rows, timestamp);
-  if (!current) return result;
-  const currentIndex = rows.findIndex(row => row.t >= current.t);
-  const history = rows.slice(0, currentIndex < 0 ? rows.length : currentIndex).slice(-limit - 1);
+function changesBefore(rows, timestamp, maxGapMs = METRICS_MAX_OBSERVATION_AGE_MS, limit = 48) {
+  const endIndex = upperBound(rows, Number(timestamp)) - 1;
+  if (endIndex < 0) return {changes: [], segmentLength: 0, reset: false};
+  const history = [];
+  let nextIndex = endIndex;
+  let reset = false;
+  for (let index = endIndex - 1; index >= 0 && history.length < limit + 1; index--) {
+    if (rows[nextIndex].t - rows[index].t > maxGapMs) {
+      reset = true;
+      break;
+    }
+    history.push(rows[index]);
+    nextIndex = index;
+  }
+  history.reverse();
+  const changes = [];
   for (let index = 1; index < history.length; index++) {
     const delta = history[index].t - history[index - 1].t;
-    if (delta <= horizonMs * 2 && history[index].value > 0 && history[index - 1].value > 0) result.push(history[index].value / history[index - 1].value - 1);
+    if (delta <= maxGapMs && history[index].value > 0 && history[index - 1].value > 0) changes.push(history[index].value / history[index - 1].value - 1);
   }
-  return result;
+  return {
+    changes,
+    segmentLength: history.length + 1,
+    reset,
+  };
 }
 
 export function aggregateMetricsAt(metricsRows, signalTime, {maxAgeMs = METRICS_MAX_OBSERVATION_AGE_MS, priceMove = null} = {}) {
   const context = metricsContext(metricsRows);
-  const state = rowAtOrBefore(context.rows, Number(signalTime));
-  if (!state) return {available: false, state: null};
-  const ageMs = Number(signalTime) - Number(state.t);
-  if (ageMs < 0 || ageMs > maxAgeMs) return {available: false, state, ageMs};
+  const current = rowAtOrBeforeWithin(context.rows, Number(signalTime), maxAgeMs);
+  const state = current.observed;
+  const diagnostics = {rejections: []};
+  if (!current.row) {
+    diagnostics.rejections.push('current-stale');
+    return {available: false, state, ageMs: current.ageMs, diagnostics};
+  }
+  const ageMs = current.ageMs;
   const {oi, oiValue, account, position, global, taker} = context;
-  const currentOi = rowAtOrBefore(oi, signalTime)?.value ?? null;
-  const currentOiValue = rowAtOrBefore(oiValue, signalTime)?.value ?? null;
-  const oiAt1h = rowAtOrBefore(oi, Number(signalTime) - H1)?.value ?? null;
-  const oiAt4h = rowAtOrBefore(oi, Number(signalTime) - 4 * H1)?.value ?? null;
-  const oiAt12h = rowAtOrBefore(oi, Number(signalTime) - 12 * H1)?.value ?? null;
-  const currentGlobal = rowAtOrBefore(global, signalTime)?.value ?? null;
-  const globalAt4h = rowAtOrBefore(global, Number(signalTime) - 4 * H1)?.value ?? null;
+  const currentOiRow = rowAtOrBeforeWithin(oi, signalTime, maxAgeMs);
+  const currentOiValueRow = rowAtOrBeforeWithin(oiValue, signalTime, maxAgeMs);
+  const oiAt1hRow = rowAtOrBeforeWithin(oi, Number(signalTime) - H1, maxAgeMs);
+  const oiAt4hRow = rowAtOrBeforeWithin(oi, Number(signalTime) - 4 * H1, maxAgeMs);
+  const oiAt12hRow = rowAtOrBeforeWithin(oi, Number(signalTime) - 12 * H1, maxAgeMs);
+  const currentGlobalRow = rowAtOrBeforeWithin(global, signalTime, maxAgeMs);
+  const globalAt4hRow = rowAtOrBeforeWithin(global, Number(signalTime) - 4 * H1, maxAgeMs);
+  const currentOi = currentOiRow.row?.value ?? null;
+  const currentOiValue = currentOiValueRow.row?.value ?? null;
+  const oiAt1h = oiAt1hRow.row?.value ?? null;
+  const oiAt4h = oiAt4hRow.row?.value ?? null;
+  const oiAt12h = oiAt12hRow.row?.value ?? null;
+  const currentGlobal = currentGlobalRow.row?.value ?? null;
+  const globalAt4h = globalAt4hRow.row?.value ?? null;
+  if (!oiAt1hRow.row) diagnostics.rejections.push('lookback-1h-gap');
+  if (!oiAt4hRow.row || !globalAt4hRow.row) diagnostics.rejections.push('lookback-4h-gap');
+  if (!oiAt12hRow.row) diagnostics.rejections.push('lookback-12h-gap');
   const oiChange4h = ratioChange(currentOi, oiAt4h);
   const normalizedPriceMove = Number(priceMove);
   const oiState = Number.isFinite(normalizedPriceMove) && oiChange4h != null
@@ -254,25 +309,63 @@ export function aggregateMetricsAt(metricsRows, signalTime, {maxAgeMs = METRICS_
         : normalizedPriceMove > 0 && oiChange4h < 0 ? 'short-covering'
           : normalizedPriceMove < 0 && oiChange4h < 0 ? 'long-liquidation' : 'position-reduction'
     : null;
-  const oiChanges = changesBefore(oi, signalTime, 4 * H1);
-  const globalChanges = changesBefore(global, signalTime, 4 * H1);
+  const oiHistory = changesBefore(oi, signalTime, maxAgeMs);
+  const globalHistory = changesBefore(global, signalTime, maxAgeMs);
+  const oiChanges = oiHistory.changes;
+  const globalChanges = globalHistory.changes;
+  const oiHistoryAvailable = oiChanges.length >= 8;
+  const ratioHistoryAvailable = globalChanges.length >= 8;
+  if (!oiHistoryAvailable || !ratioHistoryAvailable) diagnostics.rejections.push('rolling-history-gap');
   return {
     available: true, ageMs, state,
     oi: currentOi, oiValue: currentOiValue,
     oiChange1h: ratioChange(currentOi, oiAt1h), oiChange4h, oiChange12h: ratioChange(currentOi, oiAt12h),
-    oiZ: zScore(oiChange4h, oiChanges), oiHistoryAvailable: oiChanges.length >= 8,
-    topTraderAccountRatio: rowAtOrBefore(account, signalTime)?.value ?? null,
-    topTraderPositionRatio: rowAtOrBefore(position, signalTime)?.value ?? null,
-    globalLongShortRatio: currentGlobal, takerLongShortRatio: rowAtOrBefore(taker, signalTime)?.value ?? null,
+    oiZ: zScore(oiChange4h, oiChanges), oiHistoryAvailable,
+    topTraderAccountRatio: rowAtOrBeforeWithin(account, signalTime, maxAgeMs).row?.value ?? null,
+    topTraderPositionRatio: rowAtOrBeforeWithin(position, signalTime, maxAgeMs).row?.value ?? null,
+    globalLongShortRatio: currentGlobal, takerLongShortRatio: rowAtOrBeforeWithin(taker, signalTime, maxAgeMs).row?.value ?? null,
     ratioChange: ratioChange(currentGlobal, globalAt4h), ratioZ: zScore(ratioChange(currentGlobal, globalAt4h), globalChanges),
-    ratioHistoryAvailable: globalChanges.length >= 8,
+    ratioHistoryAvailable,
+    diagnostics: {
+      ...diagnostics,
+      currentAgeMs: ageMs,
+      oiHistorySegmentLength: oiHistory.segmentLength,
+      ratioHistorySegmentLength: globalHistory.segmentLength,
+      oiHistoryReset: oiHistory.reset,
+      ratioHistoryReset: globalHistory.reset,
+    },
     oiState,
   };
 }
 
 export function metricsRowsToFeatures(rows, signalTime, options = {}) {
-  const result = aggregateMetricsAt(rows, signalTime, options);
-  return result.available ? result : {available: false, state: result.state, ageMs: result.ageMs};
+  return aggregateMetricsAt(rows, signalTime, options);
+}
+
+export function auditMetricsPIT(rows, {signalTimes = null, activeStart = 0, activeEnd = Infinity, signalIntervalMs = 4 * H1, minimumObservations = METRICS_MIN_PIT_OBSERVATIONS} = {}) {
+  const times = Array.isArray(signalTimes) && signalTimes.length
+    ? [...new Set(signalTimes.map(Number).filter(Number.isFinite))].sort((a, b) => a - b)
+    : (() => {
+      const start = Math.ceil(Number(activeStart) / signalIntervalMs) * signalIntervalMs;
+      const end = Number(activeEnd);
+      if (!Number.isFinite(end) || end <= start) return [];
+      return Array.from({length: Math.max(0, Math.ceil((end - start) / signalIntervalMs))}, (_, index) => start + index * signalIntervalMs);
+    })();
+  const rejectionCounts = {};
+  let validObservations = 0;
+  for (const time of times) {
+    const result = aggregateMetricsAt(rows, time);
+    if (result.available) validObservations++;
+    for (const reason of result.diagnostics?.rejections || []) rejectionCounts[reason] = (rejectionCounts[reason] || 0) + 1;
+  }
+  return {
+    signalTimes: times.length,
+    validObservations,
+    rejectedObservations: times.length - validObservations,
+    minimumObservations,
+    usable: validObservations >= minimumObservations,
+    rejectionCounts,
+  };
 }
 
 export {REQUIRED_COLUMNS};
