@@ -1,0 +1,48 @@
+{
+  "reportVersion": "v9-data-quality-1",
+  "generatedAt": "2026-09-01T07:40:45.081Z",
+  "status": "M4-INCOMPLETE",
+  "totalSymbols": 150,
+  "currentSymbols": 142,
+  "coreSymbols": 37,
+  "expandedSymbols": 113,
+  "historicalDelistedSymbols": 8,
+  "activeSymbolsByYear": {
+    "2021": 22,
+    "2022": 22,
+    "2023": 28,
+    "2024": 54,
+    "2025": 128,
+    "2026": 142
+  },
+  "rowsByKind": {
+    "funding": 454549,
+    "index-1h": 1108367,
+    "mark-1h": 1110440,
+    "metrics": 13321268,
+    "minute": 144334840,
+    "premium-1h": 1110440,
+    "price": 2405629,
+    "taker-1h": 1110440
+  },
+  "metricsCoverage": {
+    "symbolsWithRows": 128,
+    "symbolsWithCompleteContinuity": 22,
+    "rows": 13321268,
+    "missingArchiveDates": 0,
+    "invalidArchiveDates": 0,
+    "outOfOrderArchiveDates": 1387,
+    "largestGapMs": 37800000
+  },
+  "bytes": 578874580,
+  "missingRequiredArtifacts": [],
+  "lifecycleEvidenceCoverage": {
+    "exact": 0,
+    "unresolved": 150,
+    "source": "inherited data/backtest manifest; formal PIT evidence remains incomplete"
+  },
+  "verifier": {
+    "status": "INCOMPLETE",
+    "reason": "V9 dataset inherits M4 point-in-time and lifecycle evidence blockers; strict formal verifier not run by this builder"
+  }
+}
