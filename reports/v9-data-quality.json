@@ -1,6 +1,6 @@
 {
   "reportVersion": "v9-data-quality-1",
-  "generatedAt": "2026-08-26T15:05:48.285Z",
+  "generatedAt": "2026-09-01T07:40:45.081Z",
   "status": "M4-INCOMPLETE",
   "totalSymbols": 150,
   "currentSymbols": 142,
@@ -19,12 +19,22 @@
     "funding": 454549,
     "index-1h": 1108367,
     "mark-1h": 1110440,
+    "metrics": 13321268,
     "minute": 144334840,
     "premium-1h": 1110440,
     "price": 2405629,
     "taker-1h": 1110440
   },
-  "bytes": 78207713,
+  "metricsCoverage": {
+    "symbolsWithRows": 128,
+    "symbolsWithCompleteContinuity": 22,
+    "rows": 13321268,
+    "missingArchiveDates": 0,
+    "invalidArchiveDates": 0,
+    "outOfOrderArchiveDates": 1387,
+    "largestGapMs": 37800000
+  },
+  "bytes": 578874580,
   "missingRequiredArtifacts": [],
   "lifecycleEvidenceCoverage": {
     "exact": 0,

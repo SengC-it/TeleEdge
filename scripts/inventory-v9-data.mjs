@@ -12,18 +12,25 @@ function cliValue(name, fallback) {
   return index >= 0 ? process.argv[index + 1] ?? fallback : fallback;
 }
 
+function timestamp(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) return numeric;
+  const parsed = Date.parse(String(value ?? ''));
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
+
 function artifactAvailability(manifest, kind, interval, selected) {
   const artifacts = (manifest.artifacts || []).filter(row => row.kind === kind);
   const windowStart = Date.parse(START);
   const windowEnd = Date.parse(END);
   const usable = artifacts.filter(row => {
-    const first = Date.parse(row.firstTimestamp || row.activeStart || '');
-    const last = Date.parse(row.lastTimestamp || row.activeEnd || '');
+    const first = timestamp(row.firstTimestamp ?? row.firstObserved ?? row.activeStart);
+    const last = timestamp(row.lastTimestamp ?? row.lastObserved ?? row.activeEnd);
     return Number(row.rows) > 0 && row.sha256 && Number.isFinite(first) && Number.isFinite(last) && first < windowEnd && last >= windowStart;
   });
   const timestamps = usable.flatMap(row => [
-    new Date(Math.max(windowStart, Date.parse(row.firstTimestamp || row.activeStart))).toISOString(),
-    new Date(Math.min(windowEnd, Date.parse(row.lastTimestamp || row.activeEnd))).toISOString(),
+    new Date(Math.max(windowStart, timestamp(row.firstTimestamp ?? row.firstObserved ?? row.activeStart))).toISOString(),
+    new Date(Math.min(windowEnd, timestamp(row.lastTimestamp ?? row.lastObserved ?? row.activeEnd))).toISOString(),
   ]).sort();
   const symbolsCovered = new Set(usable.map(row => row.symbol).filter(Boolean)).size;
   return {
@@ -38,9 +45,13 @@ function artifactAvailability(manifest, kind, interval, selected) {
   };
 }
 
+function metricsCoverage(manifest, selected) {
+  return artifactAvailability(manifest, 'metrics', '5m', selected);
+}
+
 function markdown(report) {
   const rows = report.sources.map(source => `| ${source.id} | ${source.name} | ${source.available ? 'yes' : 'no'} | ${source.interval} | ${source.historicalStart || '—'} | ${source.historicalEnd || '—'} | ${source.symbolsCovered}/${source.symbolsRequired} | ${source.publicNoAuth ? 'yes' : 'no'} | ${source.access} | ${source.complete ? 'yes' : 'no'} | ${source.used ? 'yes' : 'no'} | ${source.reason} |`).join('\n');
-  return `# V9 Derivatives Data Availability\n\nInventory only; no strategy optimization or Holdout was run.\n\n- Development window: ${report.window.start} through ${report.window.end}\n- Requested universe: ${report.universe.requested}; deterministic selection: ${report.universe.selected}; hash: ${report.universe.hash}\n- M4 status: **${report.m4Status}**\n\n| ID | Source | Available | Interval | Historical start | Historical end | Symbols | Public/no-auth | Archive/API | Complete | Used | Status/reason |\n|---|---|---|---|---|---|---:|---|---|---|---|---|\n${rows}\n\n## Explicit non-proxy boundary\n\nHistorical open interest and long/short ratio endpoints were observed to be recent-only for this window. They are marked unavailable; no current-value proxy is substituted. Data availability alone does not make the inherited M4 dataset point-in-time complete.\n`;
+  return `# V9 Derivatives Data Availability\n\nInventory only; no strategy optimization or Holdout was run.\n\n- Development window: ${report.window.start} through ${report.window.end}\n- Requested universe: ${report.universe.requested}; deterministic selection: ${report.universe.selected}; hash: ${report.universe.hash}\n- M4 status: **${report.m4Status}**\n\n| ID | Source | Available | Interval | Historical start | Historical end | Symbols | Public/no-auth | Archive/API | Complete | Used | Status/reason |\n|---|---|---|---|---|---|---:|---|---|---|---|---|\n${rows}\n\n## Metrics contract\n\nHistorical open interest and long/short ratios are sourced from the official daily metrics archives when present. Each row is parsed with UTC timestamps and strict numeric validation; per-symbol 5m continuity and PIT coverage are recorded in the V9 manifest. Missing/gapped symbols remain unavailable and no current-value proxy or future interpolation is substituted. Metrics availability alone does not make the inherited M4 dataset point-in-time complete.\n`;
 }
 
 export function buildV9AvailabilityReport({appDir = APP_DIR, dataRoot = path.join(APP_DIR, 'data', 'backtest'), developmentRoot = path.join(APP_DIR, 'data', 'v9-development')} = {}) {
@@ -58,6 +69,7 @@ export function buildV9AvailabilityReport({appDir = APP_DIR, dataRoot = path.joi
   const selected = symbols.length;
   const artifact = (kind, interval) => artifactAvailability(v9, kind, interval, selected);
   const unavailable = interval => ({localFiles: 0, localRows: 0, historicalStart: null, historicalEnd: null, symbolsCovered: 0, symbolsRequired: selected, interval, complete: false});
+  const metrics = metricsCoverage(v9, selected);
   const sourceRows = [
     {id: 'A', name: 'USD-M futures kline taker-buy volume', ...artifact('taker-1h', '1h'), available: artifact('taker-1h', '1h').localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision monthly/daily archive', used: true, reason: 'FLOW and cross-sectional feature input'},
     {id: 'B', name: 'USD-M aggTrades / public trades', ...unavailable('event'), available: true, publicNoAuth: true, access: 'Binance Data Vision archive', used: false, reason: 'public source exists; not downloaded because no preregistered V9 feature requires it'},
@@ -65,17 +77,18 @@ export function buildV9AvailabilityReport({appDir = APP_DIR, dataRoot = path.joi
     {id: 'D', name: 'USD-M mark price klines', ...artifact('mark-1h', '1h'), available: artifact('mark-1h', '1h').localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision monthly/daily archive', used: true, reason: 'mark/index spread input'},
     {id: 'E', name: 'USD-M index price klines', ...artifact('index-1h', '1h'), available: artifact('index-1h', '1h').localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision monthly/daily archive', used: true, reason: 'mark/index spread input'},
     {id: 'F', name: 'USD-M funding history', ...artifact('funding', 'event'), available: artifact('funding', 'event').localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision archive / normalized local artifact', used: true, reason: 'funding feature and execution cost model'},
-    {id: 'G', name: 'Historical open interest', ...unavailable('5m/recent-only'), available: false, publicNoAuth: true, access: 'Binance public market-data API', used: false, reason: 'no reliable 2024-2025 public history; OI family fail-closed'},
-    {id: 'H', name: 'Global long/short ratio', ...unavailable('5m/recent-only'), available: false, publicNoAuth: true, access: 'Binance public market-data API', used: false, reason: 'no reliable 2024-2025 public history; no proxy'},
-    {id: 'I', name: 'Top trader long/short ratio', ...unavailable('5m/recent-only'), available: false, publicNoAuth: true, access: 'Binance public market-data API', used: false, reason: 'no reliable 2024-2025 public history; no proxy'},
-    {id: 'J', name: 'Taker long/short ratio', ...unavailable('5m/recent-only'), available: false, publicNoAuth: true, access: 'Binance public market-data API', used: false, reason: 'no reliable 2024-2025 public history; no proxy'},
+    {id: 'G', name: 'Historical open interest', ...metrics, available: metrics.localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision daily metrics archive', used: true, reason: metrics.complete ? 'sum_open_interest parsed with strict PIT/continuity checks' : 'daily metrics archives incomplete for the selected universe'},
+    {id: 'H', name: 'Global long/short ratio', ...metrics, available: metrics.localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision daily metrics archive', used: true, reason: metrics.complete ? 'count_long_short_ratio parsed with strict PIT/continuity checks' : 'daily metrics archives incomplete for the selected universe'},
+    {id: 'I', name: 'Top trader long/short ratio', ...metrics, available: metrics.localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision daily metrics archive', used: true, reason: metrics.complete ? 'count/sum_toptrader ratios parsed with strict PIT/continuity checks' : 'daily metrics archives incomplete for the selected universe'},
+    {id: 'J', name: 'Taker long/short ratio', ...metrics, available: metrics.localFiles > 0, publicNoAuth: true, access: 'Binance Data Vision daily metrics archive', used: true, reason: metrics.complete ? 'sum_taker_long_short_vol_ratio parsed with strict PIT/continuity checks' : 'daily metrics archives incomplete for the selected universe'},
   ];
   const report = {
     reportVersion: 'v9-data-availability-1', generatedAt: new Date().toISOString(), window: {start: START, end: END},
     m4Status: v9.status || base.status || 'M4-INCOMPLETE',
     universe: {requested: selectedUniverse?.requestedSymbols || base.universe?.symbols?.length || 0, selected, hash: v9.universe?.symbolsHash || selectedUniverse?.symbolsHash || null, symbols},
     sources: sourceRows,
-    decision: 'Development may use only sources with observed local files; missing derivative histories remain unavailable and never use a proxy.',
+    metrics: {symbolsCovered: metrics.symbolsCovered, symbolsRequired: selected, rows: metrics.localRows, continuity: 'per-symbol audit stored in data/v9-development/manifest.json'},
+    decision: 'Development may use only sources with observed local files; daily metrics histories are parsed from Binance Data Vision and remain fail-closed for missing/gapped symbols; no current-value proxy is substituted.',
   };
   fs.mkdirSync(path.join(appDir, 'reports'), {recursive: true});
   fs.writeFileSync(path.join(appDir, 'reports', 'v9-data-availability.json'), `${JSON.stringify(report, null, 2)}\n`, 'utf8');

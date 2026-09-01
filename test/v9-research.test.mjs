@@ -9,9 +9,10 @@ import {detectV9Alpha} from '../src/v9/alphas.mjs';
 import {scoreV9Candidate} from '../src/v9/scoring.mjs';
 import {V9_ALPHA_IDS, V9_ALPHA_REGISTRY, validateV9Registry} from '../src/v9/registry.mjs';
 import {buildFundingQuery, simulateV9StandaloneObservation} from '../src/v9/replay.mjs';
+import {auditMetricsContinuity, aggregateMetricsAt, parseBinanceMetricsCsv} from '../src/v9/metrics.mjs';
 import {rankResearchCandidates} from '../src/v81/dedupe.mjs';
-import {createProgressStore} from '../scripts/fetch-v9-development-data.mjs';
-import {classifyV9Alpha} from '../scripts/run-v9-development.mjs';
+import {createProgressStore, dayList, metricsArchiveUrl} from '../scripts/fetch-v9-development-data.mjs';
+import {classifyV9Alpha, gateReport} from '../scripts/run-v9-development.mjs';
 
 function rawRow(t, buyQuote = 60, quote = 100) {
   return [t, '100', '102', '99', '101', '1', t + H1 - 1, String(quote), '10', '0.6', String(buyQuote), '0'];
@@ -77,6 +78,77 @@ test('V9 feature math exposes taker ratios and leaves unavailable OI null', () =
   assert.equal(result.dataAvailability.openInterest, false);
 });
 
+test('parses official Binance daily metrics fields with UTC create_time', () => {
+  const csv = [
+    'create_time,symbol,sum_open_interest,sum_open_interest_value,count_toptrader_long_short_ratio,sum_toptrader_long_short_ratio,count_long_short_ratio,sum_taker_long_short_vol_ratio',
+    '2024-01-01 00:00:00,BTCUSDT,74006.26600000,3131493738.89740000,1.36820310,1.25366800,1.50710938,1.31174499',
+  ].join('\n');
+  const parsed = parseBinanceMetricsCsv(csv, {expectedSymbol: 'BTCUSDT', strict: true});
+  assert.equal(parsed.rows.length, 1);
+  assert.equal(parsed.rows[0].t, Date.parse('2024-01-01T00:00:00Z'));
+  assert.equal(parsed.rows[0].openInterest, 74006.266);
+  assert.equal(parsed.rows[0].openInterestValue, 3131493738.8974);
+  assert.equal(parsed.rows[0].topTraderAccountRatio, 1.3682031);
+  assert.equal(parsed.rows[0].topTraderPositionRatio, 1.253668);
+  assert.equal(parsed.rows[0].globalLongShortRatio, 1.50710938);
+  assert.equal(parsed.rows[0].takerLongShortRatio, 1.31174499);
+});
+
+test('metrics parser detects invalid timestamps, NaN, duplicates, and out-of-order rows', () => {
+  const header = 'create_time,symbol,sum_open_interest,sum_open_interest_value,count_toptrader_long_short_ratio,sum_toptrader_long_short_ratio,count_long_short_ratio,sum_taker_long_short_vol_ratio';
+  const row = (time, oi = '10') => `${time},BTCUSDT,${oi},20,1.1,1.2,1.3,1.4`;
+  const parsed = parseBinanceMetricsCsv([header, row('2024-01-01 00:05:00'), row('2024-01-01 00:05:00'), row('2024-01-01 00:00:00'), row('bad', 'NaN')].join('\n'), {expectedSymbol: 'BTCUSDT'});
+  assert.equal(parsed.diagnostics.duplicates, 1);
+  assert.equal(parsed.diagnostics.outOfOrder, 1);
+  assert.ok(parsed.errors.some(error => error.type === 'invalid-timestamp'));
+  assert.ok(parsed.errors.some(error => error.type === 'duplicate-timestamp'));
+  assert.ok(parsed.errors.some(error => error.type === 'out-of-order'));
+  assert.throws(() => parseBinanceMetricsCsv([header, row('bad')].join('\n'), {expectedSymbol: 'BTCUSDT', strict: true}), /Invalid Binance metrics CSV/);
+});
+
+test('metrics continuity reports missing 5m intervals without interpolation', () => {
+  const start = Date.parse('2024-01-01T00:00:00Z');
+  const rows = [0, 1, 3, 4].map(index => ({t: start + index * 5 * 60_000, openInterest: 1}));
+  const audit = auditMetricsContinuity(rows, {activeStart: start, activeEnd: start + 5 * 5 * 60_000});
+  assert.equal(audit.totalRows, 4);
+  assert.equal(audit.uniqueRows, 4);
+  assert.equal(audit.missingTimestamps, 1);
+  assert.equal(audit.missingIntervals[0].start, start + 2 * 5 * 60_000);
+  assert.equal(audit.complete, false);
+});
+
+test('PIT metrics aggregation never uses a future observation', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const rows = [0, 1, 2, 3].map(index => ({
+    t: start + index * 5 * 60_000, openInterest: 100 + index, openInterestValue: 1_000 + index,
+    topTraderAccountRatio: 1 + index / 100, topTraderPositionRatio: 1 + index / 100,
+    globalLongShortRatio: 1 + index / 100, takerLongShortRatio: 1 + index / 100,
+  }));
+  const result = aggregateMetricsAt(rows, start + 2 * 5 * 60_000 + 1, {priceMove: 0.01});
+  assert.equal(result.available, true);
+  assert.equal(result.state.t, start + 2 * 5 * 60_000);
+  assert.equal(result.oi, 102);
+  assert.equal(result.globalLongShortRatio, 1.02);
+});
+
+test('metrics z-score history excludes the current observation', () => {
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const rows = Array.from({length: 120}, (_, index) => ({
+    t: start + index * 5 * 60_000, openInterest: 100 + index,
+    globalLongShortRatio: 1 + index / 100,
+  }));
+  const result = aggregateMetricsAt(rows, rows.at(-1).t, {priceMove: 0.01});
+  assert.equal(result.available, true);
+  assert.equal(result.state.t, rows.at(-1).t);
+  assert.equal(result.oiHistoryAvailable, true);
+  assert.equal(result.ratioHistoryAvailable, true);
+});
+
+test('metrics archive URLs and day windows are deterministic', () => {
+  assert.deepEqual(dayList(Date.parse('2024-01-01T12:00:00Z'), Date.parse('2024-01-03T00:00:00Z')), ['2024-01-01', '2024-01-02']);
+  assert.equal(metricsArchiveUrl('BTCUSDT', '2024-01-01'), 'https://data.binance.vision/data/futures/um/daily/metrics/BTCUSDT/BTCUSDT-metrics-2024-01-01.zip');
+});
+
 test('premium and mark-index features use completed point-in-time observations', () => {
   const start = Date.parse('2025-01-01T00:00:00Z');
   const rows = Array.from({length: 48}, (_, index) => rawRow(start + index * H1, 60, 100));
@@ -114,6 +186,28 @@ test('optional derivative alphas fail closed when true histories are absent', ()
   assert.deepEqual(detectV9Alpha(point(), market, 'OI_TREND_CONFIRMATION', 'price-oi-alignment'), []);
   assert.deepEqual(detectV9Alpha(point(), market, 'CROWDED_UNWIND', 'funding-premium-unwind'), []);
   assert.deepEqual(detectV9Alpha(point(), market, 'PREMIUM_DISLOCATION', 'mean-reversion'), []);
+});
+
+test('OI trend detector distinguishes new positioning and unwind states', () => {
+  const market = {symbol: 'TESTUSDT', baseAsset: 'TEST', core: false};
+  const aligned = point({metricsAvailable: true, oiHistoryAvailable: true, openInterest: 100, oiChange: 0.02, oiZ: 1, oiState: 'new-long'});
+  const liquidation = point({metricsAvailable: true, oiHistoryAvailable: true, openInterest: 100, oiChange: -0.02, oiZ: -1, oiState: 'long-liquidation', return3: -0.02});
+  assert.equal(detectV9Alpha(aligned, market, 'OI_TREND_CONFIRMATION', 'price-oi-alignment')[0].side, 'long');
+  assert.equal(detectV9Alpha(liquidation, market, 'OI_TREND_CONFIRMATION', 'price-oi-divergence')[0].side, 'short');
+});
+
+test('crowded unwind requires independent metrics dimensions', () => {
+  const market = {symbol: 'TESTUSDT', baseAsset: 'TEST', core: false};
+  const crowded = point({
+    metricsAvailable: true, ratioHistoryAvailable: true, oiHistoryAvailable: true,
+    premiumHistoryAvailable: true, fundingHistoryAvailable: true, fundingZ: 2, premiumZ: 2,
+    oiChange: -0.02, oiState: 'long-liquidation', return3: -0.02,
+    globalLongShortRatio: 1.2, topTraderAccountRatio: 1.1, topTraderPositionRatio: 1.15, takerLongShortRatio: 1.25,
+  });
+  const candidates = detectV9Alpha(crowded, market, 'CROWDED_UNWIND', 'funding-premium-unwind');
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].side, 'short');
+  assert.deepEqual(detectV9Alpha({...crowded, takerLongShortRatio: null}, market, 'CROWDED_UNWIND', 'funding-premium-unwind'), []);
 });
 
 test('V9 score is ex-ante and independent of outcome fields', () => {
@@ -201,6 +295,19 @@ test('V9 OOF classification keeps strong lower-bound edge, watches uncertainty, 
   assert.equal(classifyV9Alpha(row({sample: 30, uniqueSymbols: 10, netPnlUsdt: 100, profitFactor: 1.5, expectancyR: 0.2, expectancyR95CI: [0.01, 0.4]})), 'KEEP');
   assert.equal(classifyV9Alpha(row({sample: 30, uniqueSymbols: 10, netPnlUsdt: 100, profitFactor: 1.5, expectancyR: 0.2, expectancyR95CI: [-0.01, 0.4]})), 'WATCH');
   assert.equal(classifyV9Alpha(row({sample: 30, uniqueSymbols: 10, netPnlUsdt: -1, profitFactor: 0.9, expectancyR: -0.1, expectancyR95CI: [-0.2, 0]})), 'REJECT');
+});
+
+test('V9 research gate fails closed below the 100-symbol metrics minimum', () => {
+  const gate = gateReport({
+    oofAlpha: {}, oofQualifiedExecutable: Array.from({length: 100}, () => ({})), rankedCandidates: [],
+    candidateMetrics: {trades: 60, uniqueSymbols: 30, profitFactor: 2, expectancyR: 0.3, netPnlUsdt: 100, netReturn: 0.1, maxDrawdownPct: 0.01, monthlyPnl: Object.fromEntries(Array.from({length: 12}, (_, index) => [`2025-${String(index + 1).padStart(2, '0')}`, 1]))},
+    v8Metrics: {netPnlUsdt: 0}, tierMonotonicity: {sufficientSample: true, valid: true},
+    walkForward: {checks: {timeOrdered: true, purgeEnforced: true, labelOverlapFree: true, validationFrozen: true}},
+    executionProxy: false, noOrderAudit: true, keepAlphaIds: ['A', 'B'], trades: Array.from({length: 60}, (_, index) => ({marketId: `S${index}`, netPnlUsdt: 2})),
+    usableMetricsSymbols: 99, qualifiedExecutableFrequency: 8,
+  });
+  assert.equal(gate.decision, 'RESEARCH_FAIL');
+  assert.equal(gate.checks.usableMetricsSymbolsAtLeast100, false);
 });
 
 test('progress updates are serialized and resumable under concurrent workers', async () => {

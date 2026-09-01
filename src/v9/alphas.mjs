@@ -69,31 +69,31 @@ function detectFlowReversal(point, alphaId, variant) {
 }
 
 function detectOiTrend(point, alphaId, variant) {
-  if (!point.oiHistoryAvailable || finite(point.openInterest) == null || finite(point.oiChange) == null || finite(point.oiZ) == null) return [];
+  if (!point.metricsAvailable || !point.oiHistoryAvailable || finite(point.openInterest) == null || finite(point.oiChange) == null || finite(point.oiZ) == null) return [];
   const rows = [];
   for (const side of ['long', 'short']) {
     const long = side === 'long';
-    const alignment = long ? Number(point.return3) > 0 && Number(point.oiChange) > 0 : Number(point.return3) < 0 && Number(point.oiChange) > 0;
-    const divergence = long ? Number(point.return3) > 0 && Number(point.oiChange) < 0 : Number(point.return3) < 0 && Number(point.oiChange) < 0;
+    const alignment = long ? point.oiState === 'new-long' : point.oiState === 'new-short';
+    const divergence = long ? point.oiState === 'short-covering' : point.oiState === 'long-liquidation';
     if ((variant === 'price-oi-alignment' ? alignment : divergence) && Math.abs(Number(point.oiZ)) >= 0.5) rows.push({side});
   }
   return rows;
 }
 
 function detectCrowdedUnwind(point, alphaId, variant) {
-  if (!point.fundingHistoryAvailable || !point.premiumHistoryAvailable || !point.oiHistoryAvailable) return [];
-  const rows = [];
+  if (!point.metricsAvailable || !point.ratioHistoryAvailable || !point.fundingHistoryAvailable || !point.premiumHistoryAvailable || !point.oiHistoryAvailable) return [];
   const funding = Number(point.fundingZ);
   const premium = Number(point.premiumZ);
   const unwind = Number(point.return3);
-  if (variant === 'funding-premium-unwind') {
-    if (funding >= 1.5 && premium >= 1 && unwind < 0) rows.push({side: 'short'});
-    if (funding <= -1.5 && premium <= -1 && unwind > 0) rows.push({side: 'long'});
-  } else {
-    if (Number(point.oiChange) < 0 && funding >= 1 && unwind < 0) rows.push({side: 'short'});
-    if (Number(point.oiChange) < 0 && funding <= -1 && unwind > 0) rows.push({side: 'long'});
-  }
-  return rows;
+  const oiContraction = Number(point.oiChange) < 0;
+  const ratios = [point.globalLongShortRatio, point.topTraderAccountRatio, point.topTraderPositionRatio, point.takerLongShortRatio].map(Number);
+  if (ratios.some(value => !Number.isFinite(value))) return [];
+  const crowdedLong = funding >= 1.5 && premium >= 1 && oiContraction && unwind < 0 && ratios.every(value => value > 1);
+  const crowdedShort = funding <= -1.5 && premium <= -1 && oiContraction && unwind > 0 && ratios.every(value => value < 1);
+  if (variant === 'funding-premium-unwind') return crowdedLong ? [{side: 'short'}] : crowdedShort ? [{side: 'long'}] : [];
+  const stateMatches = point.oiState === 'long-liquidation' || point.oiState === 'short-covering';
+  if (!stateMatches) return [];
+  return crowdedLong ? [{side: 'short'}] : crowdedShort ? [{side: 'long'}] : [];
 }
 
 function detectPremiumDislocation(point, alphaId, variant) {

@@ -1,5 +1,6 @@
 import {H1, H4} from '../config.mjs';
 import {prepareFeatureSeries} from '../v81/features.mjs';
+import {metricsRowsToFeatures} from './metrics.mjs';
 
 const finite = value => Number.isFinite(Number(value)) ? Number(value) : null;
 
@@ -157,7 +158,7 @@ function normalizeOptionalRows(rows, key) {
   return numericSeries(rows || [], key).filter(row => row.value != null);
 }
 
-function buildDerivativePoint(enhanced, index, signalTime, optional) {
+function buildDerivativePoint(enhanced, index, signalTime, optional, priceMove = null) {
   const takerBuyQuote = finite(enhanced.takerBuyQuote);
   const takerSellQuote = finite(enhanced.takerSellQuote);
   const quoteVolume = finite(enhanced.q);
@@ -170,6 +171,7 @@ function buildDerivativePoint(enhanced, index, signalTime, optional) {
   const mark = valueAtOrBefore(optional.mark, signalTime);
   const indexPrice = valueAtOrBefore(optional.index, signalTime);
   const premiumPrior = priorOptionalValues(optional.premium, signalTime);
+  const metrics = optional.metrics.length ? metricsRowsToFeatures(optional.metrics, signalTime, {priceMove}) : {available: false};
   const openInterest = valueAtOrBefore(optional.openInterest, signalTime);
   const previousOpenInterest = previousValue(optional.openInterest, signalTime);
   const oiPrior = priorOptionalValues(optional.openInterest, signalTime);
@@ -186,19 +188,35 @@ function buildDerivativePoint(enhanced, index, signalTime, optional) {
     premiumIndex: premium,
     premiumZ: rollingZ(premium, premiumPrior.map(row => row.value)),
     premiumChange, markPrice: mark, indexPrice, markIndexSpread,
-    openInterest, oiChange, oiZ: rollingZ(oiChange, oiChangePrior),
-    oiHistoryAvailable: openInterest != null && oiPrior.length >= 8,
+    openInterest: metrics.available ? metrics.oi : openInterest,
+    openInterestValue: metrics.available ? metrics.oiValue : null,
+    oiChange: metrics.available ? metrics.oiChange4h : oiChange,
+    oiChange1h: metrics.available ? metrics.oiChange1h : null,
+    oiChange4h: metrics.available ? metrics.oiChange4h : oiChange,
+    oiChange12h: metrics.available ? metrics.oiChange12h : null,
+    oiZ: metrics.available ? metrics.oiZ : rollingZ(oiChange, oiChangePrior),
+    oiHistoryAvailable: metrics.available ? metrics.oiHistoryAvailable : openInterest != null && oiPrior.length >= 8,
+    oiState: metrics.available ? metrics.oiState : null,
+    topTraderAccountRatio: metrics.available ? metrics.topTraderAccountRatio : null,
+    topTraderPositionRatio: metrics.available ? metrics.topTraderPositionRatio : null,
+    globalLongShortRatio: metrics.available ? metrics.globalLongShortRatio : null,
+    takerLongShortRatio: metrics.available ? metrics.takerLongShortRatio : null,
+    ratioChange: metrics.available ? metrics.ratioChange : null,
+    ratioZ: metrics.available ? metrics.ratioZ : null,
+    ratioHistoryAvailable: metrics.available ? metrics.ratioHistoryAvailable : false,
+    metricsAvailable: metrics.available,
     premiumHistoryAvailable: premium != null && premiumPrior.length >= 8,
     markIndexHistoryAvailable: mark != null && indexPrice != null,
   };
 }
 
 export function buildV9FeatureSeries(rows, {
-  funding = [], btcSeries = null, openInterest = [], premium = [], mark = [], index = [], endTime = Infinity,
+  funding = [], btcSeries = null, metricsRows = [], openInterest = [], premium = [], mark = [], index = [], endTime = Infinity,
 } = {}) {
   const enhancedBars = aggregateEnhancedBars(rows, endTime);
   const optional = {
     enhanced: enhancedBars,
+    metrics: (metricsRows || []).map(row => ({...row, t: finite(row.t)})).filter(row => row.t != null).sort((a, b) => a.t - b.t),
     openInterest: normalizeOptionalRows(openInterest, 'openInterest'),
     premium: normalizeOptionalRows(premium, 'premiumIndex'),
     mark: normalizeOptionalRows(mark, 'markPrice'),
@@ -207,7 +225,7 @@ export function buildV9FeatureSeries(rows, {
   const base = prepareFeatureSeries(baseBars(enhancedBars), {funding, btcSeries});
   const points = base.points.map((point, indexInSeries) => ({
     ...point,
-    ...buildDerivativePoint(enhancedBars[indexInSeries], indexInSeries, point.signalTime, optional),
+    ...buildDerivativePoint(enhancedBars[indexInSeries], indexInSeries, point.signalTime, optional, point.return3),
     fundingChange: point.fundingZ != null && point.previousFundingZ != null ? point.fundingZ - point.previousFundingZ : null,
     fundingHistoryAvailable: (funding || []).length >= 8,
     quoteVolume: enhancedBars[indexInSeries].q,
@@ -224,6 +242,7 @@ export function buildV9FeatureSeries(rows, {
       markPrice: optional.mark.length > 0,
       indexPrice: optional.index.length > 0,
       funding: (funding || []).length > 0,
+      metrics: optional.metrics.length > 0,
     },
   };
 }

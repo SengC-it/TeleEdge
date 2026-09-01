@@ -69,6 +69,13 @@ function loadOptionalRows(root, kind, symbol, start, end) {
   return loadGzipRows(root, kind, symbol, start, end);
 }
 
+function metricsArtifactBySymbol(root) {
+  const manifestFile = path.join(root, 'manifest.json');
+  if (!fs.existsSync(manifestFile)) return new Map();
+  const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
+  return new Map((manifest.artifacts || []).filter(row => row.kind === 'metrics').map(row => [row.symbol, row]));
+}
+
 function hashFile(file) {
   return fs.existsSync(file) ? crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') : null;
 }
@@ -362,7 +369,8 @@ export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end,
   const pointsBySymbol = new Map();
   const candidatesBySymbol = {};
   const symbolStatus = {};
-  const featureAvailability = {takerBuyVolume: 0, openInterest: 0, premiumIndex: 0, markPrice: 0, indexPrice: 0, funding: 0};
+  const featureAvailability = {takerBuyVolume: 0, metrics: 0, openInterest: 0, premiumIndex: 0, markPrice: 0, indexPrice: 0, funding: 0};
+  const metricsArtifacts = metricsArtifactBySymbol(enhancedRoot);
   for (const symbol of universe.symbols) {
     const lifecycle = universe.markets.get(symbol) || {};
     const window = activeWindow(lifecycle, start, end);
@@ -382,14 +390,21 @@ export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end,
     }
     const funding = loadGzipRows(dataRoot, 'funding', symbol, historyStart - DAY, window.activeEnd + H1)
       .map(row => ({t: finite(row.t ?? row.fundingTime), rate: finite(row.rate ?? row.fundingRate)})).filter(row => row.t != null);
+    const metricsArtifact = metricsArtifacts.get(symbol);
+    const metricsComplete = Boolean(metricsArtifact?.rows > 0 && metricsArtifact.invalidArchiveDates?.length === 0 && metricsArtifact.continuity?.complete);
+    // OI/ratio alphas are fail-closed when the per-symbol PIT metrics grid is
+    // incomplete. A partial row stream must never become a silent feature
+    // proxy for a missing interval.
+    const metrics = metricsComplete ? loadOptionalRows(enhancedRoot, 'metrics', symbol, historyStart, window.activeEnd + H1) : [];
     const openInterest = loadOptionalRows(enhancedRoot, 'open-interest-1h', symbol, historyStart, window.activeEnd + H1);
     const premium = loadOptionalRows(enhancedRoot, 'premium-1h', symbol, historyStart, window.activeEnd + H1);
     const mark = loadOptionalRows(enhancedRoot, 'mark-1h', symbol, historyStart, window.activeEnd + H1);
     const index = loadOptionalRows(enhancedRoot, 'index-1h', symbol, historyStart, window.activeEnd + H1);
-    const series = buildV9FeatureSeries(rows, {funding, btcSeries, openInterest, premium, mark, index, endTime: window.activeEnd + H1});
+    const series = buildV9FeatureSeries(rows, {funding, btcSeries, metricsRows: metrics, openInterest, premium, mark, index, endTime: window.activeEnd + H1});
     const points = series.points.filter(point => point.signalTime >= window.activeStart && point.signalTime < window.activeEnd);
     pointsBySymbol.set(symbol, points);
     if (series.dataAvailability.takerBuyVolume) featureAvailability.takerBuyVolume++;
+    if (series.dataAvailability.metrics) featureAvailability.metrics++;
     if (series.dataAvailability.openInterest) featureAvailability.openInterest++;
     if (series.dataAvailability.premiumIndex) featureAvailability.premiumIndex++;
     if (series.dataAvailability.markPrice) featureAvailability.markPrice++;
@@ -568,7 +583,7 @@ export async function runV9Replay({dataRoot, enhancedRoot, appDir, start, end, m
   rawCandidates = null;
   progress(`candidates:done independent=${independentObservations.length} ranked=${rankedCandidates.length}`);
   const dataAccess = createV9DataAccess(dataRoot, marketBySymbol, start, end);
-  const standaloneOutcomes = await buildStandaloneOutcomes({independentObservations, marketBySymbol, dataAccess, dataRoot, start, end, cacheDir: path.join(enhancedRoot, 'standalone-cache-v2'), workerCount});
+  const standaloneOutcomes = await buildStandaloneOutcomes({independentObservations, marketBySymbol, dataAccess, dataRoot, start, end, cacheDir: path.join(enhancedRoot, 'standalone-cache-v4'), workerCount});
   progress('standalone:done');
   const qualifiedRanked = rankedCandidates.filter(candidate => candidate.tier === 'A' || candidate.tier === 'B');
   // Portfolio simulation is performed after purged OOF selection by the

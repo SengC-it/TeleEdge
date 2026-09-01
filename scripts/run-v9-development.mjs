@@ -154,13 +154,14 @@ function modelComparison(baseline, v9Metrics, combinedMetrics) {
   for (const name of ['V7.5 Control', 'V8 Shadow']) {
     const model = baseline?.models?.find(item => item.model === name);
     const metrics = model?.full || {};
+    const tradeRows = Array.isArray(model?.trades) ? model.trades : [];
     output[name] = {
       rankedSignals: model?.rankedSignalCount || model?.signalEvents?.length || 0,
       acceptedSignals: model?.acceptedSignalCount || model?.acceptedSignals || 0,
       trades: metrics.trades || 0, netPnlUsdt: metrics.netPnlUsdt ?? null,
       expectancyR: metrics.netExpectancyR ?? metrics.expectancyR ?? null,
       profitFactor: metrics.profitFactor ?? null, maxDrawdownPct: metrics.maxDrawdownPct ?? null,
-      uniqueSymbols: metrics.uniqueSymbols ?? null,
+      uniqueSymbols: metrics.uniqueSymbols ?? new Set(tradeRows.map(row => row.marketId || row.symbol)).size,
     };
   }
   output.V9 = {rankedSignals: v9Metrics.rankedSignals, acceptedSignals: v9Metrics.acceptedSignals, trades: v9Metrics.trades, netPnlUsdt: v9Metrics.netPnlUsdt, expectancyR: v9Metrics.expectancyR, profitFactor: v9Metrics.profitFactor, maxDrawdownPct: v9Metrics.maxDrawdownPct, uniqueSymbols: v9Metrics.uniqueSymbols};
@@ -181,13 +182,14 @@ function concentration(trades) {
   return Math.max(...[...bySymbol.values()].map(value => Math.abs(value))) / total;
 }
 
-function gateReport({oofAlpha, oofQualifiedExecutable, rankedCandidates, candidateMetrics, v8Metrics, tierMonotonicity, walkForward, executionProxy, noOrderAudit, keepAlphaIds, trades}) {
+function gateReport({oofAlpha, oofQualifiedExecutable, rankedCandidates, candidateMetrics, v8Metrics, tierMonotonicity, walkForward, executionProxy, noOrderAudit, keepAlphaIds, trades, usableMetricsSymbols = 0, qualifiedExecutableFrequency = 0}) {
   const monthly = Object.values(candidateMetrics.monthlyPnl || {});
   const concentrationValue = concentration(trades);
   const checks = {
     independentKeepAtLeast2: keepAlphaIds.length >= 2,
+    usableMetricsSymbolsAtLeast100: usableMetricsSymbols >= 100,
     oofQualifiedExecutableAtLeast100: oofQualifiedExecutable.length >= 100,
-    candidateFrequencyAtLeast8PerMonth: monthly.length > 0 && (candidateMetrics.trades / monthly.length) >= 8,
+    qualifiedExecutableFrequencyAtLeast8PerMonth: qualifiedExecutableFrequency >= 8,
     candidatePortfolioTradesAtLeast60: candidateMetrics.trades >= 60,
     candidatePortfolioSymbolsAtLeast30: candidateMetrics.uniqueSymbols >= 30,
     candidatePortfolioProfitFactorAtLeast150: Number(candidateMetrics.profitFactor) >= 1.5,
@@ -270,6 +272,8 @@ async function main() {
   const combinedRows = mergeV9RankedWithBaseline(selectedV9, v8BaselineRows);
   const v8Metrics = compactMetrics(v8Model?.full || {});
   const v75Metrics = compactMetrics(v75Model?.full || {});
+  v8Metrics.uniqueSymbols = new Set((v8Model?.trades || []).map(row => row.marketId || row.symbol)).size;
+  v75Metrics.uniqueSymbols = new Set((v75Model?.trades || []).map(row => row.marketId || row.symbol)).size;
   const v9StandaloneMetrics = compactMetrics(standaloneMetrics);
   const v9CandidateMetrics = compactMetrics(v9PortfolioMetrics);
   let combinedPortfolio;
@@ -279,7 +283,7 @@ async function main() {
       accepted: Array.from({length: Number(v8Model?.acceptedSignalCount || 0)}),
       closedTrades: Array.from({length: Number(v8Metrics.trades || 0)}),
     };
-    combinedMetrics = v8Metrics;
+    combinedMetrics = {...v8Metrics};
   } else {
     progress('combined:start');
     const combinedDataAccess = createV9DataAccess(dataRoot, replay.marketBySymbol, start, end);
@@ -297,17 +301,37 @@ async function main() {
   const tierMetrics = Object.fromEntries(['A', 'B', 'C'].map(tier => [tier, calculateResearchMetrics(standaloneExecutable.filter(row => row.tier === tier), [], options)]));
   const tierMonotonicity = validateTierMonotonicity(tierMetrics, {minimumSamples: 30});
   const noOrderAudit = !/createOrder|placeOrder|newOrder|fapi\/v\d+\/order|orderSubmission/i.test(fs.readdirSync(path.join(APP_DIR, 'src', 'v9')).map(name => fs.readFileSync(path.join(APP_DIR, 'src', 'v9', name), 'utf8')).join('\n'));
-  const gate = gateReport({oofAlpha: alphaOof, oofQualifiedExecutable, rankedCandidates: replay.rankedCandidates, candidateMetrics: v9CandidateMetrics, v8Metrics, tierMonotonicity, walkForward, executionProxy: false, noOrderAudit, keepAlphaIds, trades: v9Portfolio.closedTrades});
   const walkForwardReport = {spec: walkForward.spec, folds: walkForward.folds, checks: walkForward.checks};
   const dataManifestFile = path.join(enhancedRoot, 'manifest.json');
   const dataManifest = fs.existsSync(dataManifestFile) ? JSON.parse(fs.readFileSync(dataManifestFile, 'utf8')) : {};
-  const usableDevelopmentSymbols = new Set((dataManifest.artifacts || []).filter(row => {
-    const first = Date.parse(row.firstTimestamp || row.activeStart || '');
-    const last = Date.parse(row.lastTimestamp || row.activeEnd || '');
-    return row.kind === 'taker-1h' && Number(row.rows) > 0 && row.sha256 && Number.isFinite(first) && Number.isFinite(last) && first < end && last >= start;
-  }).map(row => row.symbol)).size;
+  const artifactTimestamp = value => {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric) && numeric > 0) return numeric;
+    const parsed = Date.parse(String(value ?? ''));
+    return Number.isFinite(parsed) ? parsed : NaN;
+  };
+  const overlappingArtifact = row => {
+    const first = artifactTimestamp(row.firstTimestamp ?? row.firstObserved ?? row.activeStart);
+    const last = artifactTimestamp(row.lastTimestamp ?? row.lastObserved ?? row.activeEnd);
+    return Number(row.rows) > 0 && row.sha256 && Number.isFinite(first) && Number.isFinite(last) && first < end && last >= start;
+  };
+  const usableDevelopmentSymbols = new Set((dataManifest.artifacts || []).filter(row => row.kind === 'taker-1h' && overlappingArtifact(row)).map(row => row.symbol)).size;
+  const usableMetricsSymbols = new Set((dataManifest.artifacts || []).filter(row => row.kind === 'metrics' && overlappingArtifact(row) && row.invalidArchiveDates?.length === 0 && row.continuity?.complete).map(row => row.symbol)).size;
+  const metricsArtifacts = (dataManifest.artifacts || []).filter(row => row.kind === 'metrics');
+  const metricsData = {
+    symbolsWithRows: metricsArtifacts.filter(row => Number(row.rows) > 0).length,
+    usableSymbols: usableMetricsSymbols,
+    rows: metricsArtifacts.reduce((sum, row) => sum + Number(row.rows || 0), 0),
+    missingArchiveDates: metricsArtifacts.reduce((sum, row) => sum + (row.missingArchiveDates?.length || 0), 0),
+    invalidArchiveDates: metricsArtifacts.reduce((sum, row) => sum + (row.invalidArchiveDates?.length || 0), 0),
+    outOfOrderArchiveDates: metricsArtifacts.reduce((sum, row) => sum + (row.outOfOrderArchiveDates?.length || 0), 0),
+    missingTimestamps: metricsArtifacts.reduce((sum, row) => sum + Number(row.continuity?.missingTimestamps || 0), 0),
+    largestGapMs: Math.max(0, ...metricsArtifacts.map(row => Number(row.continuity?.largestGapMs || 0))),
+  };
+  const qualifiedExecutableFrequency = oofQualifiedExecutable.length / Math.max(1, Object.keys(monthly).length);
+  const gate = gateReport({oofAlpha: alphaOof, oofQualifiedExecutable, rankedCandidates: replay.rankedCandidates, candidateMetrics: v9CandidateMetrics, v8Metrics, tierMonotonicity, walkForward, executionProxy: false, noOrderAudit, keepAlphaIds, trades: v9Portfolio.closedTrades, usableMetricsSymbols, qualifiedExecutableFrequency});
   const report = {
-    reportVersion: 'v9-development-1', status: gate.decision, generatedAt: new Date().toISOString(),
+    reportVersion: 'v9-development-1', status: gate.decision, V9_RESEARCH_EXHAUSTED: gate.decision === 'RESEARCH_FAIL', generatedAt: new Date().toISOString(),
     engine: {version: 'V9-research-1', researchOnly: true, currentV81AlphaSetExhausted: true},
     boundary: {start: new Date(start).toISOString(), end: new Date(end).toISOString()},
     holdout: {status: 'NOT RUN', start: new Date(HOLDOUT_START).toISOString(), end: new Date(HOLDOUT_END).toISOString()},
@@ -316,11 +340,11 @@ async function main() {
     dataAvailability: [
       {name: 'taker-buy volume / enhanced 1h klines', available: Boolean(dataManifest.dataAvailability?.takerBuyVolume?.available), reason: 'required by FLOW and cross-sectional families'},
       {name: 'premiumIndex / mark / index 1h archives', available: Boolean(dataManifest.dataAvailability?.premiumIndex?.available && dataManifest.dataAvailability?.markPrice?.available && dataManifest.dataAvailability?.indexPrice?.available), reason: 'required only by PREMIUM_DISLOCATION'},
-      {name: 'historical open interest', available: false, reason: 'no reliable 2024-2025 public history; OI family disabled'},
-      {name: 'global/top/taker long-short ratios', available: false, reason: 'no reliable 2024-2025 public history; ratio families not registered'},
+      {name: 'historical open interest', available: metricsData.usableSymbols > 0, reason: `${metricsData.usableSymbols}/150 symbols have complete official 5m metrics; symbols with gaps fail closed`},
+      {name: 'global/top/taker long-short ratios', available: metricsData.usableSymbols > 0, reason: `${metricsData.usableSymbols}/150 symbols have complete official 5m metrics; symbols with gaps fail closed`},
       {name: 'funding / 1m execution / first-touch', available: true, reason: 'reused local normalized M4 artifacts; inherited M4 limitations remain'},
     ],
-    counts: {rawCandidates: replay.counts.rawCandidates, independentObservations: replay.counts.independentObservations, rankedCandidates: replay.counts.rankedCandidates, standaloneExecutableOutcomes: standaloneExecutable.length, standaloneRejectedOutcomes: replay.counts.standaloneRejected, oofRows: oofRows.length, oofExecutableOutcomes: oofExecutable.length, oofQualifiedCandidates: oofQualifiedRows.length, oofQualifiedExecutable: oofQualifiedExecutable.length, keepAlphaIds: keepAlphaIds.length, v9PortfolioAccepted: v9Portfolio.accepted.length, v9PortfolioTrades: v9Portfolio.closedTrades.length},
+    counts: {rawCandidates: replay.counts.rawCandidates, independentObservations: replay.counts.independentObservations, rankedCandidates: replay.counts.rankedCandidates, standaloneExecutableOutcomes: standaloneExecutable.length, standaloneRejectedOutcomes: replay.counts.standaloneRejected, oofRows: oofRows.length, oofExecutableOutcomes: oofExecutable.length, oofQualifiedCandidates: oofQualifiedRows.length, oofQualifiedExecutable: oofQualifiedExecutable.length, qualifiedExecutablePerMonth: number(qualifiedExecutableFrequency, 4), keepAlphaIds: keepAlphaIds.length, v9PortfolioAccepted: v9Portfolio.accepted.length, v9PortfolioTrades: v9Portfolio.closedTrades.length, usableMetricsSymbols, metricsRows: metricsData.rows, metricsMissingTimestamps: metricsData.missingTimestamps},
     monthlyFrequency: frequencySummary(monthly),
     alphaStandalone: Object.fromEntries(Object.entries(alphaStandalone).map(([alpha, row]) => [alpha, {...row, metrics: compactMetrics(row.metrics)}])),
     alphaOof,
@@ -337,13 +361,13 @@ async function main() {
     requiredAlphaCoverage: V9_ALPHA_IDS,
     observedAlphaCoverage: [...new Set(replay.rankedCandidates.map(row => row.alpha))].sort(),
     provenance: {strategyTreeSha256: strategyTreeSha256(APP_DIR), v9CodeSha256: hashFiles(fs.readdirSync(path.join(APP_DIR, 'src', 'v9')).map(name => path.join(APP_DIR, 'src', 'v9', name))), developmentRunCodeCommit: gitSha(), frozenConfigSha256: jsonSha256({registry: V9_ALPHA_IDS, scorecard: V9_SCORECARD, targetR: 2, scanCadenceHours: 4, decisionLatencyMinutes: 20}), datasetManifestSha256: fs.existsSync(dataManifestFile) ? crypto.createHash('sha256').update(fs.readFileSync(dataManifestFile)).digest('hex') : null, reportCommit: gitSha()},
-    dataIntegrity: {m4Status: dataManifest.status || 'M4-INCOMPLETE', pointInTime: Boolean(dataManifest.universe?.pointInTime), historicalDelistingsResolved: Boolean(dataManifest.universe?.historicalDelistingsResolved), expandedNonCoreCovered: Boolean(dataManifest.universe?.expandedNonCoreCovered), manifest: path.relative(APP_DIR, dataManifestFile).replaceAll('\\', '/')},
+    dataIntegrity: {m4Status: dataManifest.status || 'M4-INCOMPLETE', pointInTime: Boolean(dataManifest.universe?.pointInTime), historicalDelistingsResolved: Boolean(dataManifest.universe?.historicalDelistingsResolved), expandedNonCoreCovered: Boolean(dataManifest.universe?.expandedNonCoreCovered), metrics: metricsData, metricsUsableSymbols: usableMetricsSymbols, manifest: path.relative(APP_DIR, dataManifestFile).replaceAll('\\', '/')},
     noOrderAudit,
     knownLimitations: [
       'M4 remains incomplete: inherited universe/lifecycle manifest is not point-in-time and historical delisting/survivorship resolution is not complete.',
       'Development uses 150 deterministic V8.1 symbols; it does not run the 388-symbol universe.',
       `${usableDevelopmentSymbols} of 150 selected symbols have overlapping enhanced Development data; this exceeds the 100-symbol minimum but is below the preferred 150.`,
-      'Historical open interest and long/short ratio series were not available from free public no-auth sources for 2024-2025; related families are disabled rather than proxied.',
+      `${usableMetricsSymbols} of 150 selected symbols have complete official 5m metrics continuity for the Development window; ${metricsData.missingTimestamps} timestamps are missing across the downloaded metrics artifacts and any gapped symbol is fail-closed for OI/crowding features.`,
       'The 2026-01-01 through 2026-07-15 Holdout was not run. No profitability or production-readiness conclusion is made.',
       'V7.5/V8 baselines are frozen same-window paper backtest references; V9 is research-only and does not alter Production.',
     ],
