@@ -15,6 +15,15 @@ export function jsonSha256(value) { return crypto.createHash('sha256').update(`$
 export function profitEngineFiles(appDir) {
   const directory = path.join(appDir, 'src', 'profit-engine');
   const files = fs.existsSync(directory) ? fs.readdirSync(directory).filter(name => name.endsWith('.mjs')).map(name => path.join('src', 'profit-engine', name)) : [];
+  // The research engine deliberately reuses the V9 feature-only adapter,
+  // canonical market-data access, and the shared acceptance/risk contract.
+  // Those dependencies are part of the research fingerprint so a label or
+  // signal change cannot be hidden behind an unchanged profit-engine file.
+  files.push(
+    'src/v9/replay.mjs', 'src/v9/features.mjs', 'src/v9/universe.mjs',
+    'src/v81/replay.mjs', 'src/v81/features.mjs',
+    'src/portfolio.mjs', 'src/fill-risk.mjs', 'src/market-data.mjs',
+  );
   const runner = path.join('scripts', 'run-profit-engine-development.mjs');
   if (fs.existsSync(path.join(appDir, runner))) files.push(runner);
   return files.sort();

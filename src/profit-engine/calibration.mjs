@@ -19,7 +19,7 @@ export function brierSkillScore(rows) {
 }
 
 export function logLoss(rows) {
-  const values = (rows || []).map(row => ({p: Math.max(1e-6, Math.min(1 - 1e-6, finite(row.pPositiveNet) ?? 0.5)), y: Number(row.outcome?.netR ?? row.netR) > 0 ? 1 : 0}));
+  const values = (rows || []).map(row => ({p: Math.max(1e-6, Math.min(1 - 1e-6, finite(row.pPositiveNetR) ?? 0.5)), y: Number(row.outcome?.netR ?? row.netR) > 0 ? 1 : 0}));
   return values.length ? -values.reduce((sum, row) => sum + row.y * Math.log(row.p) + (1 - row.y) * Math.log(1 - row.p), 0) / values.length : null;
 }
 

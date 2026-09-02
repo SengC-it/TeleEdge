@@ -9,18 +9,25 @@ function finite(value) { return Number.isFinite(Number(value)) ? Number(value) :
 export function canonicalLabelFromOutcome(outcome, {signalTime, developmentEnd = Infinity} = {}) {
   const start = finite(signalTime ?? outcome?.signalTime);
   const decisionTime = finite(outcome?.decisionTime) ?? (start == null ? null : start + 20 * 60_000);
-  const barrierTime = decisionTime == null ? null : decisionTime + CANONICAL_OUTCOME_CONTRACT.verticalBarrierHours * 3_600_000;
+  const fillTime = finite(outcome?.fillTime);
+  const barrierTime = fillTime == null ? null : fillTime + CANONICAL_OUTCOME_CONTRACT.verticalBarrierHours * 3_600_000;
   const exitTime = finite(outcome?.exitTime);
-  const completeBarrier = barrierTime == null || barrierTime <= Number(developmentEnd);
-  const executable = outcome?.executable === true && finite(outcome?.netR) != null;
-  const complete = executable && completeBarrier;
+  const durationHours = fillTime != null && exitTime != null ? (exitTime - fillTime) / 3_600_000 : null;
+  const withinBarrier = durationHours != null && durationHours >= 0 && durationHours <= CANONICAL_OUTCOME_CONTRACT.verticalBarrierHours + 1 / 60;
+  const complete = outcome?.canonicalExecutable === true && finite(outcome?.netR) != null && withinBarrier;
+  const developmentComplete = complete && exitTime < Number(developmentEnd);
+  const reason = String(outcome?.exitReason || '').toUpperCase();
   return {
     ...outcome,
-    signalTime: start, decisionTime, canonicalBarrierTime: barrierTime,
-    canonicalOutcomeType: outcome?.exitReason === 'tp' ? 'TP' : outcome?.exitReason === 'sl' ? 'SL' : 'VERTICAL_MTM',
-    labelUsable: complete, labelPositive: complete ? Number(outcome.netR) > 0 : null,
-    positiveOpportunity: complete ? Number(outcome.netR) >= 0.5 : null,
+    signalTime: start, decisionTime, fillTime, canonicalBarrierTime: barrierTime,
+    canonicalDurationHours: durationHours,
+    canonicalOutcomeType: reason === 'TP' || reason === 'SL' || reason === 'VERTICAL_MTM' ? reason : null,
+    canonicalExecutable: Boolean(outcome?.canonicalExecutable),
+    labelUsable: developmentComplete,
+    labelPositive: developmentComplete ? Number(outcome.netR) > 0 : null,
+    positiveOpportunity: developmentComplete ? Number(outcome.netR) >= 0.5 : null,
     timeToExitMinutes: exitTime != null && decisionTime != null ? (exitTime - decisionTime) / 60_000 : null,
+    canonicalDurationValid: withinBarrier,
   };
 }
 
@@ -38,6 +45,7 @@ export function joinCanonicalLabels(proposals, outcomes, {developmentEnd = Infin
       fillTime: label.fillTime ?? null, fillPrice: label.fillPrice ?? null,
       stop: label.stop ?? proposal.sl ?? null, target: label.target ?? null,
       exitTime: label.exitTime ?? null, executable: label.labelUsable,
+      canonicalExecutable: label.canonicalExecutable === true,
     };
   });
 }

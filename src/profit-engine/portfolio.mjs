@@ -2,7 +2,7 @@ import {PORTFOLIO_CONFIG} from '../v81/portfolio.mjs';
 
 export const PROFIT_PORTFOLIO_CONFIG = Object.freeze({
   initialEquityUsdt: 10_000, riskFraction: 0.006, maxPositions: 10, maxPerSide: 8,
-  sameTimestampSide: 3, cooldownHours: 72,
+  sameTimestampSide: 3, cooldownHours: 72, costRate: PORTFOLIO_CONFIG.costRate,
 });
 
 function compare(a, b) { return Number(b.predictedNetR) - Number(a.predictedNetR) || Number(b.pPositiveNetR) - Number(a.pPositiveNetR) || Number(b.r1Score) - Number(a.r1Score) || String(a.id).localeCompare(String(b.id)); }
