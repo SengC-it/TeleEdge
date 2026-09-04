@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import {execFile as execFileCallback} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 import {promisify} from 'node:util';
 
 const APP_DIR = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -82,13 +82,39 @@ function symbolBase(symbol) {
   return String(symbol).replace(/USDT$/, '');
 }
 
-function articleMentionsSymbol(article, symbol) {
-  const title = String(article?.title || '').toUpperCase();
+function tokenPattern(value) {
+  const escaped = String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^A-Z0-9])${escaped}([^A-Z0-9]|$)`, 'i');
+}
+
+export function articleMentionsSymbol(article, symbol, bodyText = '') {
+  const embeddedBody = [article?.body, article?.content, article?.description].filter(value => typeof value === 'string').join(' ');
+  const text = `${article?.title || ''} ${embeddedBody} ${bodyText}`.toUpperCase();
   const full = String(symbol).toUpperCase();
-  if (new RegExp(`(^|[^A-Z0-9])${full.replace(/[.*+?^${}()|[\\]\\]/g, '\\\\$&')}([^A-Z0-9]|$)`).test(title)) return true;
+  if (tokenPattern(full).test(text)) return true;
   const base = symbolBase(full);
-  if (base.length < 3) return false;
-  return new RegExp(`(^|[^A-Z0-9])${base}(USDT)?([^A-Z0-9]|$)`).test(title);
+  return base.length >= 3 && (tokenPattern(base).test(text) || tokenPattern(`${base}USDT`).test(text));
+}
+
+export function isUsdtPerpetualAnnouncement(article, bodyText = '', kind = 'listing') {
+  const embeddedBody = [article?.body, article?.content, article?.description].filter(value => typeof value === 'string').join(' ');
+  const text = `${article?.title || ''} ${embeddedBody} ${bodyText}`.toUpperCase();
+  if (/QUARTERLY|DELIVERY CONTRACT|COIN.?MARGINED|COIN.?M/.test(text)) return false;
+  if (kind === 'delist' && !/DELIST|DELIVER/.test(text)) return false;
+  return /PERPETUAL|USD.?Ⓢ?.?M|USDT.?M|FUTURES/.test(text);
+}
+
+export function dedupeAnnouncements(articles) {
+  const byKey = new Map();
+  for (const article of Array.isArray(articles) ? articles : []) {
+    const key = article?.code || `${article?.releaseDate || ''}:${article?.title || ''}`;
+    if (!byKey.has(key)) byKey.set(key, article);
+  }
+  return [...byKey.values()].sort((a, b) => Number(a?.releaseDate || 0) - Number(b?.releaseDate || 0));
+}
+
+export function lifecycleArticleMatches(articles, symbol, kind) {
+  return dedupeAnnouncements((Array.isArray(articles) ? articles : []).filter(article => articleMentionsSymbol(article, symbol) && isUsdtPerpetualAnnouncement(article, '', kind)));
 }
 
 function textFromBody(body) {
@@ -113,7 +139,7 @@ function textFromBody(body) {
   return result.join(' ');
 }
 
-function timeCandidates(text) {
+export function timeCandidates(text) {
   const values = [];
   const pattern = /(20\d{2}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}(?::\d{2})?))?\s*(?:\(UTC\)|UTC)?/g;
   for (const match of String(text).matchAll(pattern)) {
@@ -126,9 +152,9 @@ function timeCandidates(text) {
   return values.filter((value, index, all) => index === all.findIndex(item => item.timestamp === value.timestamp && item.precision === value.precision));
 }
 
-function articleEventTime(article, bodyText, symbol, kind) {
+export function articleEventTime(article, bodyText, symbol, kind) {
   const text = `${bodyText} ${article.title}`;
-  const symbolPattern = new RegExp(String(symbol).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+  const symbolPattern = new RegExp(String(symbol).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
   for (const match of text.matchAll(symbolPattern)) {
     const before = text.slice(Math.max(0, match.index - 140), match.index);
     const after = text.slice(match.index + symbol.length, Math.min(text.length, match.index + symbol.length + 100));
@@ -163,19 +189,21 @@ async function main() {
   const manifestFile = path.join(args.root, 'manifest.json');
   if (!fs.existsSync(manifestFile)) throw new Error(`Manifest is absent: ${manifestFile}`);
   const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8'));
-  const symbols = Array.isArray(manifest.universe?.symbols) ? manifest.universe.symbols : [];
+  const archiveIndexFile = path.join(args.root, 'source', 'archive-index.json');
+  const archiveIndex = fs.existsSync(archiveIndexFile) ? JSON.parse(fs.readFileSync(archiveIndexFile, 'utf8')) : null;
+  const symbols = [...new Set([
+    ...(Array.isArray(manifest.universe?.symbols) ? manifest.universe.symbols : []),
+    ...(Array.isArray(archiveIndex?.symbolsWithActualArchives) ? archiveIndex.symbolsWithActualArchives : []),
+  ])].sort();
   if (!symbols.length) throw new Error('Manifest universe is empty');
   const existingFile = path.join(args.root, 'source', 'historical-lifecycle-evidence.json');
   const existingPayload = fs.existsSync(existingFile) ? JSON.parse(fs.readFileSync(existingFile, 'utf8')) : null;
   const existingBySymbol = new Map((Array.isArray(existingPayload?.markets) ? existingPayload.markets : [])
     .filter(record => record?.symbol)
     .map(record => [record.symbol, record]));
-  const unresolvedTargets = new Set((manifest.universe?.markets || [])
-    .filter(market => market?.lifecycleExact !== true)
-    .map(market => market.symbol));
   const targetSymbols = args.symbols?.size
     ? symbols.filter(symbol => args.symbols.has(symbol))
-    : unresolvedTargets.size ? symbols.filter(symbol => unresolvedTargets.has(symbol)) : symbols;
+    : symbols.filter(symbol => existingBySymbol.get(symbol)?.lifecycleExact !== true);
   const [listingCatalog, delistCatalog] = await Promise.all([
     fetchCatalog(CATALOGS.listing, args.pageSize, args.delayMs),
     fetchCatalog(CATALOGS.delist, args.pageSize, args.delayMs),
@@ -186,8 +214,8 @@ async function main() {
   const records = symbols.map(symbol => existingBySymbol.get(symbol) || {symbol, listingCatalogId: CATALOGS.listing, delistCatalogId: CATALOGS.delist});
   const recordBySymbol = new Map(records.map(record => [record.symbol, record]));
   for (const symbol of targetSymbols) {
-    const listingMatches = listingCatalog.articles.filter(article => articleMentionsSymbol(article, symbol)).sort((a, b) => Number(a.releaseDate) - Number(b.releaseDate));
-    const delistMatches = delistCatalog.articles.filter(article => articleMentionsSymbol(article, symbol)).sort((a, b) => Number(b.releaseDate) - Number(a.releaseDate));
+    const listingMatches = lifecycleArticleMatches(listingCatalog.articles, symbol, 'listing');
+    const delistMatches = lifecycleArticleMatches(delistCatalog.articles, symbol, 'delist').reverse();
     const listingArticle = listingMatches[0] || null;
     const delistArticle = delistMatches[0] || null;
     const record = {...(recordBySymbol.get(symbol) || {}), symbol, listingCatalogId: CATALOGS.listing, delistCatalogId: CATALOGS.delist};
@@ -253,9 +281,11 @@ async function main() {
   console.log(JSON.stringify({output: path.relative(APP_DIR, outputFile).replaceAll('\\', '/'), sha256: sha256(rawOutput), symbols: records.length, unresolved: unresolved.length, listingArticles: listingCatalog.articles.length, delistArticles: delistCatalog.articles.length}, null, 2));
 }
 
-try {
-  await main();
-} catch (error) {
-  console.error(error.stack || error.message);
-  process.exitCode = 1;
+if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
+  try {
+    await main();
+  } catch (error) {
+    console.error(error.stack || error.message);
+    process.exitCode = 1;
+  }
 }
