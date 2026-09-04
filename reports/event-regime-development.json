@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-04T07:56:06.696Z",
+  "generatedAt": "2026-09-04T11:13:24.799Z",
   "eventDefinitionVersion": "m4-event-regime-v1",
   "developmentWindow": {
     "start": "2024-01-01T00:00:00.000Z",
@@ -212,8 +212,10 @@
     ]
   },
   "controls": {
-    "method": "deterministic exact month + side + regime + liquidity bucket matching; nearest timestamp, stable event id tie-break",
-    "audited": true
+    "method": "deterministic exact month + side + regime + liquidity bucket matching; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded",
+    "audited": true,
+    "unmatched": null,
+    "noReuse": null
   },
   "liquidity": {
     "lookbackDays": 30,
@@ -366,11 +368,11 @@
     "No Holdout was run and no Production configuration, schema, scheduler, SMTP or signal behavior was changed."
   ],
   "provenance": {
-    "m4DatasetSha256": "f9c7257b192a3b3724cf55687b3c7ac6081824fd439653cbcf3a70c5e6716a5e",
-    "pitUniverseSha256": "6db7cfe9e2d726c9cac3210f93e13a706703b07bfafc82be7045fdbd46643bac",
-    "eventEngineCodeSha256": "10c276f148580b928e2757cf8b0e714193fb0d846fb6b97d7c5c8c9780d78ee4",
-    "eventFrozenConfigSha256": "4c84910ec423726ec0fdad92f64e0a9db47c78c33a8bb00497e7b6a11492e9fb",
+    "m4DatasetSha256": "892c6ccd8e0c23c80ac691bdb7fd58ecb48040b7ca52c8f38e3bf74d0660c470",
+    "pitUniverseSha256": "1f812fa13d83c0fb8cf642d257b96127876f881a98305254b8866f336a248f71",
+    "eventEngineCodeSha256": "bb975957c91079009dbc7361dc51ec8f27ab5e725a0f8df98b332990ed10b804",
+    "eventFrozenConfigSha256": "cbbc037770b3fe87244214fa414386a873872cef86653e41b17475d2a4bfc75f",
     "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
-    "universeEvidenceSha256": "8e679aa4628a1ea30ada506087e1abde1f0696d0aeca6d20507dfc530810ebc7"
+    "universeEvidenceSha256": "10c601040b320b225ab1e72597a0f4b682c87da76a1e6c3f4da82a24d1fa5951"
   }
 }

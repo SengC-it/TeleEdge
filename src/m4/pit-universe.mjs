@@ -161,10 +161,24 @@ function archiveObservationEvidence({path: filePath, sha256: hash} = {}) {
   };
 }
 
+export function isCryptoUsdMPerpetual(row) {
+  return row?.quoteAsset === 'USDT' && row?.contractType === 'PERPETUAL'
+    && !['TRADIFI', 'EQUITY', 'COMMODITY', 'INDEX'].some(value => String(row?.underlyingType || '').toUpperCase().includes(value))
+    && !((row?.underlyingSubType || []).map(value => String(value).toUpperCase()).includes('TRADFI'));
+}
+
 function currentPerpetualMarkets(exchangeInfo) {
   return new Map((exchangeInfo?.symbols || [])
-    .filter(row => row?.quoteAsset === 'USDT' && ['PERPETUAL', 'TRADIFI_PERPETUAL'].includes(row?.contractType))
+    .filter(isCryptoUsdMPerpetual)
     .map(row => [row.symbol, row]));
+}
+
+function tradfiPerpetualSymbols(exchangeInfo) {
+  return (exchangeInfo?.symbols || [])
+    .filter(row => row?.quoteAsset === 'USDT' && row?.contractType === 'TRADIFI_PERPETUAL')
+    .map(row => row.symbol)
+    .filter(Boolean)
+    .sort();
 }
 
 function artifactMap(manifest) {
@@ -200,6 +214,10 @@ function hasArchiveOverlap(months, start, end) {
   });
 }
 
+function hasArchiveOverlapInRange(months, start, end) {
+  return Number.isFinite(start) && Number.isFinite(end) && start < end && hasArchiveOverlap(months, start, end);
+}
+
 function coverageWindow(first, last, activeStart, activeEnd, intervalMs) {
   if (!Number.isFinite(first) || !Number.isFinite(last)) return {complete: false, reason: 'observed-range-missing'};
   const startGap = first > activeStart + intervalMs;
@@ -212,6 +230,104 @@ function coverageWindow(first, last, activeStart, activeEnd, intervalMs) {
     last: iso(last),
     activeStart: iso(activeStart),
     activeEnd: iso(activeEnd),
+  };
+}
+
+function readGzipRows(file) {
+  if (!file || !fs.existsSync(file)) return [];
+  try {
+    const text = zlib.gunzipSync(fs.readFileSync(file)).toString('utf8').trim();
+    const parsed = text ? JSON.parse(text) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function validHourlyLiquidityRow(row) {
+  const t = timestampValue(row?.t ?? row?.openTime ?? row?.open_time);
+  const q = Number(row?.q ?? row?.quoteVolume ?? row?.quote_asset_volume);
+  return Number.isFinite(t) && Number.isFinite(q) && q >= 0 && row?.completed !== false && row?.isComplete !== false && row?.closed !== false
+    ? {t, q}
+    : null;
+}
+
+function lowerBoundNumber(values, target) {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (values[middle] < target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function upperBoundNumber(values, target) {
+  let low = 0;
+  let high = values.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (values[middle] <= target) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+function buildLiquidityIndex(priceRows) {
+  const byTime = new Map();
+  for (const raw of priceRows || []) {
+    const parsed = validHourlyLiquidityRow(raw);
+    if (parsed) byTime.set(parsed.t, parsed.q);
+  }
+  const rows = [...byTime.entries()].sort(([left], [right]) => left - right);
+  const timestamps = rows.map(([timestamp]) => timestamp);
+  const prefix = [0];
+  for (const [, quoteVolume] of rows) prefix.push(prefix.at(-1) + quoteVolume);
+  return {timestamps, prefix};
+}
+
+function liquidityAtTimestamp(row, timestamp) {
+  const t = timestampValue(timestamp);
+  const activeStart = timestampValue(row?.activeStart ?? row?.eligibleStart);
+  const priceRows = row?._priceRows || [];
+  const index = row?._liquidityIndex || buildLiquidityIndex(priceRows);
+  if (!Number.isFinite(t) || !Number.isFinite(activeStart) || !index.timestamps.length) return {
+    available: false, eligible: false, volumeUsdt: null, reason: 'liquidity-history-unavailable',
+  };
+  const windowStart = t - M4_LIQUIDITY_LOOKBACK_DAYS * M4_DAY;
+  if (windowStart < activeStart) return {
+    available: false, eligible: false, volumeUsdt: null, reason: 'insufficient-30d-history',
+  };
+  const observedTimes = index.timestamps;
+  if (!observedTimes.length || observedTimes[0] > windowStart) return {
+    available: false, eligible: false, volumeUsdt: null, reason: 'insufficient-30d-history',
+  }
+  const firstExpected = Math.ceil(windowStart / M4_HOURS) * M4_HOURS;
+  const lastExpected = Math.floor((t - 1) / M4_HOURS) * M4_HOURS;
+  const expectedCount = lastExpected >= firstExpected ? Math.floor((lastExpected - firstExpected) / M4_HOURS) + 1 : 0;
+  const left = lowerBoundNumber(observedTimes, firstExpected);
+  const right = upperBoundNumber(observedTimes, lastExpected);
+  const actualCount = right - left;
+  if (actualCount !== expectedCount || observedTimes[left] !== firstExpected || observedTimes[right - 1] !== lastExpected) {
+    const firstMissing = observedTimes[left] !== firstExpected ? firstExpected
+      : observedTimes[right - 1] !== lastExpected ? lastExpected : null;
+    return {
+      available: false, eligible: false, volumeUsdt: null, reason: 'liquidity-window-gap',
+      missingStart: iso(firstMissing), missingEnd: iso(firstMissing), missingRows: Math.max(1, expectedCount - actualCount),
+    };
+  };
+  if (expectedCount < M4_LIQUIDITY_LOOKBACK_DAYS * 24) return {
+    available: false, eligible: false, volumeUsdt: null, reason: 'insufficient-30d-history',
+  };
+  const volumeUsdt = Number(((index.prefix[right] - index.prefix[left]) / M4_LIQUIDITY_LOOKBACK_DAYS).toFixed(6));
+  return {
+    available: true,
+    eligible: volumeUsdt >= M4_LIQUIDITY_THRESHOLD_USDT,
+    volumeUsdt,
+    reason: volumeUsdt >= M4_LIQUIDITY_THRESHOLD_USDT ? null : 'below-threshold',
+    source: 'binance-1h-quoteVolume-completed-before-snapshot',
+    lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS,
   };
 }
 
@@ -229,6 +345,14 @@ function liquidityValue(row, key = null) {
 }
 
 export function liquidityEligibilityAt(row, timestamp, {allowMonthly = true} = {}) {
+  const direct = liquidityAtTimestamp(row, timestamp);
+  if (row?._liquidityIndex?.timestamps?.length || row?._priceRows?.length) {
+    return {
+      ...direct,
+      thresholdUsdt: M4_LIQUIDITY_THRESHOLD_USDT,
+      lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS,
+    };
+  }
   const date = new Date(timestampValue(timestamp));
   const key = Number.isNaN(date.getTime()) ? null : `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
   const hasMonthly = Boolean(row?.liquidityByMonth || row?.monthlyLiquidity);
@@ -250,11 +374,25 @@ export function liquidityEligibilityAt(row, timestamp, {allowMonthly = true} = {
     eligible: Number.isFinite(volume) && volume >= M4_LIQUIDITY_THRESHOLD_USDT,
     thresholdUsdt: M4_LIQUIDITY_THRESHOLD_USDT,
     lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS,
-    source: row?.liquidityByMonth || row?.monthlyLiquidity ? 'point-in-time-monthly-30d-average' : Number.isFinite(volume) ? 'point-in-time-30d-average' : null,
+    source: row?.liquidityByMonth || row?.monthlyLiquidity ? 'legacy-monthly-diagnostic-not-used-for-formal-snapshots' : Number.isFinite(volume) ? 'point-in-time-30d-average' : null,
   };
 }
 
 function liquidityCoverage(row, start, end) {
+  if (row?._liquidityIndex?.timestamps?.length || row?._priceRows?.length) {
+    const observations = [];
+    const first = Math.ceil(Number(start) / (4 * M4_HOURS)) * (4 * M4_HOURS);
+    for (let timestamp = first; timestamp < Number(end); timestamp += 4 * M4_HOURS) observations.push(liquidityAtTimestamp(row, timestamp));
+    const audit = {
+      observations: observations.length,
+      eligible: observations.filter(item => item.eligible).length,
+      available: observations.filter(item => item.available).length,
+      insufficientHistory: observations.filter(item => item.reason === 'insufficient-30d-history').length,
+      gap: observations.filter(item => item.reason === 'liquidity-window-gap').length,
+      belowThreshold: observations.filter(item => item.reason === 'below-threshold').length,
+    };
+    return {complete: audit.gap === 0 && audit.observations > 0, missingMonths: [], audit, source: 'formal-1h-quoteVolume'};
+  }
   const monthly = row?.liquidityByMonth || row?.monthlyLiquidity;
   if (!monthly && Number.isFinite(liquidityValue(row))) return {complete: true, missingMonths: []};
   if (!monthly || typeof monthly !== 'object') return {complete: false, missingMonths: ['all-active-months']};
@@ -312,6 +450,130 @@ function dataContract(appDir, artifactRows, activeStart, activeEnd) {
   return {complete: gaps.length === 0 && hashes.length === 0, artifacts, gaps, hashFailures: hashes};
 }
 
+function lifecycleEpisodes(record = {}) {
+  const episodes = record.activeEpisodes || record.episodes;
+  if (Array.isArray(episodes) && episodes.length) return episodes;
+  return [record];
+}
+
+function exchangeInfoEvidenceAt(kind, timestamp, exchangeInfoEvidence) {
+  const source = currentExchangeInfoEvidence(exchangeInfoEvidence);
+  return {
+    timestamp,
+    source: kind === 'listing' ? 'Binance official exchangeInfo onboardDate' : 'Binance official exchangeInfo deliveryDate',
+    url: source.url,
+    path: source.path,
+    sha256: source.sha256,
+    exact: true,
+    complete: Number.isFinite(timestamp) && validHash(source.sha256),
+  };
+}
+
+function episodeEvidence(record, kind, currentMarket, exchangeInfoEvidence, allowCurrentFallback = true) {
+  const prefix = kind === 'listing' ? 'listing' : 'delist';
+  let result = evidence(record, prefix);
+  const fallbackTime = kind === 'listing' ? timestampValue(currentMarket?.onboardDate) : timestampValue(currentMarket?.deliveryDate);
+  if (allowCurrentFallback && !result.complete && Number.isFinite(fallbackTime) && (kind === 'listing' || fallbackTime > 0)) {
+    result = exchangeInfoEvidenceAt(kind, fallbackTime, exchangeInfoEvidence);
+  }
+  return result;
+}
+
+function episodeRows({symbol, start, end, months, observedFirst, observedLast, currentMarket, lifecycleRecord, exchangeInfoEvidence, archiveEvidence, snapshotAt, artifactRows, liquidityByMonth, liquidity30dAverageQuoteVolume, priceRows, appDir}) {
+  const records = lifecycleEpisodes(lifecycleRecord);
+  const currentDelivery = timestampValue(currentMarket?.deliveryDate);
+  const currentActiveThroughEnd = Boolean(currentMarket) && Number.isFinite(snapshotAt) && snapshotAt >= end
+    && !(Number.isFinite(currentDelivery) && currentDelivery < end);
+  const rows = records.map((record, index) => {
+    const allowCurrentFallback = records.length === 1 || index === records.length - 1;
+    const listing = episodeEvidence(record, 'listing', currentMarket, exchangeInfoEvidence, allowCurrentFallback);
+    const delist = episodeEvidence(record, 'delist', currentMarket, exchangeInfoEvidence, allowCurrentFallback);
+    const listingTimestamp = Number.isFinite(listing.timestamp) ? listing.timestamp : null;
+    const delistTimestamp = Number.isFinite(delist.timestamp) ? delist.timestamp : null;
+    const activeBeforeDevelopment = hasArchiveBefore(months, start)
+      || (Number.isFinite(observedFirst) && observedFirst < start)
+      || (Number.isFinite(listingTimestamp) && listingTimestamp < start);
+    const listingInsideDevelopment = Number.isFinite(listingTimestamp) && listingTimestamp >= start && listingTimestamp < end;
+    const delistedInsideDevelopment = Number.isFinite(delistTimestamp) && delistTimestamp >= start && delistTimestamp < end;
+    const activeThroughDevelopmentEnd = currentActiveThroughEnd
+      || (Number.isFinite(delistTimestamp) && delistTimestamp >= end && delist.complete);
+    const intervalOverlap = (listingTimestamp == null || listingTimestamp < end)
+      && (delistTimestamp == null || delistTimestamp > start);
+    const episodeStart = Math.max(start, Number.isFinite(listingTimestamp) ? listingTimestamp : start);
+    const episodeEnd = Math.min(end, Number.isFinite(delistTimestamp) ? delistTimestamp : end);
+    const episodeArchiveOverlap = hasArchiveOverlapInRange(months, episodeStart, episodeEnd)
+      || (records.length === 1 && Number.isFinite(observedFirst) && Number.isFinite(observedLast)
+        && observedFirst < episodeEnd && observedLast >= episodeStart);
+    // A current exchangeInfo row alone is never a historical-universe
+    // observation.  It can corroborate an archived/confirmed lifecycle, but
+    // cannot make every current symbol part of the Development universe.
+    const likelyActiveInDevelopment = intervalOverlap && (episodeArchiveOverlap || listingInsideDevelopment || delistedInsideDevelopment);
+    const conflicts = [];
+    const conflictClasses = [];
+    const addConflict = (reason, conflictClass) => { conflicts.push(reason); if (!conflictClasses.includes(conflictClass)) conflictClasses.push(conflictClass); };
+    // firstObserved/lastObserved are symbol-level diagnostics. For a
+    // relisted symbol they can span several episodes, so only compare the
+    // outer evidence boundaries against them; an inner relist naturally
+    // occurs after the first observation and before the last observation.
+    if (index === 0 && Number.isFinite(listingTimestamp) && Number.isFinite(observedFirst) && listingTimestamp > observedFirst) {
+      addConflict('listing-after-first-observed', 'TRUE_LIFECYCLE_CONFLICT');
+    }
+    if (index === records.length - 1 && Number.isFinite(delistTimestamp) && Number.isFinite(observedLast) && observedLast >= delistTimestamp) {
+      addConflict('delist-at-or-before-last-observed', 'TRUE_LIFECYCLE_CONFLICT');
+    }
+    if (Number.isFinite(listingTimestamp) && Number.isFinite(delistTimestamp) && listingTimestamp >= delistTimestamp) {
+      addConflict('listing-not-before-delist', 'TRUE_LIFECYCLE_CONFLICT');
+    }
+    if (likelyActiveInDevelopment && listingInsideDevelopment && !listing.complete) {
+      addConflict('listing-evidence-missing-for-in-window-listing', 'EVIDENCE_MATCH_AMBIGUOUS');
+    }
+    if (likelyActiveInDevelopment && delistedInsideDevelopment && !(delist.complete && delist.exact)) {
+      addConflict('delist-evidence-missing-for-in-window-delist', 'EVIDENCE_MATCH_AMBIGUOUS');
+    }
+    const entryBoundaryResolved = !likelyActiveInDevelopment || activeBeforeDevelopment || (listingInsideDevelopment && listing.complete);
+    const exitBoundaryResolved = !likelyActiveInDevelopment || activeThroughDevelopmentEnd
+      || (delistedInsideDevelopment && delist.complete && delist.exact)
+      || (Number.isFinite(delistTimestamp) && delistTimestamp <= start && delist.complete && delist.exact);
+    if (likelyActiveInDevelopment && !entryBoundaryResolved) addConflict('entry-boundary-unresolved', 'ENTRY_UNRESOLVED');
+    if (likelyActiveInDevelopment && !exitBoundaryResolved) addConflict('exit-boundary-unresolved', 'EXIT_UNRESOLVED');
+    // Multiple independently evidenced active intervals are a first-class
+    // lifecycle shape, not by themselves a contradiction. Keep the relist
+    // signal visible for audit without turning valid episodes into a block.
+    if (records.length > 1) conflictClasses.push('RELIST_EPISODE_DETECTED');
+    const activeStart = Math.max(start, Number.isFinite(listingTimestamp) ? listingTimestamp : start);
+    const activeEnd = Math.min(end, Number.isFinite(delistTimestamp) ? delistTimestamp : end);
+    const entryEvidence = activeBeforeDevelopment ? archiveObservationEvidence(archiveEvidence) : listing;
+    const exitEvidence = activeThroughDevelopmentEnd
+      ? {...currentExchangeInfoEvidence(exchangeInfoEvidence), source: 'Binance USD-M snapshot after Development end', timestamp: snapshotAt}
+      : delist;
+    const data = likelyActiveInDevelopment && activeStart < activeEnd
+      ? dataContract(appDir, artifactRows, activeStart, activeEnd)
+      : {complete: true, artifacts: {}, gaps: [], hashFailures: []};
+    return {
+      episodeId: record.episodeId || record.id || `${symbol}|${index}`,
+      activeStart: iso(activeStart), activeEnd: iso(activeEnd),
+      listingTimestamp: iso(listingTimestamp), delistTimestamp: iso(delistTimestamp),
+      listingEvidenceTimestamp: iso(listing.timestamp), listingEvidenceSource: listing.source,
+      listingEvidenceUrl: listing.url, listingEvidencePath: listing.path, listingEvidenceSha256: listing.sha256,
+      delistEvidenceTimestamp: iso(delist.timestamp), delistEvidenceSource: delist.source,
+      delistEvidenceUrl: delist.url, delistEvidencePath: delist.path, delistEvidenceSha256: delist.sha256,
+      activeBeforeDevelopment, listingInsideDevelopment, delistedInsideDevelopment, activeThroughDevelopmentEnd,
+      likelyActiveInDevelopment, entryBoundaryResolved, exitBoundaryResolved,
+      noLifecycleConflict: conflicts.length === 0,
+      pitWindowResolved: !likelyActiveInDevelopment || (entryBoundaryResolved && exitBoundaryResolved && conflicts.length === 0),
+      lifecycleExact: !likelyActiveInDevelopment || (entryBoundaryResolved && exitBoundaryResolved && conflicts.length === 0),
+      lifecycleConflictReasons: conflicts, lifecycleConflictClasses: conflictClasses,
+      entryEvidenceSource: entryEvidence.source || null, entryEvidenceTimestamp: iso(entryEvidence.timestamp),
+      entryEvidencePath: entryEvidence.path || null, entryEvidenceUrl: entryEvidence.url || null, entryEvidenceSha256: entryEvidence.sha256 || null,
+      exitEvidenceSource: exitEvidence.source || null, exitEvidenceTimestamp: iso(exitEvidence.timestamp),
+      exitEvidencePath: exitEvidence.path || null, exitEvidenceUrl: exitEvidence.url || null, exitEvidenceSha256: exitEvidence.sha256 || null,
+      archiveEvidenceOverlap: episodeArchiveOverlap,
+      data,
+    };
+  });
+  return {rows, archiveOverlap: rows.some(row => row.archiveEvidenceOverlap), currentActiveThroughEnd};
+}
+
 export function resolvePitWindow({
   symbol,
   start = M4_DEVELOPMENT_START,
@@ -327,6 +589,7 @@ export function resolvePitWindow({
   artifactRows = new Map(),
   liquidityByMonth = null,
   liquidity30dAverageQuoteVolume = null,
+  priceRows = null,
   appDir = process.cwd(),
 } = {}) {
   const months = archiveMonths(archiveRecord);
@@ -334,129 +597,77 @@ export function resolvePitWindow({
   const lastArchiveMonth = months.at(-1) || null;
   const observedFirst = timestampValue(firstObserved);
   const observedLast = timestampValue(lastObserved);
-  let listing = evidence(lifecycleRecord, 'listing');
-  const currentOnboard = timestampValue(currentMarket?.onboardDate);
-  if (!listing.complete && Number.isFinite(currentOnboard)) {
-    listing = {...evidence({}, 'listing', {...currentExchangeInfoEvidence(exchangeInfoEvidence), timestamp: currentOnboard}), timestamp: currentOnboard, exact: true, complete: true, source: 'Binance official exchangeInfo onboardDate', url: exchangeInfoEvidence.url, path: exchangeInfoEvidence.path, sha256: exchangeInfoEvidence.sha256};
-  }
-  const externalDelist = evidence(lifecycleRecord, 'delist');
-  const delivery = timestampValue(currentMarket?.deliveryDate);
-  let delist = externalDelist;
-  if (!delist.complete && Number.isFinite(delivery) && delivery > 0) {
-    delist = {...evidence({}, 'delist', {...currentExchangeInfoEvidence(exchangeInfoEvidence), timestamp: delivery}), timestamp: delivery, exact: true, complete: true, source: 'Binance official exchangeInfo deliveryDate', url: exchangeInfoEvidence.url, path: exchangeInfoEvidence.path, sha256: exchangeInfoEvidence.sha256};
-  }
   const snapshotAt = timestampValue(snapshotTimestamp);
-  const currentActiveThroughEnd = Boolean(currentMarket) && Number.isFinite(snapshotAt) && snapshotAt >= end && !(Number.isFinite(delivery) && delivery < end);
-  const delistTimestamp = Number.isFinite(delist.timestamp) ? delist.timestamp : null;
-  const listingTimestamp = Number.isFinite(listing.timestamp) ? listing.timestamp : null;
-  const activeBeforeDevelopment = hasArchiveBefore(months, start)
-    || (Number.isFinite(observedFirst) && observedFirst < start)
-    || (Number.isFinite(listingTimestamp) && listingTimestamp < start);
-  const listingInsideDevelopment = Number.isFinite(listingTimestamp) && listingTimestamp >= start && listingTimestamp < end;
-  const archiveOverlap = hasArchiveOverlap(months, start, end)
-    || (Number.isFinite(observedFirst) && Number.isFinite(observedLast) && observedFirst < end && observedLast >= start);
-  const likelyActiveInDevelopment = archiveOverlap || listingInsideDevelopment || (activeBeforeDevelopment && (currentActiveThroughEnd || (delistTimestamp != null && delistTimestamp > start)));
-  const delistedInsideDevelopment = Number.isFinite(delistTimestamp) && delistTimestamp >= start && delistTimestamp < end;
-  const activeThroughDevelopmentEnd = currentActiveThroughEnd || (Number.isFinite(delistTimestamp) && delistTimestamp >= end && delist.complete);
-  const historicalDelisted = !currentMarket && (delistTimestamp != null || (lastArchiveMonth && lastArchiveMonth < monthKey(end)));
-  const conflicts = [];
-  if (Number.isFinite(listingTimestamp) && Number.isFinite(observedFirst) && listingTimestamp > observedFirst) conflicts.push('listing-after-first-observed');
-  if (Number.isFinite(delistTimestamp) && Number.isFinite(observedLast) && observedLast >= delistTimestamp) conflicts.push('delist-at-or-before-last-observed');
-  if (Number.isFinite(listingTimestamp) && Number.isFinite(delistTimestamp) && listingTimestamp >= delistTimestamp) conflicts.push('listing-not-before-delist');
-  if (likelyActiveInDevelopment && listingInsideDevelopment && !listing.complete) conflicts.push('listing-evidence-missing-for-in-window-listing');
-  if (likelyActiveInDevelopment && delistedInsideDevelopment && !(delist.complete && delist.exact)) conflicts.push('delist-evidence-missing-for-in-window-delist');
-  if (likelyActiveInDevelopment && !activeBeforeDevelopment && !listingInsideDevelopment) conflicts.push('entry-boundary-unresolved');
-  if (likelyActiveInDevelopment && !activeThroughDevelopmentEnd && !delistedInsideDevelopment) conflicts.push('exit-boundary-unresolved');
-  const entryBoundaryResolved = !likelyActiveInDevelopment
-    || activeBeforeDevelopment
-    || (listingInsideDevelopment && listing.complete);
-  const exitBoundaryResolved = !likelyActiveInDevelopment
-    || activeThroughDevelopmentEnd
-    || (delistedInsideDevelopment && delist.complete && delist.exact)
-    || (Number.isFinite(delistTimestamp) && delistTimestamp <= start && delist.complete && delist.exact);
+  const resolved = episodeRows({symbol, start, end, months, observedFirst, observedLast, currentMarket, lifecycleRecord, exchangeInfoEvidence, archiveEvidence, snapshotAt, artifactRows, liquidityByMonth, liquidity30dAverageQuoteVolume, priceRows, appDir});
+  const episodes = resolved.rows;
+  const relevantEpisodes = episodes.filter(row => row.likelyActiveInDevelopment);
+  const likelyActiveInDevelopment = relevantEpisodes.length > 0;
+  const firstEpisode = episodes[0] || {};
+  const lastEpisode = episodes.at(-1) || {};
+  const activeStart = relevantEpisodes.reduce((value, row) => Math.min(value, timestampValue(row.activeStart) ?? end), end);
+  const activeEnd = relevantEpisodes.reduce((value, row) => Math.max(value, timestampValue(row.activeEnd) ?? start), start);
+  const activeBeforeDevelopment = relevantEpisodes.some(row => row.activeBeforeDevelopment);
+  const listingInsideDevelopment = relevantEpisodes.some(row => row.listingInsideDevelopment);
+  const delistedInsideDevelopment = relevantEpisodes.some(row => row.delistedInsideDevelopment);
+  const activeThroughDevelopmentEnd = relevantEpisodes.some(row => row.activeThroughDevelopmentEnd);
+  const historicalDelisted = !currentMarket && (delistedInsideDevelopment || (lastArchiveMonth && lastArchiveMonth < monthKey(end)) || Boolean(lastEpisode.delistTimestamp));
+  const conflicts = [...new Set(relevantEpisodes.flatMap(row => row.lifecycleConflictReasons || []))];
+  const conflictClasses = [...new Set(relevantEpisodes.flatMap(row => row.lifecycleConflictClasses || []))];
+  const entryBoundaryResolved = !likelyActiveInDevelopment || relevantEpisodes.every(row => row.entryBoundaryResolved);
+  const exitBoundaryResolved = !likelyActiveInDevelopment || relevantEpisodes.every(row => row.exitBoundaryResolved);
   const noLifecycleConflict = conflicts.length === 0;
-  const pitWindowResolved = !likelyActiveInDevelopment || (entryBoundaryResolved && exitBoundaryResolved && noLifecycleConflict);
-  // Current markets can be proven active through the Development boundary by
-  // the post-window exchangeInfo snapshot; a historical delisted market must
-  // additionally carry both independently auditable lifecycle evidences.
-  const historicalLifecycleResolved = !historicalDelisted || (listing.complete && delist.complete);
-  const lifecycleExact = entryBoundaryResolved && exitBoundaryResolved && noLifecycleConflict && historicalLifecycleResolved;
-  const activeStart = Math.max(start, Number.isFinite(listingTimestamp) ? listingTimestamp : start);
-  const activeEnd = Math.min(end, Number.isFinite(delistTimestamp) ? delistTimestamp : end);
-  const data = likelyActiveInDevelopment && activeStart < activeEnd
-    ? dataContract(appDir, artifactRows, activeStart, activeEnd)
-    : {complete: true, artifacts: {}, gaps: [], hashFailures: []};
-  const liquidity = {liquidityByMonth, liquidity30dAverageQuoteVolume};
-  const liquidityEvidence = liquidityCoverage(liquidity, activeStart, activeEnd);
-  const entryEvidence = activeBeforeDevelopment
-    ? archiveObservationEvidence(archiveEvidence)
-    : listing;
-  const exitEvidence = activeThroughDevelopmentEnd
-    ? {...currentExchangeInfoEvidence(exchangeInfoEvidence), source: 'Binance USD-M snapshot after Development end', timestamp: snapshotAt}
-    : delist;
-  return {
-    symbol,
-    core: CORE_MARKETS.has(symbol),
-    tier: CORE_MARKETS.has(symbol) ? 'core' : 'expanded',
-    firstArchiveMonth,
-    lastArchiveMonth,
-    actualFirstArchiveMonth: firstArchiveMonth,
-    actualLastArchiveMonth: lastArchiveMonth,
-    archiveEvidenceSource: archiveEvidence.source || null,
-    archiveEvidenceUrl: archiveEvidence.url || null,
-    archiveEvidencePath: archiveEvidence.path || null,
-    archiveEvidenceSha256: archiveEvidence.sha256 || null,
-    firstObserved: iso(observedFirst),
-    lastObserved: iso(observedLast),
-    activeBeforeDevelopment,
-    listingInsideDevelopment,
-    listingTimestamp: iso(listingTimestamp),
-    listingAgeDays: listingAgeDaysAt({listingTimestamp}, start),
-    activeThroughDevelopmentEnd,
-    delistedInsideDevelopment,
-    delistTimestamp: iso(delistTimestamp),
-    eligibleStart: iso(activeStart),
-    eligibleEnd: iso(activeEnd),
-    activeStart: iso(activeStart),
-    activeEnd: iso(activeEnd),
-    historicalDelisted,
-    likelyActiveInDevelopment,
-    requiredForDevelopment: likelyActiveInDevelopment,
-    entryBoundaryResolved,
-    exitBoundaryResolved,
-    noLifecycleConflict,
-    pitWindowResolved,
-    lifecycleExact,
-    listingEvidenceSource: listing.source,
-    listingEvidenceTimestamp: iso(listing.timestamp),
-    listingEvidenceUrl: listing.url,
-    listingEvidencePath: listing.path,
-    listingEvidenceSha256: listing.sha256,
-    delistEvidenceSource: delist.source,
-    delistEvidenceTimestamp: iso(delist.timestamp),
-    delistEvidenceUrl: delist.url,
-    delistEvidencePath: delist.path,
-    delistEvidenceSha256: delist.sha256,
-    entryEvidenceSource: entryEvidence.source || null,
-    entryEvidenceTimestamp: iso(entryEvidence.timestamp ?? (activeBeforeDevelopment ? observedFirst : listingTimestamp)),
-    entryEvidencePath: entryEvidence.path || null,
-    entryEvidenceUrl: entryEvidence.url || null,
-    entryEvidenceSha256: entryEvidence.sha256 || null,
-    exitEvidenceSource: exitEvidence.source || null,
-    exitEvidenceTimestamp: iso(exitEvidence.timestamp ?? delistTimestamp),
-    exitEvidencePath: exitEvidence.path || null,
-    exitEvidenceUrl: exitEvidence.url || null,
-    exitEvidenceSha256: exitEvidence.sha256 || null,
-    lifecycleConflictReasons: conflicts,
-    data,
-    liquidityByMonth,
-    liquidity30dAverageQuoteVolume,
-    liquidity: {
-      ...liquidityEvidence,
-      thresholdUsdt: M4_LIQUIDITY_THRESHOLD_USDT,
-      lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS,
-    },
+  const pitWindowResolved = !likelyActiveInDevelopment || relevantEpisodes.every(row => row.pitWindowResolved);
+  const lifecycleExact = !likelyActiveInDevelopment || relevantEpisodes.every(row => row.lifecycleExact);
+  const artifactPrice = artifactRows.get?.('price');
+  const loadedPriceRows = likelyActiveInDevelopment
+    ? (Array.isArray(priceRows) ? priceRows : readGzipRows(artifactPrice?.file))
+    : [];
+  const liquidityIndex = buildLiquidityIndex(loadedPriceRows);
+  const liquidityRow = {activeStart: iso(activeStart), activeEnd: iso(activeEnd), liquidityByMonth, liquidity30dAverageQuoteVolume};
+  Object.defineProperty(liquidityRow, '_liquidityIndex', {value: liquidityIndex, enumerable: false});
+  const liquidityEvidence = likelyActiveInDevelopment && activeStart < activeEnd
+    ? liquidityCoverage(liquidityRow, activeStart, activeEnd)
+    : {complete: true, missingMonths: [], audit: {observations: 0, eligible: 0, available: 0, insufficientHistory: 0, gap: 0, belowThreshold: 0}};
+  const allData = relevantEpisodes.map(row => row.data);
+  const data = !likelyActiveInDevelopment ? {complete: true, artifacts: {}, gaps: [], hashFailures: []} : {
+    complete: allData.every(row => row.complete),
+    artifacts: allData[0]?.artifacts || {},
+    gaps: allData.flatMap(row => row.gaps || []),
+    hashFailures: allData.flatMap(row => row.hashFailures || []),
   };
+  const firstListing = firstEpisode.listingEvidenceTimestamp ? firstEpisode : relevantEpisodes[0] || firstEpisode;
+  const lastDelist = lastEpisode.delistEvidenceTimestamp ? lastEpisode : relevantEpisodes.at(-1) || lastEpisode;
+  const row = {
+    symbol,
+    core: CORE_MARKETS.has(symbol), tier: CORE_MARKETS.has(symbol) ? 'core' : 'expanded',
+    firstArchiveMonth, lastArchiveMonth, actualFirstArchiveMonth: firstArchiveMonth, actualLastArchiveMonth: lastArchiveMonth,
+    archiveEvidenceSource: archiveEvidence.source || null, archiveEvidenceUrl: archiveEvidence.url || null,
+    archiveEvidencePath: archiveEvidence.path || null, archiveEvidenceSha256: archiveEvidence.sha256 || null,
+    firstObserved: iso(observedFirst), lastObserved: iso(observedLast),
+    activeBeforeDevelopment, listingInsideDevelopment, archiveEvidenceOverlap: resolved.archiveOverlap,
+    listingTimestamp: firstListing.listingTimestamp || null, listingAgeDays: listingAgeDaysAt({listingTimestamp: firstListing.listingTimestamp}, start),
+    activeThroughDevelopmentEnd, delistedInsideDevelopment, delistTimestamp: lastDelist.delistTimestamp || null,
+    eligibleStart: iso(activeStart), eligibleEnd: iso(activeEnd), activeStart: iso(activeStart), activeEnd: iso(activeEnd),
+    historicalDelisted, likelyActiveInDevelopment, requiredForDevelopment: likelyActiveInDevelopment,
+    entryBoundaryResolved, exitBoundaryResolved, noLifecycleConflict, pitWindowResolved, lifecycleExact,
+    listingEvidenceTimestamp: firstListing.listingEvidenceTimestamp || null, listingEvidenceSource: firstListing.listingEvidenceSource || null,
+    listingEvidenceUrl: firstListing.listingEvidenceUrl || null, listingEvidencePath: firstListing.listingEvidencePath || null, listingEvidenceSha256: firstListing.listingEvidenceSha256 || null,
+    delistEvidenceTimestamp: lastDelist.delistEvidenceTimestamp || null, delistEvidenceSource: lastDelist.delistEvidenceSource || null,
+    delistEvidenceUrl: lastDelist.delistEvidenceUrl || null, delistEvidencePath: lastDelist.delistEvidencePath || null, delistEvidenceSha256: lastDelist.delistEvidenceSha256 || null,
+    entryEvidenceSource: firstListing.entryEvidenceSource || null, entryEvidenceTimestamp: firstListing.entryEvidenceTimestamp || null,
+    entryEvidencePath: firstListing.entryEvidencePath || null, entryEvidenceUrl: firstListing.entryEvidenceUrl || null, entryEvidenceSha256: firstListing.entryEvidenceSha256 || null,
+    exitEvidenceSource: lastDelist.exitEvidenceSource || null, exitEvidenceTimestamp: lastDelist.exitEvidenceTimestamp || null,
+    exitEvidencePath: lastDelist.exitEvidencePath || null, exitEvidenceUrl: lastDelist.exitEvidenceUrl || null, exitEvidenceSha256: lastDelist.exitEvidenceSha256 || null,
+    lifecycleConflictReasons: conflicts, lifecycleConflictClasses: conflictClasses,
+    lifecycleConflictClass: conflictClasses[0] || null, activeEpisodes: episodes,
+    currentMarketContractType: currentMarket?.contractType || null,
+    data, liquidityByMonth, liquidity30dAverageQuoteVolume,
+    liquidity: {...liquidityEvidence, thresholdUsdt: M4_LIQUIDITY_THRESHOLD_USDT, lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS},
+  };
+  Object.defineProperty(row, '_liquidityIndex', {value: liquidityIndex, enumerable: false});
+  Object.defineProperty(row, '_liquidityByTimestamp', {value: new Map(), enumerable: false, writable: true});
+  Object.defineProperty(row, '_liquidityAudit', {value: liquidityEvidence.audit || {}, enumerable: false, writable: true});
+  return row;
 }
 
 export function monthlyPitCounts(markets, start = M4_DEVELOPMENT_START, end = M4_DEVELOPMENT_END) {
@@ -464,8 +675,8 @@ export function monthlyPitCounts(markets, start = M4_DEVELOPMENT_START, end = M4
   for (let cursor = Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth(), 1); cursor < end; cursor = nextMonth(cursor)) {
     const monthEnd = Math.min(nextMonth(cursor), end);
     const key = monthKey(cursor);
-    const active = (markets || []).filter(row => row.pitWindowResolved && row.activeStart && row.activeEnd
-      && timestampValue(row.activeStart) < monthEnd && timestampValue(row.activeEnd) > cursor);
+    const active = (markets || []).filter(row => row.pitWindowResolved && (row.activeEpisodes || [{activeStart: row.activeStart, activeEnd: row.activeEnd}])
+      .some(episode => timestampValue(episode.activeStart) < monthEnd && timestampValue(episode.activeEnd) > cursor));
     result[key] = {
       pitEligibleSymbols: active.length,
       core: active.filter(row => row.core).length,
@@ -480,8 +691,8 @@ export function monthlyLiquidityCounts(markets, start = M4_DEVELOPMENT_START, en
   for (let cursor = Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth(), 1); cursor < end; cursor = nextMonth(cursor)) {
     const monthEnd = Math.min(nextMonth(cursor), end);
     const key = monthKey(cursor);
-    const active = (markets || []).filter(row => row.pitWindowResolved && row.activeStart && row.activeEnd
-      && timestampValue(row.activeStart) < monthEnd && timestampValue(row.activeEnd) > cursor);
+    const active = (markets || []).filter(row => row.pitWindowResolved && (row.activeEpisodes || [{activeStart: row.activeStart, activeEnd: row.activeEnd}])
+      .some(episode => timestampValue(episode.activeStart) < monthEnd && timestampValue(episode.activeEnd) > cursor));
     const evaluated = active.map(row => ({row, liquidity: liquidityEligibilityAt(row, monthEnd - 1)}));
     result[key] = {
       pitEligibleSymbols: evaluated.filter(item => item.liquidity.eligible).length,
@@ -512,8 +723,7 @@ export function buildPitUniverseAt(timestamp, markets, {requireData = true, requ
   const t = timestampValue(timestamp);
   if (t == null) return [];
   return (markets || []).filter(row => row.pitWindowResolved
-    && timestampValue(row.activeStart) <= t
-    && t < timestampValue(row.activeEnd)
+    && (row.activeEpisodes || [{activeStart: row.activeStart, activeEnd: row.activeEnd}]).some(episode => timestampValue(episode.activeStart) <= t && t < timestampValue(episode.activeEnd))
     && (!requireData || isPitMarketDataAvailableAt(row, t))
     && (!requireLiquidity || liquidityEligibilityAt(row, t, {allowMonthly: false}).eligible)).map(row => row.symbol).sort();
 }
@@ -536,6 +746,7 @@ function canonicalUniverseRow(row) {
     eligibleStart: row.eligibleStart,
     eligibleEnd: row.eligibleEnd,
     activeBeforeDevelopment: row.activeBeforeDevelopment,
+    archiveEvidenceOverlap: row.archiveEvidenceOverlap,
     listingInsideDevelopment: row.listingInsideDevelopment,
     listingTimestamp: row.listingTimestamp,
     listingAgeDays: row.listingAgeDays,
@@ -560,6 +771,12 @@ function canonicalUniverseRow(row) {
     liquidity: row.liquidity,
     pitWindowResolved: row.pitWindowResolved,
     lifecycleConflictReasons: row.lifecycleConflictReasons,
+    lifecycleConflictClasses: row.lifecycleConflictClasses,
+    lifecycleConflictClass: row.lifecycleConflictClass,
+    activeEpisodes: row.activeEpisodes,
+    requiredForDevelopment: row.requiredForDevelopment,
+    likelyActiveInDevelopment: row.likelyActiveInDevelopment,
+    currentMarketContractType: row.currentMarketContractType,
   };
 }
 
@@ -581,6 +798,7 @@ export function buildPitUniverseFromFiles({
   const exchangeInfo = JSON.parse(fs.readFileSync(exchangeFile, 'utf8'));
   const lifecycle = fs.existsSync(lifecycleFile) ? JSON.parse(fs.readFileSync(lifecycleFile, 'utf8')) : {};
   const current = currentPerpetualMarkets(exchangeInfo);
+  const excludedTradfiSymbols = tradfiPerpetualSymbols(exchangeInfo);
   const lifecycleBySymbol = evidenceMap(lifecycle);
   const artifacts = artifactMap(manifest);
   const manifestMarkets = new Map((manifest.universe?.markets || manifest.markets || [])
@@ -588,9 +806,10 @@ export function buildPitUniverseFromFiles({
     .map(row => [row.symbol, row]));
   const archiveSymbols = archiveIndex.symbolsWithActualArchives || Object.keys(archiveIndex.actualArchiveKeysBySymbol || {});
   const currentSymbols = [...current.keys()];
+  const globalDiscoveredSymbols = [...new Set([...archiveSymbols, ...currentSymbols, ...excludedTradfiSymbols])]
+    .filter(symbol => /^[A-Z0-9]+USDT$/.test(symbol)).sort();
   const discoveredSymbols = [...new Set([...archiveSymbols, ...currentSymbols])]
-    .filter(symbol => /^[A-Z0-9]+USDT$/.test(symbol))
-    .sort();
+    .filter(symbol => /^[A-Z0-9]+USDT$/.test(symbol) && !excludedTradfiSymbols.includes(symbol)).sort();
   const exchangeInfoEvidence = currentExchangeInfoEvidence({
     path: path.relative(appDir, exchangeFile).replaceAll('\\', '/'),
     sha256: hashFile(exchangeFile),
@@ -622,15 +841,27 @@ export function buildPitUniverseFromFiles({
     });
   });
   const activeMarkets = markets.filter(row => row.requiredForDevelopment);
+  const developmentArchiveSymbols = activeMarkets.filter(row => row.archiveEvidenceOverlap).map(row => row.symbol).sort();
+  const developmentRelevantSymbols = activeMarkets.map(row => row.symbol).sort();
   const unresolved = activeMarkets.filter(row => !row.pitWindowResolved).map(row => ({
     symbol: row.symbol,
     reasons: row.lifecycleConflictReasons,
+    conflictClasses: row.lifecycleConflictClasses,
     firstArchiveMonth: row.firstArchiveMonth,
     lastArchiveMonth: row.lastArchiveMonth,
   }));
   const dataGaps = activeMarkets.flatMap(row => row.data.gaps.map(gap => ({symbol: row.symbol, ...gap})));
   const hashFailures = activeMarkets.flatMap(row => row.data.hashFailures.map(failure => ({symbol: row.symbol, ...failure})));
-  const liquidityUnknown = activeMarkets.filter(row => !row.liquidity.complete).map(row => ({symbol: row.symbol, missingMonths: row.liquidity.missingMonths}));
+  const liquidityUnknown = activeMarkets.filter(row => !row.liquidity.complete).map(row => ({symbol: row.symbol, missingMonths: row.liquidity.missingMonths, audit: row.liquidity.audit || null}));
+  const liquidityAudit = activeMarkets.reduce((result, row) => {
+    const audit = row.liquidity.audit || {};
+    result.observations += Number(audit.observations || 0);
+    result.eligible += Number(audit.eligible || 0);
+    result.insufficientHistory += Number(audit.insufficientHistory || 0);
+    result.gap += Number(audit.gap || 0);
+    result.belowThreshold += Number(audit.belowThreshold || 0);
+    return result;
+  }, {observations: 0, eligible: 0, insufficientHistory: 0, gap: 0, belowThreshold: 0});
   const canonical = markets.map(canonicalUniverseRow);
   const pitUniverseSha256 = sha256(JSON.stringify(canonical));
   const sourceFiles = [manifestFile, archiveFile, exchangeFile, lifecycleFile].filter(fs.existsSync);
@@ -641,19 +872,23 @@ export function buildPitUniverseFromFiles({
     && manifest.universe?.expandedNonCoreCovered === true
     && manifest.execution?.preferredInterval === '1m'
     && manifest.execution?.oneMinuteAvailable === true;
-  const historicalDelistingsResolved = markets.filter(row => row.historicalDelisted)
-    .every(row => row.lifecycleExact && row.listingEvidenceTimestamp && row.delistEvidenceTimestamp);
+  const historicalDelistingsResolved = activeMarkets.filter(row => row.historicalDelisted)
+    .every(row => row.lifecycleExact && row.exitBoundaryResolved);
   const expandedActiveMarkets = activeMarkets.filter(row => !row.core);
   const expandedNonCoreCovered = expandedActiveMarkets.length > 0
     && expandedActiveMarkets.every(row => row.pitWindowResolved && row.lifecycleExact && row.data.complete);
+  // This is the Development-window gate.  It deliberately does not depend
+  // on a global current-symbol lifecycle result or on the legacy manifest
+  // booleans; those remain diagnostics below.
+  const m4WindowDataContractReady = activeMarkets.length > 0
+    && activeMarkets.every(row => row.pitWindowResolved && row.data.complete && row.data.artifacts
+      && M4_REQUIRED_ARTIFACTS.every(kind => row.data.artifacts[kind]?.present && row.data.artifacts[kind]?.nonEmpty));
   const pointInTime = unresolved.length === 0
-    && discoveredSymbols.length > 0
-    && activeMarkets.length > 0
+    && developmentRelevantSymbols.length > 0
     && hashFailures.length === 0
     && dataGaps.length === 0
     && historicalDelistingsResolved
-    && liquidityUnknown.length === 0
-    && manifestDataContractReady;
+    && m4WindowDataContractReady;
   const globalResolved = markets.length > 0
     && markets.every(row => row.lifecycleExact)
     && activeMarkets.length > 0
@@ -668,9 +903,8 @@ export function buildPitUniverseFromFiles({
   } else blockers.push({reason: 'unresolved-pit-lifecycle', count: unresolved.length, symbols: unresolved.map(row => row.symbol)});
   if (dataGaps.length) blockers.push({reason: 'required-data-gaps', count: dataGaps.length});
   if (hashFailures.length) blockers.push({reason: 'artifact-hash-failures', count: hashFailures.length});
-  if (!discoveredSymbols.length || !activeMarkets.length) blockers.push({reason: 'empty-pit-universe', count: discoveredSymbols.length ? activeMarkets.length : 0});
-  if (liquidityUnknown.length) blockers.push({reason: 'point-in-time-liquidity-metadata-missing', count: liquidityUnknown.length, symbols: liquidityUnknown.map(row => row.symbol)});
-  if (!manifestDataContractReady) blockers.push({reason: 'manifest-strict-data-contract-incomplete'});
+  if (!globalDiscoveredSymbols.length || !activeMarkets.length) blockers.push({reason: 'empty-pit-universe', count: globalDiscoveredSymbols.length ? activeMarkets.length : 0});
+  if (!m4WindowDataContractReady) blockers.push({reason: 'm4-window-data-contract-incomplete'});
   if (!expandedNonCoreCovered) blockers.push({reason: 'expanded-non-core-data-incomplete', count: expandedActiveMarkets.filter(row => !row.data.complete).length});
   return {
     status: pointInTime ? 'M4_PIT_WINDOW_COMPLETE' : 'M4_BLOCKED',
@@ -678,19 +912,32 @@ export function buildPitUniverseFromFiles({
     end: iso(end),
     snapshotTimestamp: manifest.snapshotTimestamp || null,
     discoveredSymbols,
+    globalDiscoveredSymbols,
+    developmentArchiveSymbols,
+    developmentRelevantSymbols,
+    excludedTradfiSymbols,
     currentSymbols: discoveredSymbols.filter(symbol => current.has(symbol)),
-    historicalDelistedSymbols: discoveredSymbols.filter(symbol => !current.has(symbol)),
+    historicalDelistedSymbols: developmentRelevantSymbols.filter(symbol => !current.has(symbol)),
     listedDuringDevelopment: markets.filter(row => row.listingInsideDevelopment).map(row => row.symbol),
     delistedDuringDevelopment: markets.filter(row => row.delistedInsideDevelopment).map(row => row.symbol),
     markets,
     activeMarkets,
     unresolved,
-    lifecycleConflicts: markets.filter(row => row.lifecycleConflictReasons.length).map(row => ({symbol: row.symbol, reasons: row.lifecycleConflictReasons})),
+    lifecycleConflicts: markets.filter(row => row.lifecycleConflictReasons.length).map(row => ({symbol: row.symbol, reasons: row.lifecycleConflictReasons, conflictClasses: row.lifecycleConflictClasses})),
+    trueLifecycleConflicts: activeMarkets.filter(row => (row.lifecycleConflictClasses || []).includes('TRUE_LIFECYCLE_CONFLICT')).map(row => row.symbol).sort(),
+    ambiguousEvidenceMatches: activeMarkets.filter(row => (row.lifecycleConflictClasses || []).includes('EVIDENCE_MATCH_AMBIGUOUS')).map(row => row.symbol).sort(),
+    relistEpisodeSymbols: activeMarkets.filter(row => (row.lifecycleConflictClasses || []).includes('RELIST_EPISODE_DETECTED')).map(row => row.symbol).sort(),
+    developmentActiveEpisodes: activeMarkets.flatMap(row => (row.activeEpisodes || []).filter(episode => episode.likelyActiveInDevelopment).map(episode => ({symbol: row.symbol, ...episode}))),
+    multiEpisodeSymbols: activeMarkets.filter(row => (row.activeEpisodes || []).filter(episode => episode.likelyActiveInDevelopment).length > 1).map(row => row.symbol).sort(),
     monthlyPitUniverse: monthlyPitCounts(markets, start, end),
     monthlyLiquidityEligible: monthlyLiquidityCounts(markets, start, end),
     dataGaps,
     hashFailures,
     liquidityUnknown,
+    liquidityEligibleObservations: liquidityAudit.eligible,
+    liquidityRejectedInsufficientHistory: liquidityAudit.insufficientHistory,
+    liquidityRejectedGap: liquidityAudit.gap,
+    liquidityRejectedBelowThreshold: liquidityAudit.belowThreshold,
     dataIntegrity: {
       requiredArtifacts: M4_REQUIRED_ARTIFACTS,
       artifactRows: Object.fromEntries(M4_REQUIRED_ARTIFACTS.map(kind => [kind, markets.reduce((sum, row) => sum + Number(row.data.artifacts?.[kind]?.rows || 0), 0)])),
@@ -699,11 +946,16 @@ export function buildPitUniverseFromFiles({
       hashFailures: hashFailures.length,
       gaps: dataGaps.length,
       liquidityUnknown: liquidityUnknown.length,
+      liquidityEligibleObservations: liquidityAudit.eligible,
+      liquidityRejectedInsufficientHistory: liquidityAudit.insufficientHistory,
+      liquidityRejectedGap: liquidityAudit.gap,
+      liquidityRejectedBelowThreshold: liquidityAudit.belowThreshold,
     },
     pointInTime,
     historicalDelistingsResolved,
     expandedNonCoreCovered,
     manifestDataContractReady,
+    m4WindowDataContractReady,
     m4PitWindowComplete: pointInTime,
     m4GlobalComplete: globalResolved,
     pitUniverseSha256,

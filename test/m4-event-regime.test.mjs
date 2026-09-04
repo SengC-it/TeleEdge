@@ -12,7 +12,12 @@ import {
   monthlyLiquidityCounts,
   monthlyPitCounts,
   resolvePitWindow,
+  isCryptoUsdMPerpetual,
+  M4_LIQUIDITY_THRESHOLD_USDT,
 } from '../src/m4/pit-universe.mjs';
+import {buildEventSnapshots, eventOutcome, runEventResearch} from '../scripts/run-m4-event-regime.mjs';
+import {buildLifecycleEpisodes} from '../scripts/fetch-binance-lifecycle-evidence.mjs';
+import {DAY, H1} from '../src/config.mjs';
 import {
   EVENT_DEFINITIONS,
   detectBreadthRegimeTransitions,
@@ -267,7 +272,7 @@ test('event dedupe applies 72-hour refractory by family, direction, and symbol/m
 });
 
 test('controls use deterministic exact strata and stable nearest-time tie break', () => {
-  const event = {eventId: 'event', eventTime: Date.parse('2025-02-01T00:00:00Z'), sideHypothesis: 'long', marketRegime: 'BULL'};
+  const event = {eventId: 'event', eventTime: Date.parse('2025-02-02T00:00:00Z'), sideHypothesis: 'long', marketRegime: 'BULL'};
   const controls = matchEventControls(event, [
     {id: 'b', signalTime: event.eventTime + 1, side: 'long', month: '2025-02', marketRegime: 'BULL'},
     {id: 'a', signalTime: event.eventTime - 1, side: 'long', month: '2025-02', marketRegime: 'BULL'},
@@ -283,7 +288,8 @@ test('event-end purge excludes labels that overlap the validation boundary', () 
   ], {validationStart: Date.parse('2025-01-01T00:00:00Z')});
   assert.equal(result.kept.length, 1);
   assert.equal(result.excludedByOutcomeOverlap, 1);
-  assert.equal(result.labelOverlapFree, false);
+  assert.equal(result.labelOverlapFree, true);
+  assert.equal(result.rawLabelOverlapFree, false);
 });
 
 test('event summary and gate do not convert a small positive point estimate into KEEP', () => {
@@ -319,6 +325,176 @@ test('forward capture excludes an unfinished one-hour candle', () => {
     [Date.parse('2026-09-04T00:00:00Z'), '2'],
   ];
   assert.deepEqual(completedOneHourKlines(rows, capture).map(row => row[0]), [rows[0][0]]);
+});
+
+test('post-Development listings and pre-Development ended markets do not block the PIT window', () => {
+  const post = resolvePitWindow({
+    symbol: 'POSTUSDT', start: START, end: END,
+    archiveRecord: {}, currentMarket: {symbol: 'POSTUSDT', quoteAsset: 'USDT', contractType: 'PERPETUAL', onboardDate: END + DAY},
+    snapshotTimestamp: END + DAY,
+  });
+  assert.equal(post.likelyActiveInDevelopment, false);
+  assert.equal(post.pitWindowResolved, true);
+  const ended = resolvePitWindow({
+    symbol: 'ENDEDUSDT', start: START, end: END,
+    archiveRecord: archive(['2023-12']),
+    firstObserved: START - DAY, lastObserved: START - 60_000,
+    lifecycleRecord: lifecycle(START - 10 * DAY, START - 60_000),
+  });
+  assert.equal(ended.likelyActiveInDevelopment, false);
+  assert.equal(ended.pitWindowResolved, true);
+});
+
+test('relisted markets retain multiple active episodes and do not use current onboard to erase history', () => {
+  const firstListing = START - 100 * DAY;
+  const firstDelist = START + 30 * DAY;
+  const secondListing = START + 60 * DAY;
+  const secondDelist = END + DAY;
+  const row = resolvePitWindow({
+    symbol: 'RELISTUSDT', start: START, end: END,
+    archiveRecord: archive(['2023-12', '2024-01', '2024-03', '2024-12']),
+    firstObserved: firstListing, lastObserved: END - DAY,
+    currentMarket: {symbol: 'RELISTUSDT', quoteAsset: 'USDT', contractType: 'PERPETUAL', onboardDate: secondListing},
+    snapshotTimestamp: END + DAY,
+    lifecycleRecord: {activeEpisodes: [
+      {...lifecycle(firstListing, firstDelist)},
+      {...lifecycle(secondListing, secondDelist)},
+    ]},
+  });
+  assert.equal(row.activeEpisodes.length, 2);
+  assert.equal(row.activeEpisodes[0].delistTimestamp, new Date(firstDelist).toISOString());
+  assert.equal(row.activeEpisodes[1].listingTimestamp, new Date(secondListing).toISOString());
+  assert.equal(row.lifecycleConflictClasses.includes('RELIST_EPISODE_DETECTED'), true);
+  assert.equal(row.pitWindowResolved, true);
+});
+
+test('PIT universe excludes TradFi perpetuals while admitting crypto USD-M perpetuals', () => {
+  assert.equal(isCryptoUsdMPerpetual({quoteAsset: 'USDT', contractType: 'TRADIFI_PERPETUAL'}), false);
+  assert.equal(isCryptoUsdMPerpetual({quoteAsset: 'USDT', contractType: 'PERPETUAL', underlyingType: 'EQUITY'}), false);
+  assert.equal(isCryptoUsdMPerpetual({quoteAsset: 'USDT', contractType: 'PERPETUAL', underlyingType: 'COIN'}), true);
+});
+
+test('formal liquidity uses completed hourly quote volume, excludes future hours, and divides by 30 days', () => {
+  const at = Date.parse('2024-03-01T00:00:00Z');
+  const q = M4_LIQUIDITY_THRESHOLD_USDT / 24;
+  const rows = Array.from({length: 720}, (_, index) => ({t: at - (720 - index) * H1, q, o: 1, h: 1, l: 1, c: 1}));
+  rows.push({t: at, q: 1_000_000_000, o: 1, h: 1, l: 1, c: 1});
+  const result = resolvePitWindow({
+    symbol: 'LIQUSDT', start: START, end: END, archiveRecord: archive(['2024-01']),
+    firstObserved: START, lastObserved: END - H1, lifecycleRecord: lifecycle(null, END + DAY), priceRows: rows,
+  });
+  const liquidity = liquidityEligibilityAt(result, at);
+  assert.equal(liquidity.available, true);
+  assert.equal(liquidity.volumeUsdt, M4_LIQUIDITY_THRESHOLD_USDT);
+  assert.equal(liquidity.eligible, true);
+});
+
+test('formal liquidity is unavailable before 30 days and fails closed on an internal gap', () => {
+  const at = Date.parse('2024-03-01T00:00:00Z');
+  const q = M4_LIQUIDITY_THRESHOLD_USDT / 24;
+  const shortRows = Array.from({length: 24}, (_, index) => ({t: at - (24 - index) * H1, q}));
+  const short = resolvePitWindow({symbol: 'SHORTLIQUSDT', start: START, end: END, archiveRecord: archive(['2024-01']), firstObserved: START, lastObserved: END - H1, lifecycleRecord: lifecycle(null, END + DAY), priceRows: shortRows});
+  assert.equal(liquidityEligibilityAt(short, at).reason, 'insufficient-30d-history');
+  const fullRows = Array.from({length: 720}, (_, index) => ({t: at - (720 - index) * H1, q}));
+  fullRows.splice(300, 1);
+  const gapped = resolvePitWindow({symbol: 'GAPLIQUSDT', start: START, end: END, archiveRecord: archive(['2024-01']), firstObserved: START, lastObserved: END - H1, lifecycleRecord: lifecycle(null, END + DAY), priceRows: fullRows});
+  assert.equal(liquidityEligibilityAt(gapped, at).reason, 'liquidity-window-gap');
+});
+
+test('event transition timestamp is the confirmation bar, not the crossing bar', () => {
+  const t = Date.parse('2025-01-01T00:00:00Z');
+  const breadth = detectBreadthRegimeTransitions([
+    {eventTime: t, breadthAbove50: 0.40},
+    {eventTime: t + 4 * H1, breadthAbove50: 0.56},
+    {eventTime: t + 8 * H1, breadthAbove50: 0.55},
+  ]);
+  assert.equal(breadth[0].eventTime, t + 8 * H1);
+  assert.equal(breadth[0].transitionStartTime, t + 4 * H1);
+  const trend = detectTrendRegimeTransitions([
+    {eventTime: t, marketRegime: 'SIDEWAYS'},
+    {eventTime: t + H1, marketRegime: 'BULL'},
+    {eventTime: t + 2 * H1, marketRegime: 'BULL'},
+  ]);
+  assert.equal(trend[0].eventTime, t + 2 * H1);
+});
+
+test('volatility direction uses positive/negative return breadth and never breadthAbove50 fallback', () => {
+  const t = Date.parse('2025-01-01T00:00:00Z');
+  assert.equal(detectVolatilityShocks([{eventTime: t, realizedVolZ: 2.1, breadthAbove50: 0.9, marketDirection: 'long'}])[0].sideHypothesis, null);
+  assert.equal(detectVolatilityShocks([{eventTime: t, realizedVolZ: 2.1, positiveReturnBreadth: 0.70, negativeReturnBreadth: 0.10}])[0].sideHypothesis, 'long');
+  assert.equal(detectVolatilityShocks([{eventTime: t, realizedVolZ: 2.1, positiveReturnBreadth: 0.10, negativeReturnBreadth: 0.70}])[0].sideHypothesis, 'short');
+});
+
+test('mixed-sign leverage dimensions do not create a leverage event', () => {
+  const events = detectLeverageStressTransitions([{eventTime: 1, crowdingStressZ: 2.4, fundingZ: 2, premiumZ: 1.5, oiZ: -1, marketDirection: 'short'}]);
+  assert.equal(events.length, 0);
+});
+
+test('market-level events use BTCUSDT as the fixed canonical instrument', () => {
+  const t = Date.parse('2025-02-01T00:00:00Z');
+  const event = {eventId: 'btc-event', eventTime: t, eventFamily: 'MARKET_VOLATILITY_SHOCK', level: 'market', sideHypothesis: 'long'};
+  const result = eventOutcome(event, {marketDataBySymbol: new Map([['BTCUSDT', {
+    entry: 100,
+    stop: 95,
+    market: {symbol: 'BTCUSDT', filters: [{filterType: 'PRICE_FILTER', tickSize: '0.01'}, {filterType: 'LOT_SIZE', stepSize: '0.001', minQty: '0.001'}]},
+    minuteRows: [
+      {t: t + 20 * 60_000, o: 100, h: 101, l: 99, c: 100},
+      {t: t + 21 * 60_000, o: 100, h: 110, l: 99, c: 109},
+    ],
+  }]])});
+  assert.equal(result.symbol, 'BTCUSDT');
+  assert.equal(result.exitReason, 'TP');
+});
+
+test('market-level events are non-executable when BTCUSDT is not PIT active', () => {
+  const event = {eventId: 'btc-unavailable', eventTime: Date.parse('2025-02-01T00:00:00Z'), eventFamily: 'MARKET_VOLATILITY_SHOCK', level: 'market', sideHypothesis: 'long'};
+  assert.equal(eventOutcome(event, {marketDataBySymbol: {BTCUSDT: {pitActive: false, minuteRows: []}}}), null);
+});
+
+test('controls require exact strata, reject contamination, and do not reuse a row within a family fold', () => {
+  const t = Date.parse('2025-02-01T00:00:00Z');
+  const event = {eventId: 'event', eventFamily: 'BREADTH_REGIME_TRANSITION', eventTime: t, sideHypothesis: 'long', marketRegime: 'BULL', liquidityBucket: 'high', outerFold: 0};
+  const used = new Set();
+  const observations = [
+    {id: 'usable', signalTime: t + 4 * 24 * H1, side: 'long', marketRegime: 'BULL', liquidityBucket: 'high', outerFold: 0},
+    {id: 'missing-stratum', signalTime: t + 5 * 24 * H1, side: 'long', marketRegime: 'BULL', outerFold: 0},
+    {id: 'near-event', signalTime: t - H1, side: 'long', marketRegime: 'BULL', liquidityBucket: 'high', outerFold: 0},
+  ];
+  assert.deepEqual(matchEventControls(event, observations, {usedControlIds: used, eventRows: [event]}).map(row => row.id), ['usable']);
+  assert.deepEqual(matchEventControls(event, observations, {usedControlIds: used, eventRows: [event]}), []);
+});
+
+test('purged kept labels are overlap-free while the exclusion count remains auditable', () => {
+  const validationStart = Date.parse('2025-01-01T00:00:00Z');
+  const result = purgeEventLabels([
+    {id: 'safe', exitTime: validationStart - 4 * 24 * H1},
+    {id: 'overlap', exitTime: validationStart - 2 * H1},
+  ], {validationStart});
+  assert.equal(result.kept.length, 1);
+  assert.equal(result.labelOverlapFree, true);
+  assert.equal(result.rawLabelOverlapFree, false);
+});
+
+test('feature-only event runner produces a non-empty research result without V9 alpha filtering', () => {
+  const t = Date.parse('2025-01-01T00:00:00Z');
+  const snapshots = buildEventSnapshots({featurePoints: [
+    {symbol: 'BTCUSDT', eventTime: t, return4: -1, above50: false, marketRegime: 'SIDEWAYS'},
+    {symbol: 'ETHUSDT', eventTime: t, return4: -1, above50: false},
+    {symbol: 'BTCUSDT', eventTime: t + 4 * H1, return4: 1, above50: true, marketRegime: 'BULL'},
+    {symbol: 'ETHUSDT', eventTime: t + 4 * H1, return4: 1, above50: true},
+    {symbol: 'BTCUSDT', eventTime: t + 8 * H1, return4: 1, above50: true, marketRegime: 'BULL'},
+    {symbol: 'ETHUSDT', eventTime: t + 8 * H1, return4: 1, above50: true},
+  ], start: t - H1, end: t + 12 * H1});
+  assert.equal(snapshots.length, 3);
+  const result = runEventResearch({
+    snapshots,
+    start: t - H1,
+    end: t + 12 * H1,
+    outcomeForEvent: event => ({executable: true, canonicalExecutable: true, labelUsable: true, netR: 0.2, netPnlUsdt: 1, exitTime: event.eventTime + H1, forwardReturns: {h4: 0.1, h12: 0.2, h24: 0.3, h72: 0.4}}),
+  });
+  assert.equal(result.status, 'COMPLETED');
+  assert.ok(result.independentEvents.length > 0);
+  assert.ok(Object.values(result.families).some(row => row.raw > 0));
 });
 
 test('empty source universe cannot pass the PIT gate', () => {

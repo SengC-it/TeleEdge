@@ -84,12 +84,14 @@ function makeEvent(family, row, {
   level = EVENT_DEFINITIONS[family].level,
   features = {},
   diagnostic = false,
+  transitionStartTime = null,
 } = {}) {
   const t = eventTime(row);
   return {
     eventId: eventId(family, row, sideHypothesis, symbol),
     eventFamily: family,
     eventTime: t,
+    transitionStartTime: finite(transitionStartTime),
     symbol,
     sideHypothesis,
     marketRegime: row?.marketRegime || row?.regime || null,
@@ -115,7 +117,23 @@ function consecutiveObservations(left, right) {
 }
 
 function directionalBreadth(row) {
-  return finite(row?.directionalBreadth ?? row?.breadthDirectional ?? row?.breadthAbove50);
+  // `breadthAbove50` is a regime level, not directional return breadth.  It
+  // must never be used as a volatility direction proxy.  The legacy
+  // directional field is retained only for old, explicitly directional
+  // fixture rows; production snapshots provide the two explicit fields.
+  return finite(row?.directionalBreadth ?? row?.breadthDirectional);
+}
+
+function volatilitySide(row) {
+  const positive = finite(row?.positiveReturnBreadth);
+  const negative = finite(row?.negativeReturnBreadth);
+  if (positive != null || negative != null) {
+    if (positive != null && positive >= 0.65 && (negative == null || negative < 0.65)) return 'long';
+    if (negative != null && negative >= 0.65 && (positive == null || positive < 0.65)) return 'short';
+    return null;
+  }
+  const legacy = directionalBreadth(row);
+  return legacy != null && legacy >= 0.65 ? marketDirection(row) : null;
 }
 
 function marketDirection(row) {
@@ -132,15 +150,17 @@ export function detectBreadthRegimeTransitions(rows) {
     const confirmation = finite(sorted[index + 1].breadthAbove50);
     if (previous == null || current == null || confirmation == null) continue;
     if (previous < 0.45 && current >= 0.55 && confirmation >= 0.50) {
-      events.push(makeEvent('BREADTH_REGIME_TRANSITION', sorted[index], {
+      events.push(makeEvent('BREADTH_REGIME_TRANSITION', sorted[index + 1], {
         sideHypothesis: 'long',
         features: {previousBreadth: previous, eventBreadth: current, confirmationBreadth: confirmation},
+        transitionStartTime: eventTime(sorted[index]),
       }));
     }
     if (previous > 0.55 && current <= 0.45 && confirmation <= 0.50) {
-      events.push(makeEvent('BREADTH_REGIME_TRANSITION', sorted[index], {
+      events.push(makeEvent('BREADTH_REGIME_TRANSITION', sorted[index + 1], {
         sideHypothesis: 'short',
         features: {previousBreadth: previous, eventBreadth: current, confirmationBreadth: confirmation},
+        transitionStartTime: eventTime(sorted[index]),
       }));
     }
   }
@@ -151,12 +171,23 @@ export function detectVolatilityShocks(rows) {
   const events = [];
   for (const row of sortedRows(rows)) {
     const realizedVolZ = finite(row.realizedVolZ);
-    const breadth = directionalBreadth(row);
+    const positiveReturnBreadth = finite(row.positiveReturnBreadth);
+    const negativeReturnBreadth = finite(row.negativeReturnBreadth);
+    const breadth = positiveReturnBreadth != null || negativeReturnBreadth != null
+      ? Math.max(positiveReturnBreadth ?? 0, negativeReturnBreadth ?? 0)
+      : directionalBreadth(row);
     if (realizedVolZ == null || realizedVolZ < 2) continue;
-    const side = breadth != null && breadth >= 0.65 ? marketDirection(row) : null;
+    const side = volatilitySide(row);
     events.push(makeEvent('MARKET_VOLATILITY_SHOCK', row, {
       sideHypothesis: side,
-      features: {realizedVolZ, medianAbsReturnZ: finite(row.medianAbsReturnZ), rangeExpansionBreadth: finite(row.rangeExpansionBreadth), directionalBreadth: breadth},
+      features: {
+        realizedVolZ,
+        medianAbsReturnZ: finite(row.medianAbsReturnZ),
+        rangeExpansionBreadth: finite(row.rangeExpansionBreadth),
+        positiveReturnBreadth,
+        negativeReturnBreadth,
+        directionalBreadth: breadth,
+      },
       diagnostic: side == null,
     }));
   }
@@ -196,10 +227,9 @@ function consistentStress(row) {
   ].filter(([, value]) => value != null && value !== 0);
   const positive = dimensions.filter(([, value]) => value > 0);
   const negative = dimensions.filter(([, value]) => value < 0);
+  if (positive.length && negative.length) return null;
   if (positive.length >= 2) return {crowded: 'long', dimensions: positive.map(([name]) => name)};
   if (negative.length >= 2) return {crowded: 'short', dimensions: negative.map(([name]) => name)};
-  const explicit = row.crowdingDirection;
-  if (explicit === 'long' || explicit === 'short') return {crowded: explicit, dimensions: dimensions.map(([name]) => name)};
   return null;
 }
 
@@ -238,7 +268,11 @@ export function detectTrendRegimeTransitions(rows) {
     const confirmation = String(sorted[index + 1].marketRegime ?? sorted[index + 1].regime ?? '').toUpperCase();
     const side = sideFor(from, to);
     if (!side || confirmation !== to) continue;
-    events.push(makeEvent('TREND_REGIME_TRANSITION', sorted[index], {sideHypothesis: side, features: {from, to, confirmation}}));
+    events.push(makeEvent('TREND_REGIME_TRANSITION', sorted[index + 1], {
+      sideHypothesis: side,
+      features: {from, to, confirmation},
+      transitionStartTime: eventTime(sorted[index]),
+    }));
   }
   return events;
 }
@@ -273,19 +307,47 @@ export function dedupeEventEpisodes(events, refractoryHours = EVENT_REFRACTORY_H
   return {rawEvents: sorted, independentEvents: independent, suppressedEvents: suppressed};
 }
 
-export function matchEventControls(event, observations, {maxControls = 1} = {}) {
+export function matchEventControls(event, observations, {
+  maxControls = 1,
+  usedControlIds = null,
+  eventRows = null,
+  fold = null,
+} = {}) {
   const eventMonth = month(event.eventTime);
   const side = event.sideHypothesis;
+  if (!side) return [];
+  const used = usedControlIds instanceof Set ? usedControlIds : new Set(usedControlIds || []);
+  const contamination = [...(eventRows || []), ...(observations || []).filter(row => row.eventId || row.eventFamily || row.isEvent)]
+    .filter(row => !event.eventFamily || !row.eventFamily || row.eventFamily === event.eventFamily);
+  const contaminated = row => {
+    const timestamp = eventTime(row);
+    if (timestamp == null) return true;
+    return contamination.some(other => {
+      const otherTime = eventTime(other);
+      if (otherTime == null) return false;
+      return Math.abs(otherTime - timestamp) <= EVENT_REFRACTORY_HOURS * 3_600_000;
+    });
+  };
   const candidates = (observations || []).filter(row => {
     if (row.eventId || row.eventFamily || row.isEvent) return false;
     if (row.completed === false || row.isComplete === false) return false;
-    if (side && row.side && row.side !== side) return false;
-    if (row.month && row.month !== eventMonth) return false;
-    if (row.marketRegime && event.marketRegime && row.marketRegime !== event.marketRegime) return false;
-    if (row.liquidityBucket && event.liquidityBucket && row.liquidityBucket !== event.liquidityBucket) return false;
-    return eventTime(row) != null;
+    const timestamp = eventTime(row);
+    if (timestamp == null || contaminated(row)) return false;
+    if (used.has(stableId(row))) return false;
+    const rowSide = row.side ?? row.sideHypothesis ?? null;
+    const rowMonth = month(timestamp);
+    const rowRegime = row.marketRegime ?? row.regime ?? null;
+    const rowLiquidity = row.liquidityBucket ?? null;
+    if (rowSide !== side || rowMonth !== eventMonth) return false;
+    if ((event.marketRegime ?? null) !== rowRegime) return false;
+    if ((event.liquidityBucket ?? null) !== rowLiquidity) return false;
+    if (fold != null && row.outerFold != null && row.outerFold !== fold) return false;
+    if (event.outerFold != null && row.outerFold != null && row.outerFold !== event.outerFold) return false;
+    return true;
   }).sort((left, right) => Math.abs(eventTime(left) - event.eventTime) - Math.abs(eventTime(right) - event.eventTime) || stableId(left).localeCompare(stableId(right)));
-  return candidates.slice(0, maxControls);
+  const selected = candidates.slice(0, maxControls);
+  for (const row of selected) used.add(stableId(row));
+  return selected;
 }
 
 export function purgeEventLabels(rows, {validationStart, purgeHours = 72} = {}) {
@@ -297,7 +359,16 @@ export function purgeEventLabels(rows, {validationStart, purgeHours = 72} = {}) 
     if (exit != null && exit >= boundary) excluded.push({...row, excludedByOutcomeOverlap: true});
     else kept.push(row);
   }
-  return {kept, excluded, excludedByOutcomeOverlap: excluded.length, labelOverlapFree: excluded.length === 0};
+  return {
+    kept,
+    excluded,
+    excludedByOutcomeOverlap: excluded.length,
+    // The retained sample is overlap-free by construction.  Keep the raw
+    // diagnostic separately so excluded rows are not mislabeled as a gate
+    // failure on the post-purge sample.
+    labelOverlapFree: true,
+    rawLabelOverlapFree: excluded.length === 0,
+  };
 }
 
 function mean(values) {

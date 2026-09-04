@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   articleEventTime,
   articleMentionsSymbol,
+  buildLifecycleEpisodes,
   dedupeAnnouncements,
   isUsdtPerpetualAnnouncement,
   lifecycleArticleMatches,
@@ -36,4 +37,31 @@ test('delist matching requires a delist/delivery action and extracts detail time
   assert.equal(lifecycleArticleMatches([article], 'ABCUSDT', 'delist').length, 1);
   const event = articleEventTime(article, 'ABCUSDT perpetual trading will end at 2025-04-05 12:30 UTC', 'ABCUSDT', 'delist');
   assert.deepEqual(event, {timestamp: Date.parse('2025-04-05T12:30:00Z'), precision: 'minute'});
+});
+
+test('base-token-only announcement is not lifecycle evidence for a full perpetual symbol', () => {
+  const article = {code: 'base-only', title: 'Binance adds ABC to its platform'};
+  assert.equal(articleMentionsSymbol(article, 'ABCUSDT', 'ABC will be supported'), false);
+  assert.equal(lifecycleArticleMatches([article], 'ABCUSDT', 'listing').length, 0);
+});
+
+test('spot, coin-M and non-perpetual announcements are rejected', () => {
+  const spot = {title: 'Binance Lists ABCUSDT Spot Trading Pair'};
+  const coinM = {title: 'ABCUSD Coin-Margined Perpetual Contract'};
+  const delivery = {title: 'ABCUSDT Quarterly Contract Delivery'};
+  assert.equal(isUsdtPerpetualAnnouncement(spot), false);
+  assert.equal(isUsdtPerpetualAnnouncement(coinM), false);
+  assert.equal(isUsdtPerpetualAnnouncement(delivery), false);
+});
+
+test('lifecycle episode pairing preserves relist and unmatched-delisting evidence', () => {
+  const episodes = buildLifecycleEpisodes([
+    {timestamp: 10, precision: 'minute', articleCode: 'l1', source: 'listing', url: 'l1', path: 'l1', sha256: 'a'.repeat(64)},
+    {timestamp: 30, precision: 'minute', articleCode: 'l2', source: 'listing', url: 'l2', path: 'l2', sha256: 'b'.repeat(64)},
+  ], [
+    {timestamp: 20, precision: 'minute', articleCode: 'd1', source: 'delist', url: 'd1', path: 'd1', sha256: 'c'.repeat(64)},
+    {timestamp: 40, precision: 'minute', articleCode: 'd2', source: 'delist', url: 'd2', path: 'd2', sha256: 'd'.repeat(64)},
+  ]);
+  assert.equal(episodes.length, 2);
+  assert.deepEqual(episodes.map(row => [row.listingTime, row.delistTime]), [[10, 20], [30, 40]]);
 });
