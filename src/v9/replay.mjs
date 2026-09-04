@@ -365,7 +365,7 @@ function v9RefractoryHours() {
   return Object.fromEntries(V9_ALPHA_IDS.map(alpha => [alpha, 72]));
 }
 
-export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end, marketBySymbol, btcSeries}) {
+export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end, marketBySymbol, btcSeries, featureOnly = false}) {
   const pointsBySymbol = new Map();
   const candidatesBySymbol = {};
   const symbolStatus = {};
@@ -427,9 +427,50 @@ export function createFeatureRows({universe, dataRoot, enhancedRoot, start, end,
   for (const symbol of universe.symbols) {
     const market = marketBySymbol.get(symbol);
     const points = rankedPoints.get(symbol) || [];
-    candidatesBySymbol[symbol] = points.flatMap(point => generateV9Candidates(point, market));
+    candidatesBySymbol[symbol] = featureOnly ? [] : points.flatMap(point => generateV9Candidates(point, market));
   }
   return {pointsBySymbol: rankedPoints, candidatesBySymbol, symbolStatus, featureAvailability, metricsRejectionCounts, metricsPITBySymbol};
+}
+
+/**
+ * Research-only adapter exposing every completed V9 feature point without
+ * invoking any V9 alpha detector. Profit Engine proposal primitives consume
+ * this feature store directly.
+ */
+export function buildProfitFeaturePoints({dataRoot, enhancedRoot, appDir, start, end, maxSymbols = 150} = {}) {
+  const universe = loadV9Universe(dataRoot, appDir, {start, end, limit: maxSymbols});
+  const marketBySymbol = marketMap(universe);
+  const btcMarket = marketBySymbol.get('BTCUSDT');
+  const btcLifecycle = universe.markets.get('BTCUSDT') || {};
+  const btcWindow = activeWindow(btcLifecycle, start, end);
+  const btcRows = loadEnhancedRows(enhancedRoot, 'BTCUSDT', Math.max(0, btcWindow.activeStart - 120 * DAY), btcWindow.activeEnd + H1);
+  const btcFunding = loadGzipRows(dataRoot, 'funding', 'BTCUSDT', Math.max(0, start - 120 * DAY), end + H1)
+    .map(row => ({t: finite(row.t ?? row.fundingTime), rate: finite(row.rate ?? row.fundingRate)})).filter(row => row.t != null);
+  const btcSeries = btcRows.length ? buildV9FeatureSeries(btcRows, {funding: btcFunding, endTime: end + H1}) : {points: []};
+  const features = createFeatureRows({universe, dataRoot, enhancedRoot, start, end, marketBySymbol, btcSeries, featureOnly: true});
+  const pointsBySymbol = new Map();
+  for (const symbol of universe.symbols) {
+    const market = marketBySymbol.get(symbol) || {};
+    const lifecycle = universe.markets.get(symbol) || {};
+    pointsBySymbol.set(symbol, (features.pointsBySymbol.get(symbol) || []).map(point => ({
+      ...point,
+      marketId: symbol,
+      symbol: market.baseAsset || symbol.replace(/USDT$/, ''),
+      core: Boolean(market.core),
+      listingTime: market.onboardDate || lifecycle.listingTime || lifecycle.onboardTime || null,
+      activeStart: market.activeStart || lifecycle.activeStart || lifecycle.eligibleStart || null,
+      activeEnd: market.activeEnd || lifecycle.activeEnd || lifecycle.eligibleEnd || null,
+      signalPrice: point.close,
+      entry: point.close,
+    })));
+  }
+  return {
+    universe, marketBySymbol, pointsBySymbol,
+    btcContext: {rows: btcRows.length, points: btcSeries.points.length, market: btcMarket?.symbol || null},
+    symbolStatus: features.symbolStatus,
+    featureAvailability: features.featureAvailability,
+    metricsDiagnostics: {rejectionCounts: features.metricsRejectionCounts, pitObservationsBySymbol: features.metricsPITBySymbol},
+  };
 }
 
 async function processStandaloneAssignment({candidateGroups, marketRows, dataRoot, start, end, cacheDir}) {
