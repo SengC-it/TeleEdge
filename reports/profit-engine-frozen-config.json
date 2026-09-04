@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "engine": "TELEEDGE PROFIT RESEARCH ENGINE R1-R3",
   "status": "FROZEN_FOR_DEVELOPMENT",
   "boundary": {
@@ -164,35 +164,41 @@
     "hash": "ec12cd57cca7022ed6c8f2c26a10ff34424a8513fbd6be091bdb359c06dc9b43",
     "selected": 150
   },
-  "proposalPrimitives": {
-    "TREND_PRIMITIVE": {
-      "adxMin": 15,
-      "return12AbsMin": 0.02
+  "proposalFactory": {
+    "source": "all completed PIT feature points; no V9 alpha detector prefilter",
+    "primitives": {
+      "TREND_PRIMITIVE": {
+        "adxMin": 15,
+        "return12AbsMin": 0.02
+      },
+      "PULLBACK_PRIMITIVE": {
+        "return12AbsMin": 0.02,
+        "return3OppositeAbsMin": 0.005
+      },
+      "FLOW_PRIMITIVE": {
+        "takerImbalanceAbsMin": 0.12,
+        "aggressiveVolumeZAbsMin": 1
+      },
+      "CROSS_SECTION_PRIMITIVE": {
+        "returnRankTail": 0.2,
+        "flowRankTail": 0.3
+      },
+      "CROWDING_PRIMITIVE": {
+        "fundingZAbsMin": 1,
+        "premiumZAbsMin": 1,
+        "oiZAbsMin": 1
+      },
+      "VOLATILITY_PRIMITIVE": {
+        "rangeRatioMin": 1.2,
+        "volumeRatioMin": 1.2
+      },
+      "V8_BASELINE": {
+        "frozen": true
+      }
     },
-    "PULLBACK_PRIMITIVE": {
-      "return12AbsMin": 0.02,
-      "return3OppositeAbsMin": 0.005
-    },
-    "FLOW_PRIMITIVE": {
-      "takerImbalanceAbsMin": 0.12,
-      "aggressiveVolumeZAbsMin": 1
-    },
-    "CROSS_SECTION_PRIMITIVE": {
-      "returnRankTail": 0.2,
-      "flowRankTail": 0.3
-    },
-    "CROWDING_PRIMITIVE": {
-      "fundingZAbsMin": 1,
-      "premiumZAbsMin": 1,
-      "oiZAbsMin": 1
-    },
-    "VOLATILITY_PRIMITIVE": {
-      "rangeRatioMin": 1.2,
-      "volumeRatioMin": 1.2
-    },
-    "V8_BASELINE": {
-      "frozen": true
-    }
+    "mergeKey": "symbol|side|signalTime",
+    "episodeRefractoryHours": 72,
+    "unifiedStop": true
   },
   "proposalSources": [
     "TREND_PRIMITIVE",
@@ -206,10 +212,17 @@
   "canonicalOutcome": {
     "decisionLatencyMinutes": 20,
     "executionInterval": "1m",
+    "fill": "first executable minute at-or-after decision",
     "targetR": 2,
     "verticalBarrierHours": 72,
+    "firstTouch": true,
     "sameMinuteTpSl": "SL",
-    "feesFundingCosts": true,
+    "exitReasons": [
+      "TP",
+      "SL",
+      "VERTICAL_MTM"
+    ],
+    "fundingCostWindow": "fillTime to canonical exitTime",
     "executionProxy": false
   },
   "features": {
@@ -304,7 +317,7 @@
       "type": "regularized-logistic",
       "target": "netR>0",
       "lambda": 0.1,
-      "innerOofStacking": true
+      "innerMetaCrossFit": true
     }
   },
   "thresholdSelection": {
@@ -324,7 +337,7 @@
       60,
       70
     ],
-    "rule": "outer-train/inner-OOF only; trades>=30 PF>=1.30 Exp>=0.15 DD<=6%; no qualified config otherwise"
+    "rule": "outer-train internal OOF only; trades>=30 PF>=1.30 Exp>=0.15 DD<=6%; no qualified config otherwise"
   },
   "highConfidence": {
     "pPositive": 0.6,
@@ -345,5 +358,6 @@
     "eventEndAware": true
   },
   "noOrderBoundary": true,
+  "productionIsolation": true,
   "sourceBaseCommit": "b0b22d511741f497736c54dfb9f8a9d58fc19053"
 }

@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "status": "BLOCKED_RESEARCH_FAIL",
   "holdout": {
     "start": "2026-01-01T00:00:00.000Z",
@@ -10,12 +10,12 @@
   "developmentGate": "RESEARCH_FAIL",
   "hashes": {
     "strategyTreeSha256": "6e1a44992886f141ad6fdf09c3a387036f7df7303b52bfba8c132344534b60e0",
-    "profitEngineCodeSha256": "e4e9af3dac42fdf4ce514eaf1024669b0fcb2232ebeb4cd5e90b8964403c8249",
-    "datasetManifestSha256": "7233391a3f30a931ebd9849239ac428b6bc6fdb6b34e8d2c8b0c250e0adaee43",
+    "profitEngineCodeSha256": "07e74b2a335ab7ce8a986badeffb2a1029d9c0e91d95f1615e0186ca5d9eea1b",
+    "datasetManifestSha256": "14eec4cc4fa2c3f98a59da9a8501e80dbba34c600b4de0d1815bfe055b9b522d",
     "universeHash": "ec12cd57cca7022ed6c8f2c26a10ff34424a8513fbd6be091bdb359c06dc9b43",
-    "developmentRunCommit": "7630ac648965f2a611b3b2054c16b53bd191c8ca",
-    "frozenConfigSha256": "a1b1936920be96e2bacd838e19b5c55d9b501ac0d59a929836b986ffe5d88116",
-    "modelCardSha256": "20d0f2aab93c726a59fe5e7c512313ef12bc224345b62f5534b006dcf38fe589"
+    "developmentRunCommit": "2ffd935c3deefc67b508d1aec404837a53da345c",
+    "frozenConfigSha256": "8745bf0d4f02b235406c629244a60d53fdd993d34906622e41dec8e9bfecb62b",
+    "modelCardSha256": "cc68d82b5c64db42f7ee2796afdef3daed1d80b7a4e81f94fc236fbe5f2ba789"
   },
   "reason": "Development gate failed; holdout is blocked.",
   "noProductionIntegration": true
