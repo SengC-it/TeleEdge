@@ -108,8 +108,8 @@ function verticalMark(rows, fillTime, barrierTime) {
   };
 }
 
-function canonicalFunding(fundingRows, minuteRows, fillTime, exitTime, fillPrice, quantity, side) {
-  const query = buildFundingQuery(fundingRows, minuteRows);
+function canonicalFunding(fundingRows, minuteRows, fillTime, exitTime, fillPrice, quantity, side, fundingQuery = null) {
+  const query = fundingQuery || buildFundingQuery(fundingRows, minuteRows);
   const funding = query.query(fillTime - 1, exitTime, fillPrice);
   const direction = side === 'long' ? -1 : 1;
   return {
@@ -166,14 +166,17 @@ function baseOutcome(candidate, decisionTime) {
 export function simulateCanonicalOutcome(candidate, {
   market,
   minuteRows = [],
+  minuteRowsPrepared = false,
+  minuteQuery = null,
   fundingRows = [],
+  fundingQuery = null,
   equityUsdt = PROFIT_PORTFOLIO_CONFIG.initialEquityUsdt,
   costRate = PROFIT_PORTFOLIO_CONFIG.costRate,
 } = {}) {
   const signalTime = Number(candidate.signalTime ?? candidate.t);
   const decisionTime = signalTime + CANONICAL_OUTCOME_CONTRACT.decisionLatencyMinutes * 60_000;
   const base = baseOutcome(candidate, decisionTime);
-  const validRows = normalizeMinuteRows(minuteRows);
+  const validRows = minuteRowsPrepared ? minuteRows : normalizeMinuteRows(minuteRows);
   const firstMinute = firstExecutableMinute(validRows, decisionTime);
   if (!firstMinute) return {...base, rejectionReason: 'fill-price-unavailable'};
 
@@ -197,7 +200,7 @@ export function simulateCanonicalOutcome(candidate, {
 
   const filledRisk = acceptance.filledRisk;
   const barrierTime = Number(acceptance.fillTime) + VERTICAL_BARRIER_MS;
-  const query = buildMinuteQuery(validRows);
+  const query = minuteQuery || buildMinuteQuery(validRows);
   const touch = firstTouch(validRows, query, Number(acceptance.fillTime), barrierTime, candidate.side, Number(filledRisk.stop), Number(filledRisk.target));
   const exit = touch || verticalMark(validRows, Number(acceptance.fillTime), barrierTime);
   if (!exit) {
@@ -214,7 +217,7 @@ export function simulateCanonicalOutcome(candidate, {
     };
   }
 
-  const funding = canonicalFunding(fundingRows, validRows, Number(acceptance.fillTime), Number(exit.exitTime), Number(acceptance.fillPrice), Number(acceptance.quantity), candidate.side);
+  const funding = canonicalFunding(fundingRows, validRows, Number(acceptance.fillTime), Number(exit.exitTime), Number(acceptance.fillPrice), Number(acceptance.quantity), candidate.side, fundingQuery);
   const direction = candidate.side === 'long' ? 1 : -1;
   const grossPnlUsdt = direction * (Number(exit.exitPrice) - Number(acceptance.fillPrice)) * Number(acceptance.quantity);
   const modeledCostUsdt = Number(costRate) * Number(acceptance.fillPrice) * Number(acceptance.quantity);
@@ -280,9 +283,13 @@ function writeCache(file, proposals, outcomes) {
 function symbolOutcomes({symbol, proposals, market, dataRoot, start, end}) {
   const dataEnd = Number(end) + VERTICAL_BARRIER_MS + H1;
   const dataAccess = createDevelopmentDataAccess(dataRoot, new Map([[symbol, market]]), Number(start), dataEnd);
-  const minuteRows = dataAccess.loadMinute(symbol);
+  const minuteRows = normalizeMinuteRows(dataAccess.loadMinute(symbol));
   const fundingRows = dataAccess.loadFunding(symbol, Number(start) - 24 * H1, dataEnd);
-  const outcomes = proposals.map(proposal => simulateCanonicalOutcome(proposal, {market, minuteRows, fundingRows}));
+  const minuteQuery = buildMinuteQuery(minuteRows);
+  const fundingQuery = buildFundingQuery(fundingRows, minuteRows);
+  const outcomes = proposals.map(proposal => simulateCanonicalOutcome(proposal, {
+    market, minuteRows, minuteRowsPrepared: true, minuteQuery, fundingRows, fundingQuery,
+  }));
   dataAccess.release(symbol);
   return outcomes;
 }
