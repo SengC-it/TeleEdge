@@ -117,6 +117,7 @@ test('formal dataset lifecycle release requires timestamped listing and delist e
     end: Date.parse('2022-01-01T00:00:00Z'),
     currentMarket: null,
     priceSummary: {firstTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastTimestamp: Date.parse('2021-11-30T23:00:00Z')},
+    minuteSummary: {firstObservedTimestamp: Date.parse('2021-01-20T00:15:00Z'), lastObservedTimestamp: Date.parse('2021-11-30T23:59:00Z')},
     archiveWindowValue: {firstMonth: '2021-02', lastMonth: '2021-11', firstMonthStart: Date.parse('2021-02-01T00:00:00Z'), lastMonthEnd: Date.parse('2021-12-01T00:00:00Z')},
     lifecycleEvidence: {
       OLDUSDT: {
@@ -151,6 +152,7 @@ test('formal dataset lifecycle evidence conflicts never become exact', () => {
     end: Date.parse('2022-01-01T00:00:00Z'),
     currentMarket: null,
     priceSummary: {firstTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastTimestamp: Date.parse('2021-11-30T23:00:00Z')},
+    minuteSummary: {firstObservedTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastObservedTimestamp: Date.parse('2021-11-30T23:59:00Z')},
     archiveWindowValue: {firstMonth: '2021-02', lastMonth: '2021-11', firstMonthStart: Date.parse('2021-02-01T00:00:00Z'), lastMonthEnd: Date.parse('2021-12-01T00:00:00Z')},
     lifecycleEvidence: {CONFLICT1USDT: {...base, listingEvidenceTimestamp: '2021-03-01T00:00:00Z', delistEvidenceTimestamp: '2021-12-01T00:00:00Z'}},
   });
@@ -162,6 +164,7 @@ test('formal dataset lifecycle evidence conflicts never become exact', () => {
     end: Date.parse('2022-01-01T00:00:00Z'),
     currentMarket: null,
     priceSummary: {firstTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastTimestamp: Date.parse('2021-11-30T23:00:00Z')},
+    minuteSummary: {firstObservedTimestamp: Date.parse('2021-02-01T00:00:00Z'), lastObservedTimestamp: Date.parse('2021-11-30T23:59:00Z')},
     archiveWindowValue: {firstMonth: '2021-02', lastMonth: '2021-11', firstMonthStart: Date.parse('2021-02-01T00:00:00Z'), lastMonthEnd: Date.parse('2021-12-01T00:00:00Z')},
     lifecycleEvidence: {CONFLICT2USDT: {...base, listingEvidenceTimestamp: '2021-01-20T00:00:00Z', delistEvidenceTimestamp: '2021-11-30T23:00:00Z'}},
   });

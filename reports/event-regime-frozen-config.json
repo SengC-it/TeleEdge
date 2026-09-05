@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "eventDefinitionVersion": "m4-event-regime-v1",
+  "families": {
+    "BREADTH_REGIME_TRANSITION": {
+      "level": "market",
+      "bull": {
+        "fromBelow": 0.45,
+        "toAtLeast": 0.55,
+        "confirmationFloor": 0.5,
+        "side": "long"
+      },
+      "bear": {
+        "fromAbove": 0.55,
+        "toAtMost": 0.45,
+        "confirmationCeiling": 0.5,
+        "side": "short"
+      },
+      "confirmationObservations": 2
+    },
+    "MARKET_VOLATILITY_SHOCK": {
+      "level": "market",
+      "realizedVolZ": 2,
+      "directionalBreadth": 0.65
+    },
+    "DISPERSION_ROTATION": {
+      "level": "symbol",
+      "fromBelow": 1,
+      "toAtLeast": 1.5,
+      "topBottomPct": 0.1,
+      "maxPerSide": 3
+    },
+    "LEVERAGE_STRESS_TRANSITION": {
+      "level": "market",
+      "absoluteCrowdingStressZ": 2,
+      "minimumConsistentDimensions": 2
+    },
+    "TREND_REGIME_TRANSITION": {
+      "level": "market",
+      "states": [
+        "BULL",
+        "BEAR",
+        "SIDEWAYS"
+      ],
+      "confirmationObservations": 2
+    }
+  },
+  "refractoryHours": 72,
+  "outcomeContract": {
+    "decisionLatencyMinutes": 20,
+    "executionInterval": "1m",
+    "targetR": 2,
+    "verticalBarrierHours": 72,
+    "sameMinuteTpSl": "SL",
+    "noInterpolation": true,
+    "researchOnly": true
+  },
+  "controls": {
+    "method": "deterministic exact month + side + regime + liquidity bucket matching; market controls use BTCUSDT; dispersion controls use the event symbol; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded",
+    "audited": false,
+    "unmatched": null,
+    "noReuse": null
+  },
+  "liquidity": {
+    "lookbackDays": 30,
+    "thresholdUsdt": 20000000,
+    "completedOnly": true,
+    "pointInTime": true
+  },
+  "walkForward": {
+    "outerFolds": 6,
+    "purgeHours": 72,
+    "eventEndAware": true,
+    "randomSplit": false,
+    "validationFrozen": true
+  },
+  "gates": {
+    "minimumExecutable": 60,
+    "minimumFoldsWithSamples": 4,
+    "minimumPositiveFolds": 4,
+    "minimumProfitFactor": 1.25,
+    "minimumExpectancyR": 0.1,
+    "minimumExpectancyUpliftR": 0.08,
+    "minimumProfitFactorUplift": 0.15,
+    "maximumDrawdownPct": 0.08,
+    "maximumSymbolContribution": 0.2
+  },
+  "developmentWindow": {
+    "start": "2024-01-01T00:00:00.000Z",
+    "end": "2026-01-01T00:00:00.000Z"
+  },
+  "holdout": {
+    "status": "NOT RUN",
+    "authorized": false
+  }
+}

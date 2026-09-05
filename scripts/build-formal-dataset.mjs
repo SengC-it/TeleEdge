@@ -76,6 +76,7 @@ function monthValue(value) {
 }
 
 function timeValue(value) {
+  if (value == null || value === '') return NaN;
   if (Number.isFinite(Number(value))) return Number(value);
   const parsed = Date.parse(value || '');
   return Number.isFinite(parsed) ? parsed : NaN;
@@ -572,10 +573,14 @@ function lifecycleEvidenceDetails(record, prefix, fallback = {}) {
   return {timestamp, source, url, path: evidencePath, sha256, timestampExact, complete};
 }
 
-export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceSummary, archiveWindowValue, lifecycleEvidence, exchangeInfoEvidence = null}) {
+export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceSummary, minuteSummary = null, archiveWindowValue, lifecycleEvidence, exchangeInfoEvidence = null}) {
   const external = lifecycleEvidence?.[symbol] || {};
   const firstObservedValue = timeValue(priceSummary?.firstObservedTimestamp ?? priceSummary?.firstTimestamp);
   const lastObservedValue = timeValue(priceSummary?.lastObservedTimestamp ?? priceSummary?.lastTimestamp);
+  const firstMinuteObservedValue = timeValue(minuteSummary?.firstObservedTimestamp ?? minuteSummary?.firstTimestamp);
+  const lastMinuteObservedValue = timeValue(minuteSummary?.lastObservedTimestamp ?? minuteSummary?.lastTimestamp);
+  const firstHourlyObservedValue = timeValue(priceSummary?.firstObservedTimestamp ?? priceSummary?.firstTimestamp);
+  const lastHourlyObservedValue = timeValue(priceSummary?.lastObservedTimestamp ?? priceSummary?.lastTimestamp);
   const firstObserved = firstObservedValue > 0 ? firstObservedValue : NaN;
   const lastObserved = lastObservedValue > 0 ? lastObservedValue : NaN;
   const currentEvidence = currentMarket && exchangeInfoEvidence
@@ -605,8 +610,43 @@ export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceS
       : {timestamp: NaN, source: currentMarket ? 'snapshot-active-through-end' : null, url: currentMarket ? currentEvidence.url : null, path: currentMarket ? currentEvidence.path : null, sha256: currentMarket ? currentEvidence.sha256 : null, complete: false};
   const historicalDelisted = !currentMarket || (Number.isFinite(exchangeDeliveryTime) && exchangeDeliveryTime > 0 && exchangeDeliveryTime < end);
   const lifecycleConflicts = [];
-  if (Number.isFinite(listingEvidence.timestamp) && Number.isFinite(firstObserved) && listingEvidence.timestamp > firstObserved) lifecycleConflicts.push('listing-after-first-observed');
-  if (historicalDelisted && Number.isFinite(currentDelistEvidence.timestamp) && Number.isFinite(lastObserved) && lastObserved >= currentDelistEvidence.timestamp) lifecycleConflicts.push('delist-at-or-before-last-observed');
+  const lifecycleBoundaryDiagnostics = [];
+  const addBoundaryDiagnostic = value => { if (!lifecycleBoundaryDiagnostics.includes(value)) lifecycleBoundaryDiagnostics.push(value); };
+  const listingInsideDevelopment = Number.isFinite(listingEvidence.timestamp) && listingEvidence.timestamp >= start && listingEvidence.timestamp < end;
+  const delistedInsideDevelopment = historicalDelisted && Number.isFinite(currentDelistEvidence.timestamp)
+    && currentDelistEvidence.timestamp >= start && currentDelistEvidence.timestamp < end;
+  let listingBoundaryResolved = !listingInsideDevelopment;
+  let delistBoundaryResolved = !delistedInsideDevelopment;
+  if (Number.isFinite(listingEvidence.timestamp)) {
+    if (Number.isFinite(firstMinuteObservedValue)) {
+      if (firstMinuteObservedValue < listingEvidence.timestamp) lifecycleConflicts.push('listing-after-first-observed');
+      else {
+        listingBoundaryResolved = true;
+        addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+      }
+    } else if (Number.isFinite(firstHourlyObservedValue)
+      && firstHourlyObservedValue <= listingEvidence.timestamp
+      && listingEvidence.timestamp < firstHourlyObservedValue + 3_600_000) {
+      listingBoundaryResolved = true;
+      addBoundaryDiagnostic('HOURLY_BOUNDARY_STRADDLE');
+      addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+    }
+  }
+  if (delistedInsideDevelopment && Number.isFinite(currentDelistEvidence.timestamp)) {
+    if (Number.isFinite(lastMinuteObservedValue)) {
+      if (lastMinuteObservedValue >= currentDelistEvidence.timestamp) lifecycleConflicts.push('delist-at-or-before-last-observed');
+      else {
+        delistBoundaryResolved = true;
+        addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+      }
+    } else if (Number.isFinite(lastHourlyObservedValue)
+      && lastHourlyObservedValue < currentDelistEvidence.timestamp
+      && currentDelistEvidence.timestamp <= lastHourlyObservedValue + 3_600_000) {
+      delistBoundaryResolved = true;
+      addBoundaryDiagnostic('HOURLY_BOUNDARY_STRADDLE');
+      addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+    }
+  }
   if (Number.isFinite(listingEvidence.timestamp) && Number.isFinite(currentDelistEvidence.timestamp) && listingEvidence.timestamp >= currentDelistEvidence.timestamp) lifecycleConflicts.push('listing-not-before-delist');
   const inferredListing = Number.isFinite(archiveWindowValue.firstMonthStart)
     ? archiveWindowValue.firstMonthStart
@@ -620,9 +660,9 @@ export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceS
   const delistTime = historicalDelisted && currentDelistEvidence.complete && !lifecycleConflicts.some(reason => reason.startsWith('delist-') || reason === 'listing-not-before-delist')
     ? currentDelistEvidence.timestamp
     : historicalDelisted ? inferredDelist : NaN;
-  const listingExact = listingEvidence.complete && !lifecycleConflicts.includes('listing-after-first-observed');
+  const listingExact = listingEvidence.complete && listingBoundaryResolved && !lifecycleConflicts.includes('listing-after-first-observed');
   const delistExact = historicalDelisted
-    ? currentDelistEvidence.complete && !lifecycleConflicts.some(reason => reason.startsWith('delist-') || reason === 'listing-not-before-delist')
+    ? currentDelistEvidence.complete && delistBoundaryResolved && !lifecycleConflicts.some(reason => reason.startsWith('delist-') || reason === 'listing-not-before-delist')
     : true;
   const lifecycleExact = listingExact && delistExact && lifecycleConflicts.length === 0;
   const resolvedEnd = historicalDelisted && Number.isFinite(delistTime) && delistTime > 0 ? Math.min(end, delistTime) : end;
@@ -664,10 +704,15 @@ export function lifecycleFromEvidence(symbol, {start, end, currentMarket, priceS
     delistEvidencePath: currentDelistEvidence.path,
     delistEvidenceSha256: currentDelistEvidence.sha256,
     lifecycleConflictReasons: lifecycleConflicts,
+    lifecycleBoundaryDiagnostics,
+    listingBoundaryResolved,
+    delistBoundaryResolved,
     archiveFirstMonth: archiveWindowValue.firstMonth,
     archiveLastMonth: archiveWindowValue.lastMonth,
     firstObservedPriceTimestamp: Number.isFinite(firstObserved) ? new Date(firstObserved).toISOString() : null,
     lastObservedPriceTimestamp: Number.isFinite(lastObserved) ? new Date(lastObserved).toISOString() : null,
+    firstObservedMinuteTimestamp: Number.isFinite(firstMinuteObservedValue) ? new Date(firstMinuteObservedValue).toISOString() : null,
+    lastObservedMinuteTimestamp: Number.isFinite(lastMinuteObservedValue) ? new Date(lastMinuteObservedValue).toISOString() : null,
   };
 }
 
@@ -1102,7 +1147,8 @@ export async function buildFormalDataset(options = {}) {
   artifacts.sort((a, b) => `${a.symbol}|${a.kind}`.localeCompare(`${b.symbol}|${b.kind}`));
 
   const marketRecords = symbols.map(symbol => {
-    const priceSummary = observedSummaries.get(symbol) || summaries.get(symbol);
+    const priceSummary = summaries.get(symbol);
+    const minuteSummary = observedSummaries.get(symbol);
     const archiveRows = Object.values(archivesBySymbol[symbol]).flat();
     const window = archiveWindow(archiveRows, args.start, args.end);
     return lifecycleFromEvidence(symbol, {
@@ -1110,6 +1156,7 @@ export async function buildFormalDataset(options = {}) {
       end: args.end,
       currentMarket: currentSymbols.get(symbol),
       priceSummary,
+      minuteSummary,
       archiveWindowValue: window,
       lifecycleEvidence,
       exchangeInfoEvidence: {
