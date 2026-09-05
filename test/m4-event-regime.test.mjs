@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import zlib from 'node:zlib';
 import test from 'node:test';
 import {
   buildPitUniverseFromFiles,
@@ -15,8 +16,9 @@ import {
   isCryptoUsdMPerpetual,
   M4_LIQUIDITY_THRESHOLD_USDT,
 } from '../src/m4/pit-universe.mjs';
-import {buildEventSnapshots, eventOutcome, runEventResearch} from '../scripts/run-m4-event-regime.mjs';
+import {buildEventSnapshots, buildFormalEventInputs, createFormalEventOutcomeProvider, eventOutcome, runEventResearch} from '../scripts/run-m4-event-regime.mjs';
 import {buildLifecycleEpisodes} from '../scripts/fetch-binance-lifecycle-evidence.mjs';
+import {stopForPoint} from '../src/v81/features.mjs';
 import {DAY, H1} from '../src/config.mjs';
 import {
   EVENT_DEFINITIONS,
@@ -155,10 +157,88 @@ test('lifecycle observation conflicts fail closed', () => {
   const row = market({
     lifecycleRecord: lifecycle(Date.parse('2024-02-01T00:00:00Z'), Date.parse('2025-01-01T00:00:00Z')),
     firstObserved: Date.parse('2024-01-01T00:00:00Z'),
+    artifactRows: new Map([
+      ['minute', {firstObservedTimestamp: Date.parse('2024-01-01T00:00:00Z'), lastObservedTimestamp: Date.parse('2025-01-01T00:00:00Z')}],
+    ]),
   });
   assert.equal(row.noLifecycleConflict, false);
   assert.equal(row.pitWindowResolved, false);
   assert.ok(row.lifecycleConflictReasons.includes('listing-after-first-observed'));
+});
+
+test('hourly listing boundary straddle is valid interval alignment, not a lifecycle conflict', () => {
+  const listing = Date.parse('2024-02-15T15:45:00Z');
+  const row = market({
+    archiveRecord: archive(['2024-02', '2024-03']),
+    firstObserved: Date.parse('2024-02-15T15:00:00Z'),
+    lastObserved: Date.parse('2024-02-29T23:00:00Z'),
+    lifecycleRecord: lifecycle(listing, Date.parse('2024-03-01T00:00:00Z')),
+    artifactRows: new Map([
+      ['price', {firstObservedTimestamp: Date.parse('2024-02-15T15:00:00Z'), lastObservedTimestamp: Date.parse('2024-02-29T23:00:00Z')}],
+    ]),
+  });
+  assert.equal(row.pitWindowResolved, true);
+  assert.equal(row.noLifecycleConflict, true);
+  assert.ok(row.lifecycleBoundaryDiagnostics.includes('HOURLY_BOUNDARY_STRADDLE'));
+  assert.ok(row.lifecycleBoundaryDiagnostics.includes('ARCHIVE_INTERVAL_ALIGNMENT'));
+  assert.equal(row.lifecycleConflictClasses.includes('TRUE_LIFECYCLE_CONFLICT'), false);
+});
+
+test('first executable minute at listing boundary is valid, while a minute before listing is a true conflict', () => {
+  const listing = Date.parse('2024-02-15T15:45:00Z');
+  const common = {
+    archiveRecord: archive(['2024-02', '2024-03']),
+    firstObserved: Date.parse('2024-02-15T15:00:00Z'),
+    lastObserved: Date.parse('2024-02-29T23:00:00Z'),
+    lifecycleRecord: lifecycle(listing, Date.parse('2024-03-01T00:00:00Z')),
+  };
+  const valid = market({
+    ...common,
+    artifactRows: new Map([
+      ['price', {firstObservedTimestamp: common.firstObserved, lastObservedTimestamp: common.lastObserved}],
+      ['minute', {firstObservedTimestamp: listing, lastObservedTimestamp: Date.parse('2024-02-29T23:59:00Z')}],
+    ]),
+  });
+  assert.equal(valid.pitWindowResolved, true);
+  assert.equal(valid.noLifecycleConflict, true);
+  assert.ok(valid.lifecycleBoundaryDiagnostics.includes('ARCHIVE_INTERVAL_ALIGNMENT'));
+
+  const conflict = market({
+    ...common,
+    artifactRows: new Map([
+      ['price', {firstObservedTimestamp: common.firstObserved, lastObservedTimestamp: common.lastObserved}],
+      ['minute', {firstObservedTimestamp: listing - 60_000, lastObservedTimestamp: Date.parse('2024-02-29T23:59:00Z')}],
+    ]),
+  });
+  assert.equal(conflict.pitWindowResolved, false);
+  assert.equal(conflict.lifecycleConflictClasses.includes('TRUE_LIFECYCLE_CONFLICT'), true);
+  assert.ok(conflict.lifecycleConflictReasons.includes('listing-after-first-observed'));
+});
+
+test('hourly delist boundary straddle is valid, while a minute after delist is a true conflict', () => {
+  const delist = Date.parse('2025-05-15T09:00:00Z');
+  const hourly = market({
+    lifecycleRecord: lifecycle(Date.parse('2023-01-01T00:00:00Z'), delist),
+    lastObserved: Date.parse('2025-05-15T08:00:00Z'),
+    artifactRows: new Map([
+      ['price', {firstObservedTimestamp: Date.parse('2023-01-01T00:00:00Z'), lastObservedTimestamp: Date.parse('2025-05-15T08:00:00Z')}],
+    ]),
+  });
+  assert.equal(hourly.pitWindowResolved, true);
+  assert.equal(hourly.noLifecycleConflict, true);
+  assert.ok(hourly.lifecycleBoundaryDiagnostics.includes('HOURLY_BOUNDARY_STRADDLE'));
+
+  const conflict = market({
+    lifecycleRecord: lifecycle(Date.parse('2023-01-01T00:00:00Z'), delist),
+    lastObserved: Date.parse('2025-05-15T08:00:00Z'),
+    artifactRows: new Map([
+      ['price', {firstObservedTimestamp: Date.parse('2023-01-01T00:00:00Z'), lastObservedTimestamp: Date.parse('2025-05-15T08:00:00Z')}],
+      ['minute', {firstObservedTimestamp: Date.parse('2023-01-01T00:00:00Z'), lastObservedTimestamp: delist + 60_000}],
+    ]),
+  });
+  assert.equal(conflict.pitWindowResolved, false);
+  assert.equal(conflict.lifecycleConflictClasses.includes('TRUE_LIFECYCLE_CONFLICT'), true);
+  assert.ok(conflict.lifecycleConflictReasons.includes('delist-at-or-before-last-observed'));
 });
 
 test('monthly PIT counts are based on resolved lifecycle rather than current survival', () => {
@@ -495,6 +575,111 @@ test('feature-only event runner produces a non-empty research result without V9 
   assert.equal(result.status, 'COMPLETED');
   assert.ok(result.independentEvents.length > 0);
   assert.ok(Object.values(result.families).some(row => row.raw > 0));
+});
+
+test('formal event pipeline wires PIT data, feature snapshots, events, outcomes, controls, and family metrics', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-formal-event-'));
+  const dataRoot = path.join(root, 'data');
+  const enhancedRoot = path.join(root, 'enhanced');
+  const start = Date.parse('2025-01-01T00:00:00Z');
+  const end = Date.parse('2025-02-01T00:00:00Z');
+  const activeStart = start - 40 * DAY;
+  const activeEnd = end + 7 * DAY;
+  const historyStart = activeStart - 130 * DAY;
+  const symbols = ['BTCUSDT', 'ETHUSDT'];
+  const writeRows = (directory, symbol, rows) => {
+    const file = path.join(directory, `${symbol}.json.gz`);
+    fs.mkdirSync(directory, {recursive: true});
+    fs.writeFileSync(file, zlib.gzipSync(JSON.stringify(rows)));
+  };
+  const hourlyRows = symbol => {
+    const rows = [];
+    let close = symbol === 'BTCUSDT' ? 100 : 50;
+    for (let timestamp = historyStart; timestamp < activeEnd + H1; timestamp += H1) {
+      const impulse = Math.sin((timestamp - historyStart) / H1 / 11) * 0.25 + (symbol === 'BTCUSDT' ? 0.015 : 0.01);
+      const open = close;
+      close = Math.max(1, close * (1 + impulse / 100));
+      const high = Math.max(open, close) * 1.015;
+      const low = Math.min(open, close) * 0.985;
+      rows.push({t: timestamp, o: open, h: high, l: low, c: close, q: 2_000_000, v: 20_000, trades: 1000, takerBuyBase: 10_000, takerBuyQuote: 1_050_000});
+    }
+    return rows;
+  };
+  const markets = symbols.map(symbol => {
+    const rows = hourlyRows(symbol);
+    const market = {
+      symbol,
+      core: symbol === 'BTCUSDT',
+      requiredForDevelopment: true,
+      pitWindowResolved: true,
+      activeStart: new Date(activeStart).toISOString(),
+      activeEnd: new Date(activeEnd).toISOString(),
+      activeEpisodes: [{activeStart: new Date(activeStart).toISOString(), activeEnd: new Date(activeEnd).toISOString()}],
+      marketFilters: [{filterType: 'PRICE_FILTER', tickSize: '0.01'}, {filterType: 'LOT_SIZE', stepSize: '0.001', minQty: '0.001'}],
+      data: {complete: true, artifacts: {
+        price: {present: true, nonEmpty: true, firstTimestamp: new Date(historyStart).toISOString(), lastTimestamp: new Date(activeEnd).toISOString()},
+        minute: {present: true, nonEmpty: true, firstTimestamp: new Date(historyStart).toISOString(), lastTimestamp: new Date(activeEnd).toISOString()},
+        funding: {present: true, nonEmpty: true, firstTimestamp: new Date(historyStart).toISOString(), lastTimestamp: new Date(activeEnd).toISOString()},
+      }},
+    };
+    Object.defineProperty(market, '_priceRows', {value: rows, enumerable: false});
+    return market;
+  });
+  try {
+    for (const symbol of symbols) {
+      writeRows(path.join(enhancedRoot, 'taker-1h'), symbol, hourlyRows(symbol));
+      writeRows(path.join(dataRoot, 'funding'), symbol, [{t: start + 8 * H1, rate: 0.0001, fundingIntervalHours: 8, markPrice: null}]);
+      writeRows(path.join(dataRoot, 'minute'), symbol, []);
+    }
+    const pit = {activeMarkets: markets};
+    const inputs = buildFormalEventInputs({pit, dataRoot, enhancedRoot, start, end});
+    assert.ok(inputs.points.length > 0);
+    assert.ok(inputs.snapshots.length > 0);
+    assert.ok(inputs.controls.length > 0);
+    assert.equal(inputs.snapshotAudit.allSnapshotsCompleted, true);
+    assert.equal(inputs.snapshotAudit.futureListedMemberCount, 0);
+    assert.equal(inputs.snapshotAudit.postDelistMemberCount, 0);
+
+    const snapshots = inputs.snapshots.slice(0, 3).map(row => ({...row}));
+    assert.equal(snapshots.length, 3);
+    snapshots[0].breadthAbove50 = 0.40;
+    snapshots[1].breadthAbove50 = 0.56;
+    snapshots[2].breadthAbove50 = 0.56;
+    snapshots.forEach(row => { row.marketRegime = 'BULL'; row.liquidityBucket = 'eligible'; });
+    const eventTime = snapshots[2].eventTime;
+    const point = inputs.pointsBySymbol.get('BTCUSDT').find(row => Number(row.signalTime) === Number(eventTime));
+    assert.ok(point);
+    const stop = stopForPoint(point, 'long');
+    assert.ok(stop);
+    writeRows(path.join(dataRoot, 'minute'), 'BTCUSDT', [
+      {t: eventTime + 20 * 60_000, o: point.close, h: point.close * 2, l: point.close, c: point.close, complete: true},
+    ]);
+    const outcomeForEvent = createFormalEventOutcomeProvider({
+      dataRoot,
+      markets,
+      featurePointsBySymbol: inputs.pointsBySymbol,
+      start,
+      end,
+    });
+    const result = runEventResearch({
+      snapshots,
+      start,
+      end,
+      outcomeForEvent,
+      controlObservations: inputs.controls,
+    });
+    assert.equal(result.status, 'COMPLETED');
+    assert.ok(result.independentEvents.length > 0);
+    const canonical = outcomeForEvent(result.independentEvents[0]);
+    assert.equal(canonical.canonicalExecutable, true);
+    assert.equal(canonical.exitReason, 'TP');
+    assert.deepEqual(Object.keys(canonical.forwardReturns).sort(), ['h12', 'h24', 'h4', 'h72']);
+    assert.equal(canonical.stopUsesFutureData, false);
+    assert.ok(Object.values(result.families).some(row => row.raw > 0));
+    assert.ok(Object.values(result.families).some(row => row.control.rows >= 0));
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
 });
 
 test('empty source universe cannot pass the PIT gate', () => {

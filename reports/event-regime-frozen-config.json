@@ -56,8 +56,8 @@
     "researchOnly": true
   },
   "controls": {
-    "method": "deterministic exact month + side + regime + liquidity bucket matching; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded",
-    "audited": true,
+    "method": "deterministic exact month + side + regime + liquidity bucket matching; market controls use BTCUSDT; dispersion controls use the event symbol; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded",
+    "audited": false,
     "unmatched": null,
     "noReuse": null
   },

@@ -473,6 +473,95 @@ export function buildProfitFeaturePoints({dataRoot, enhancedRoot, appDir, start,
   };
 }
 
+/**
+ * M4 research-only adapter. It consumes the verified M4 lifecycle rows and
+ * the existing completed V9 feature store, but deliberately never calls a
+ * V9 alpha detector or proposal factory. Unlike buildProfitFeaturePoints,
+ * this adapter does not apply the frozen 150-symbol V9 selection and retains
+ * the exchange symbol as both symbol and marketId.
+ */
+export function buildM4FeaturePoints({dataRoot, enhancedRoot, markets = [], start, end} = {}) {
+  const marketRows = (markets || []).filter(row => row?.requiredForDevelopment && row?.pitWindowResolved === true);
+  const marketBySymbol = new Map(marketRows.map(row => [row.symbol, row]));
+  const windowsFor = market => (market?.activeEpisodes || [{activeStart: market?.activeStart, activeEnd: market?.activeEnd}])
+    .map(episode => ({
+      activeStart: parseTime(episode.activeStart ?? episode.eligibleStart, start),
+      activeEnd: parseTime(episode.activeEnd ?? episode.eligibleEnd, end),
+    }))
+    .filter(episode => episode.activeStart < episode.activeEnd && episode.activeStart < end && episode.activeEnd > start);
+  const historyStart = marketRows.reduce((value, market) => Math.min(value, ...windowsFor(market).map(row => row.activeStart - 120 * DAY)), start);
+  const btcMarket = marketBySymbol.get('BTCUSDT');
+  const btcWindows = windowsFor(btcMarket);
+  const btcStart = btcWindows.length ? Math.min(...btcWindows.map(row => row.activeStart)) : start;
+  const btcEnd = btcWindows.length ? Math.max(...btcWindows.map(row => row.activeEnd)) : end;
+  const btcRows = loadEnhancedRows(enhancedRoot, 'BTCUSDT', Math.max(0, btcStart - 120 * DAY), btcEnd + H1);
+  const btcFunding = loadGzipRows(dataRoot, 'funding', 'BTCUSDT', Math.max(0, historyStart - DAY), end + H1)
+    .map(row => ({t: finite(row.t ?? row.fundingTime), rate: finite(row.rate ?? row.fundingRate)}))
+    .filter(row => row.t != null);
+  const btcSeries = btcRows.length ? buildV9FeatureSeries(btcRows, {funding: btcFunding, endTime: end + H1}) : {points: []};
+  const pointsBySymbol = new Map();
+  const symbolStatus = {};
+  const featureAvailability = {takerBuyVolume: 0, metrics: 0, openInterest: 0, premiumIndex: 0, markPrice: 0, indexPrice: 0, funding: 0};
+  for (const [symbol, market] of marketBySymbol) {
+    const windows = windowsFor(market);
+    const symbolStart = windows.length ? Math.min(...windows.map(row => row.activeStart)) : start;
+    const symbolEnd = windows.length ? Math.max(...windows.map(row => row.activeEnd)) : end;
+    const rows = loadEnhancedRows(enhancedRoot, symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1);
+    const funding = loadGzipRows(dataRoot, 'funding', symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1)
+      .map(row => ({...row, t: finite(row.t ?? row.fundingTime), rate: finite(row.rate ?? row.fundingRate)}))
+      .filter(row => row.t != null && row.rate != null);
+    const metrics = loadOptionalRows(enhancedRoot, 'metrics', symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1);
+    const openInterest = loadOptionalRows(enhancedRoot, 'open-interest-1h', symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1);
+    const premium = loadOptionalRows(enhancedRoot, 'premium-1h', symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1);
+    const mark = loadOptionalRows(enhancedRoot, 'mark-1h', symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1);
+    const index = loadOptionalRows(enhancedRoot, 'index-1h', symbol, Math.max(0, symbolStart - 120 * DAY), symbolEnd + H1);
+    const series = rows.length
+      ? buildV9FeatureSeries(rows, {funding, btcSeries, metricsRows: metrics, openInterest, premium, mark, index, endTime: symbolEnd + H1})
+      : {points: [], dataAvailability: {}};
+    const points = series.points.filter(point => {
+      const barStart = Number(point.t);
+      const signalTime = Number(point.signalTime);
+      return signalTime >= start && signalTime < end
+        && windows.some(window => barStart >= window.activeStart && barStart + 4 * H1 <= window.activeEnd);
+    }).map(point => {
+      const previousClose = finite(point.previousClose);
+      const close = finite(point.close);
+      const return4 = previousClose > 0 && close > 0 ? close / previousClose - 1 : null;
+      const marketRegime = String(point.btcRegime || point.regime || '').toUpperCase() || null;
+      return {
+        ...point,
+        symbol,
+        marketId: symbol,
+        core: Boolean(market.core),
+        listingTime: market.listingTimestamp || market.eligibleStart || null,
+        activeStart: market.activeStart || market.eligibleStart || null,
+        activeEnd: market.activeEnd || market.eligibleEnd || null,
+        signalPrice: close,
+        entry: close,
+        return4,
+        above50: close != null && finite(point.ema50) != null ? close > Number(point.ema50) : null,
+        marketRegime,
+        marketDirection: return4 == null ? null : return4 > 0 ? 'long' : return4 < 0 ? 'short' : null,
+        liquidityBucket: 'eligible',
+        featureSource: 'v9-feature-store-feature-only',
+      };
+    });
+    pointsBySymbol.set(symbol, points);
+    symbolStatus[symbol] = points.length ? 'processed' : rows.length ? 'insufficient-completed-4h-bars' : 'missing-enhanced-1h';
+    for (const key of Object.keys(featureAvailability)) if (series.dataAvailability?.[key]) featureAvailability[key]++;
+  }
+  const rankedPoints = assignCrossSectionalRanks(pointsBySymbol);
+  const points = [...rankedPoints.values()].flat().sort((left, right) => Number(left.signalTime) - Number(right.signalTime) || left.symbol.localeCompare(right.symbol));
+  return {
+    points,
+    pointsBySymbol: rankedPoints,
+    marketBySymbol,
+    symbolStatus,
+    featureAvailability,
+    source: {dataRoot, enhancedRoot, featureOnly: true, symbols: [...marketBySymbol.keys()].sort()},
+  };
+}
+
 async function processStandaloneAssignment({candidateGroups, marketRows, dataRoot, start, end, cacheDir}) {
   const marketBySymbol = new Map(marketRows);
   const dataAccess = createV9DataAccess(dataRoot, marketBySymbol, start, end);

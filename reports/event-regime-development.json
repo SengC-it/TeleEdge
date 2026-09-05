@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-04T11:13:24.799Z",
+  "generatedAt": "2026-09-05T03:55:04.708Z",
   "eventDefinitionVersion": "m4-event-regime-v1",
   "developmentWindow": {
     "start": "2024-01-01T00:00:00.000Z",
@@ -211,9 +211,20 @@
       "72h"
     ]
   },
+  "formalPipeline": {
+    "status": "NOT_RUN_M4_BLOCKED",
+    "featureOnly": true,
+    "featurePoints": null,
+    "snapshotAudit": null,
+    "controlObservations": null,
+    "outcomeProvider": false,
+    "inputError": null,
+    "dataRoot": "data/backtest",
+    "enhancedRoot": "data/v9-development"
+  },
   "controls": {
-    "method": "deterministic exact month + side + regime + liquidity bucket matching; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded",
-    "audited": true,
+    "method": "deterministic exact month + side + regime + liquidity bucket matching; market controls use BTCUSDT; dispersion controls use the event symbol; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded",
+    "audited": false,
     "unmatched": null,
     "noReuse": null
   },
@@ -351,11 +362,14 @@
       "reports/event-regime-frozen-config.json",
       "reports/m4-pit-universe.json",
       "reports/m4-pit-universe.md",
+      "scripts/build-formal-dataset.mjs",
       "scripts/capture-forward-research-snapshot.mjs",
       "scripts/fetch-binance-lifecycle-evidence.mjs",
       "scripts/run-m4-event-regime.mjs",
       "src/m4/event-engine.mjs",
       "src/m4/pit-universe.mjs",
+      "src/v9/replay.mjs",
+      "test/formal-dataset.test.mjs",
       "test/lifecycle-evidence.test.mjs",
       "test/m4-event-regime.test.mjs"
     ],
@@ -365,13 +379,14 @@
   "knownLimitations": [
     "M4 PIT window is blocked until all Development-active archive symbols have resolved entry/exit boundaries and required data coverage.",
     "Event family metrics are intentionally not computed while M4 is blocked; no point estimate is presented as evidence.",
+    "Formal feature points, snapshots, controls and outcome provider are only admitted from the real feature/data roots after the M4 gate passes.",
     "No Holdout was run and no Production configuration, schema, scheduler, SMTP or signal behavior was changed."
   ],
   "provenance": {
-    "m4DatasetSha256": "892c6ccd8e0c23c80ac691bdb7fd58ecb48040b7ca52c8f38e3bf74d0660c470",
-    "pitUniverseSha256": "1f812fa13d83c0fb8cf642d257b96127876f881a98305254b8866f336a248f71",
-    "eventEngineCodeSha256": "bb975957c91079009dbc7361dc51ec8f27ab5e725a0f8df98b332990ed10b804",
-    "eventFrozenConfigSha256": "cbbc037770b3fe87244214fa414386a873872cef86653e41b17475d2a4bfc75f",
+    "m4DatasetSha256": "0333784d343766e9ed57ae97b8d4972f0c21c27e58ff07086c32e86b0b79d905",
+    "pitUniverseSha256": "704cd7bf8f0aa74810ce5ac884a78cfca73a81585633c7dcee93e79ef3b71683",
+    "eventEngineCodeSha256": "4a6d4830ae1935509f21dfa2e917609405c035b5ff192182dbf91fd1aaad4d35",
+    "eventFrozenConfigSha256": "a66814b19e28979339a625dd59d790b194107d3d05a6f555799f4700270004c1",
     "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
     "universeEvidenceSha256": "10c601040b320b225ab1e72597a0f4b682c87da76a1e6c3f4da82a24d1fa5951"
   }

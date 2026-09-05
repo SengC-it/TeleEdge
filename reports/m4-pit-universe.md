@@ -16,13 +16,15 @@ This report uses the union of actual Binance Data Vision USD-M archive evidence 
 - Excluded TradFi perpetual symbols: 169
 - Listed during Development: 375
 - Delisted during Development: 74
-- PIT window resolved: 316/681
-- Unresolved Development lifecycle: 365
+- PIT window resolved: 653/681
+- Unresolved Development lifecycle: 28
 - Development-active episodes: 622
 - Multi-episode/relisted symbols: 2
 - Relist episode classification: 3
-- True lifecycle conflicts: 352
+- True lifecycle conflicts: 13
 - Ambiguous evidence matches: 1
+- Hourly boundary straddles accepted: 0
+- Archive interval alignments: 608
 - M4_PIT_WINDOW_COMPLETE: **false**
 - M4_GLOBAL_COMPLETE: **false**
 - M4 window data contract ready: **false**
@@ -32,30 +34,30 @@ This report uses the union of actual Binance Data Vision USD-M archive evidence 
 
 | Month | PIT eligible | Core | Expanded |
 |---|---:|---:|---:|
-| 2024-01 | 159 | 36 | 123 |
-| 2024-02 | 164 | 37 | 127 |
-| 2024-03 | 164 | 37 | 127 |
-| 2024-04 | 166 | 37 | 129 |
-| 2024-05 | 167 | 37 | 130 |
-| 2024-06 | 170 | 37 | 133 |
-| 2024-07 | 171 | 38 | 133 |
-| 2024-08 | 174 | 38 | 136 |
-| 2024-09 | 176 | 38 | 138 |
-| 2024-10 | 180 | 39 | 141 |
-| 2024-11 | 181 | 39 | 142 |
-| 2024-12 | 190 | 39 | 151 |
-| 2025-01 | 196 | 41 | 155 |
-| 2025-02 | 201 | 42 | 159 |
-| 2025-03 | 213 | 42 | 171 |
-| 2025-04 | 219 | 42 | 177 |
-| 2025-05 | 225 | 42 | 183 |
-| 2025-06 | 229 | 42 | 187 |
-| 2025-07 | 235 | 42 | 193 |
-| 2025-08 | 236 | 42 | 194 |
-| 2025-09 | 247 | 43 | 204 |
-| 2025-10 | 252 | 43 | 209 |
-| 2025-11 | 257 | 45 | 212 |
-| 2025-12 | 262 | 45 | 217 |
+| 2024-01 | 242 | 40 | 202 |
+| 2024-02 | 250 | 41 | 209 |
+| 2024-03 | 258 | 41 | 217 |
+| 2024-04 | 262 | 43 | 219 |
+| 2024-05 | 263 | 43 | 220 |
+| 2024-06 | 261 | 43 | 218 |
+| 2024-07 | 259 | 44 | 215 |
+| 2024-08 | 274 | 44 | 230 |
+| 2024-09 | 292 | 44 | 248 |
+| 2024-10 | 301 | 45 | 256 |
+| 2024-11 | 320 | 46 | 274 |
+| 2024-12 | 346 | 49 | 297 |
+| 2025-01 | 359 | 51 | 308 |
+| 2025-02 | 365 | 52 | 313 |
+| 2025-03 | 385 | 52 | 333 |
+| 2025-04 | 403 | 52 | 351 |
+| 2025-05 | 420 | 54 | 366 |
+| 2025-06 | 438 | 55 | 383 |
+| 2025-07 | 458 | 55 | 403 |
+| 2025-08 | 475 | 57 | 418 |
+| 2025-09 | 504 | 58 | 446 |
+| 2025-10 | 525 | 60 | 465 |
+| 2025-11 | 535 | 64 | 471 |
+| 2025-12 | 537 | 65 | 472 |
 
 ## Monthly PIT liquidity eligibility
 
@@ -63,115 +65,63 @@ Fixed rule: completed point-in-time 30-day average quote volume ≥ 20,000,000 U
 
 | Month | Liquidity-eligible | Core | Expanded | Unknown |
 |---|---:|---:|---:|---:|
-| 2024-01 | 105 | 34 | 71 | 12 |
-| 2024-02 | 116 | 35 | 81 | 13 |
-| 2024-03 | 149 | 37 | 112 | 8 |
-| 2024-04 | 122 | 35 | 87 | 10 |
-| 2024-05 | 102 | 35 | 67 | 9 |
-| 2024-06 | 88 | 33 | 55 | 11 |
-| 2024-07 | 84 | 34 | 50 | 9 |
-| 2024-08 | 85 | 35 | 50 | 11 |
-| 2024-09 | 80 | 33 | 47 | 10 |
-| 2024-10 | 87 | 34 | 53 | 11 |
-| 2024-11 | 131 | 38 | 93 | 9 |
-| 2024-12 | 141 | 39 | 102 | 17 |
-| 2025-01 | 109 | 36 | 73 | 14 |
-| 2025-02 | 104 | 39 | 65 | 13 |
-| 2025-03 | 89 | 39 | 50 | 20 |
-| 2025-04 | 93 | 39 | 54 | 14 |
-| 2025-05 | 99 | 38 | 61 | 13 |
-| 2025-06 | 84 | 39 | 45 | 12 |
-| 2025-07 | 111 | 39 | 72 | 14 |
-| 2025-08 | 109 | 39 | 70 | 9 |
-| 2025-09 | 89 | 39 | 50 | 19 |
-| 2025-10 | 96 | 41 | 55 | 11 |
-| 2025-11 | 87 | 41 | 46 | 13 |
-| 2025-12 | 73 | 39 | 34 | 13 |
+| 2024-01 | 141 | 35 | 106 | 16 |
+| 2024-02 | 157 | 37 | 120 | 17 |
+| 2024-03 | 221 | 40 | 181 | 14 |
+| 2024-04 | 176 | 38 | 138 | 15 |
+| 2024-05 | 150 | 40 | 110 | 13 |
+| 2024-06 | 132 | 38 | 94 | 13 |
+| 2024-07 | 124 | 39 | 85 | 9 |
+| 2024-08 | 123 | 40 | 83 | 23 |
+| 2024-09 | 118 | 38 | 80 | 26 |
+| 2024-10 | 133 | 39 | 94 | 16 |
+| 2024-11 | 201 | 44 | 157 | 29 |
+| 2024-12 | 224 | 46 | 178 | 34 |
+| 2025-01 | 177 | 46 | 131 | 29 |
+| 2025-02 | 174 | 49 | 125 | 17 |
+| 2025-03 | 145 | 48 | 97 | 30 |
+| 2025-04 | 157 | 48 | 109 | 28 |
+| 2025-05 | 179 | 47 | 132 | 29 |
+| 2025-06 | 139 | 50 | 89 | 26 |
+| 2025-07 | 189 | 51 | 138 | 28 |
+| 2025-08 | 170 | 49 | 121 | 26 |
+| 2025-09 | 164 | 52 | 112 | 39 |
+| 2025-10 | 184 | 54 | 130 | 34 |
+| 2025-11 | 160 | 56 | 104 | 21 |
+| 2025-12 | 122 | 53 | 69 | 21 |
 
 ## Lifecycle blockers
 
 | Symbol | Reason | Conflict class | First archive month | Last archive month |
 |---|---|---|---|---|
-| 0GUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-09 | 2026-07 |
-| 1000000BOBUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-06 | 2026-07 |
-| 1000000MOGUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| 1000CATUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-10 | 2026-07 |
-| 1000CHEEMSUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| 1000WHYUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| 1000XUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| 1MBABYDOGEUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-09 | 2026-07 |
-| 2ZUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-10 | 2026-07 |
-| 42USDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2025-10 | 2026-07 |
-| 4USDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-10 | 2026-07 |
-| A2ZUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2025-07 | 2026-07 |
-| ACTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| AERGOUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-09 | 2026-06 |
-| AEROUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-12 | 2026-07 |
-| AEVOUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-03 | 2026-07 |
-| AGIXUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2023-02 | 2026-07 |
-| AGLDUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-07 | 2026-07 |
-| AGTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-05 | 2026-07 |
-| AI16ZUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2025-01 | 2026-07 |
+| AERGOUSDT | listing-after-first-observed, entry-boundary-unresolved | TRUE_LIFECYCLE_CONFLICT, ENTRY_UNRESOLVED | 2024-09 | 2026-06 |
 | AIAUSDT | entry-boundary-unresolved | ENTRY_UNRESOLVED, RELIST_EPISODE_DETECTED | 2025-09 | 2026-07 |
-| AINUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-07 | 2026-07 |
-| AIOTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-04 | 2026-07 |
-| AIOUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-08 | 2026-07 |
-| AIUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2024-01 | 2026-07 |
-| AIXBTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-12 | 2026-07 |
-| AKEUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-09 | 2026-07 |
 | AKROUSDT | delist-evidence-missing-for-in-window-delist, exit-boundary-unresolved | EVIDENCE_MATCH_AMBIGUOUS, EXIT_UNRESOLVED | 2021-01 | 2022-05 |
-| AKTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| ALCHUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-01 | 2026-07 |
 | ALLUSDT | entry-boundary-unresolved, exit-boundary-unresolved | ENTRY_UNRESOLVED, EXIT_UNRESOLVED | 2025-08 | 2026-07 |
-| ALPACAUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2024-08 | 2026-07 |
-| ALPHAUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2020-11 | 2026-07 |
-| ALPINEUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-05 | 2026-07 |
-| AMBUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2023-03 | 2026-07 |
-| ANTUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2021-12 | 2024-07 |
-| APRUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-10 | 2026-07 |
-| ARKMUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-07 | 2026-07 |
 | ARUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2021-09 | 2026-07 |
-| ASRUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-05 | 2026-07 |
-| ATAUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2021-08 | 2026-07 |
-| ATHUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-04 | 2026-07 |
-| ATUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-10 | 2026-07 |
-| AUDIOUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2021-08 | 2024-07 |
-| AVAAIUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-01 | 2026-07 |
-| AXLUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-03 | 2026-07 |
-| B2USDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-05 | 2026-07 |
-| B3USDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2025-02 | 2026-07 |
-| BABYUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-04 | 2026-07 |
-| BADGERUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2023-11 | 2026-07 |
-| BAKEUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2021-05 | 2026-07 |
-| BALUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2020-09 | 2026-07 |
-| BANANAS31USDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-03 | 2026-07 |
-| BANKUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-04 | 2026-07 |
-| BANUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-11 | 2026-07 |
-| BASUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-08 | 2026-07 |
-| BBUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-05 | 2026-07 |
 | BDXNUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2025-06 | 2026-03 |
-| BEAMXUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-11 | 2026-07 |
-| BEATUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-11 | 2026-07 |
-| BICOUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-09 | 2026-07 |
-| BIDUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2025-03 | 2026-07 |
-| BIGTIMEUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-10 | 2026-07 |
-| BIOUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-01 | 2026-07 |
-| BLESSUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-09 | 2026-07 |
-| BLUAIUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-10 | 2026-07 |
-| BLUEBIRDUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2022-11 | 2024-07 |
-| BLZUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2020-09 | 2026-07 |
-| BMTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-03 | 2026-07 |
-| BNXUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2022-04 | 2026-07 |
-| BOBUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2025-11 | 2026-07 |
-| BOMEUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-03 | 2026-07 |
-| BONDUSDT | listing-after-first-observed, delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2023-10 | 2026-07 |
-| BRETTUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2024-08 | 2026-07 |
-| BREVUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-12 | 2026-07 |
-| BROCCOLIF3BUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-03 | 2026-07 |
-| BRUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2025-03 | 2026-07 |
-| BSVUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-10 | 2026-07 |
-| BSWUSDT | delist-at-or-before-last-observed | TRUE_LIFECYCLE_CONFLICT | 2024-09 | 2026-07 |
+| BNXUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2022-04 | 2026-07 |
 | BTCDOMUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2021-06 | 2026-07 |
+| COCOSUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2023-02 | 2024-07 |
+| CTKUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2020-11 | 2026-07 |
+| CVCUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2020-11 | 2026-07 |
+| CVXUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2022-09 | 2026-07 |
+| EOSUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2020-01 | 2026-07 |
+| FRONTUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2023-09 | 2026-07 |
+| GAIBUSDT | entry-boundary-unresolved | ENTRY_UNRESOLVED | 2025-11 | 2026-04 |
+| GALUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2022-05 | 2024-08 |
+| ICPUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2021-05 | 2026-07 |
+| LITUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2021-02 | 2026-07 |
+| MATICUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2020-10 | 2026-07 |
+| MAVIAUSDT | entry-boundary-unresolved | ENTRY_UNRESOLVED, RELIST_EPISODE_DETECTED | 2024-02 | 2026-07 |
+| PUMPUSDT | listing-after-first-observed, entry-boundary-unresolved | TRUE_LIFECYCLE_CONFLICT, ENTRY_UNRESOLVED | 2025-04 | 2026-07 |
+| RADUSDT | delist-at-or-before-last-observed, exit-boundary-unresolved | TRUE_LIFECYCLE_CONFLICT, EXIT_UNRESOLVED | 2023-05 | 2026-07 |
+| RNDRUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2023-02 | 2024-08 |
+| ROSEUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2021-12 | 2026-07 |
+| SLPUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2023-10 | 2026-07 |
+| SXPUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2020-07 | 2026-05 |
+| TLMUSDT | listing-after-first-observed | TRUE_LIFECYCLE_CONFLICT | 2021-07 | 2026-07 |
+| TOMOUSDT | exit-boundary-unresolved | EXIT_UNRESOLVED | 2020-10 | 2024-08 |
 
 ## Data gaps
 
@@ -208,6 +158,10 @@ Fixed rule: completed point-in-time 30-day average quote volume ≥ 20,000,000 U
 | COCOSUSDT | funding | declared-active-end-before-lifecycle-end |
 | COCOSUSDT | funding | funding-end-window-not-covered |
 | COMMONUSDT | minute | active-start-not-covered |
+| CTKUSDT | price | active-end-not-covered |
+| CTKUSDT | minute | active-end-not-covered |
+| CVXUSDT | price | active-end-not-covered |
+| CVXUSDT | minute | active-end-not-covered |
 | DAMUSDT | minute | active-start-not-covered |
 | DMCUSDT | price | active-start-not-covered |
 | DMCUSDT | minute | active-start-not-covered |
@@ -246,31 +200,27 @@ Fixed rule: completed point-in-time 30-day average quote volume ≥ 20,000,000 U
 | MAVIAUSDT | minute | active-start-not-covered |
 | MAVIAUSDT | funding | declared-active-start-after-lifecycle-start |
 | MAVIAUSDT | funding | funding-start-outside-window |
+| MAVIAUSDT | price | active-end-not-covered |
+| MAVIAUSDT | minute | active-end-not-covered |
 | MONUSDT | minute | active-start-not-covered |
 | NEIROUSDT | minute | active-start-not-covered |
 | RNDRUSDT | price | declared-active-end-before-lifecycle-end |
 | RNDRUSDT | price | active-end-not-covered |
 | RNDRUSDT | minute | declared-active-end-before-lifecycle-end |
-| RNDRUSDT | minute | active-end-not-covered |
-| RNDRUSDT | funding | declared-active-end-before-lifecycle-end |
-| RNDRUSDT | funding | funding-end-window-not-covered |
-| SKATEUSDT | minute | active-start-not-covered |
-| SXPUSDT | funding | funding-end-window-not-covered |
-| TANSSIUSDT | minute | active-start-not-covered |
 
 ## Integrity and provenance
 
 - Required artifacts: price, minute, funding
-- Active markets with complete artifact metadata: 589/619
-- Data gaps: 88
+- Active markets with complete artifact metadata: 586/619
+- Data gaps: 98
 - Hash failures: 3
 - Liquidity metadata unknown: 10
 - Liquidity eligible observations: 697865
 - Liquidity rejected for insufficient 30-day history: 117504
 - Liquidity rejected for gap: 22449
 - Liquidity rejected below threshold: 767169
-- PIT liquidity eligible monthly min/mean/max: 73 / 101.375 / 149
-- PIT universe SHA-256: 1f812fa13d83c0fb8cf642d257b96127876f881a98305254b8866f336a248f71
+- PIT liquidity eligible monthly min/mean/max: 118 / 160.83333333333334 / 224
+- PIT universe SHA-256: 704cd7bf8f0aa74810ce5ac884a78cfca73a81585633c7dcee93e79ef3b71683
 - Universe evidence SHA-256: 10c601040b320b225ab1e72597a0f4b682c87da76a1e6c3f4da82a24d1fa5951
 - Dataset manifest SHA-256: 79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a
 

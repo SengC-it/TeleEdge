@@ -339,6 +339,8 @@ export function matchEventControls(event, observations, {
     const rowRegime = row.marketRegime ?? row.regime ?? null;
     const rowLiquidity = row.liquidityBucket ?? null;
     if (rowSide !== side || rowMonth !== eventMonth) return false;
+    if (event.level === 'symbol' && String(row.symbol || '') !== String(event.symbol || '')) return false;
+    if (event.level === 'market' && (row.controlLevel !== 'market' || String(row.symbol || '') !== 'BTCUSDT')) return false;
     if ((event.marketRegime ?? null) !== rowRegime) return false;
     if ((event.liquidityBucket ?? null) !== rowLiquidity) return false;
     if (fold != null && row.outerFold != null && row.outerFold !== fold) return false;

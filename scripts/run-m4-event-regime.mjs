@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import zlib from 'node:zlib';
 import {APP_DIR} from '../src/config.mjs';
 import {CANONICAL_OUTCOME_CONTRACT} from '../src/profit-engine/labels.mjs';
 import {auditProductionIsolation, auditRepoNoOrder} from '../src/profit-engine/audits.mjs';
@@ -22,18 +23,22 @@ import {
 } from '../src/m4/event-engine.mjs';
 import {buildPitUniverseAt, buildPitUniverseFromFiles, M4_DEVELOPMENT_END, M4_DEVELOPMENT_START, M4_LIQUIDITY_LOOKBACK_DAYS, M4_LIQUIDITY_THRESHOLD_USDT} from '../src/m4/pit-universe.mjs';
 import {simulateCanonicalOutcome} from '../src/profit-engine/canonical-outcome.mjs';
+import {buildM4FeaturePoints} from '../src/v9/replay.mjs';
+import {stopForPoint} from '../src/v81/features.mjs';
 
 const DEFAULT_DATA_ROOT = path.join(APP_DIR, 'data', 'backtest');
 const DEFAULT_REPORTS_DIR = path.join(APP_DIR, 'reports');
+const DEFAULT_ENHANCED_ROOT = path.join(APP_DIR, 'data', 'v9-development');
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
 function parseArgs(argv = process.argv.slice(2)) {
-  const result = {dataRoot: DEFAULT_DATA_ROOT, reportsDir: DEFAULT_REPORTS_DIR};
+  const result = {dataRoot: DEFAULT_DATA_ROOT, enhancedRoot: DEFAULT_ENHANCED_ROOT, reportsDir: DEFAULT_REPORTS_DIR};
   for (let index = 0; index < argv.length; index++) {
     if (argv[index] === '--data-root') result.dataRoot = path.resolve(argv[++index]);
+    if (argv[index] === '--enhanced-root') result.enhancedRoot = path.resolve(argv[++index]);
     if (argv[index] === '--reports-dir') result.reportsDir = path.resolve(argv[++index]);
   }
   return result;
@@ -99,6 +104,13 @@ function numeric(value) {
   return Number.isFinite(Number(value)) ? Number(value) : null;
 }
 
+function timeNumber(value) {
+  const numericValue = numeric(value);
+  if (numericValue != null) return numericValue;
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function median(values) {
   const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
   if (!sorted.length) return null;
@@ -132,6 +144,20 @@ function fraction(values, predicate) {
   return usable.length ? usable.filter(predicate).length / usable.length : null;
 }
 
+function standardDeviation(values) {
+  const usable = values.map(Number).filter(Number.isFinite);
+  if (usable.length < 2) return null;
+  const average = mean(usable);
+  return Math.sqrt(usable.reduce((sum, value) => sum + (value - average) ** 2, 0) / (usable.length - 1));
+}
+
+function zScore(value, history) {
+  const current = numeric(value);
+  const usable = history.map(Number).filter(Number.isFinite);
+  const deviation = standardDeviation(usable);
+  return current == null || usable.length < 8 || !(deviation > 1e-12) ? null : (current - mean(usable)) / deviation;
+}
+
 /**
  * Build event-engine observations from completed feature points.  This is a
  * feature-only adapter: it never invokes a V7/V8 alpha detector.  A supplied
@@ -148,9 +174,10 @@ export function buildEventSnapshots({featurePoints = [], snapshots = [], markets
   const points = Array.isArray(featurePoints) ? featurePoints : [...(featurePoints?.values?.() || [])].flat();
   const timestamps = [...new Set(points.map(pointTime).filter(value => value != null && value >= start && value < end))].sort((a, b) => a - b);
   const marketRows = Array.isArray(markets) ? markets : [];
-  return timestamps.map(timestamp => {
+  const built = timestamps.map(timestamp => {
     const eligible = marketRows.length ? new Set(buildPitUniverseAt(timestamp, marketRows, {requireData: true, requireLiquidity: true})) : null;
-    const members = featureMembersAt(points, timestamp, eligible);
+    const allMembers = featureMembersAt(points, timestamp, null);
+    const members = eligible ? allMembers.filter(([symbol]) => eligible.has(symbol)) : allMembers;
     const values = members.map(([, point]) => point);
     const returns = values.map(point => numeric(point.return4 ?? point.return1 ?? point.priceReturn));
     const above = values.map(point => numeric(point.above50 ?? point.closeAboveSma50 ?? (point.close != null && point.sma50 != null ? Number(point.close) > Number(point.sma50) : null)));
@@ -158,25 +185,243 @@ export function buildEventSnapshots({featurePoints = [], snapshots = [], markets
     const negative = fraction(returns, value => value < 0);
     const breadthAbove50 = fraction(above, value => Boolean(value));
     const btc = values.find(point => (point.symbol || point.marketId) === 'BTCUSDT');
+    const dispersion = standardDeviation(returns);
+    const dimensions = [
+      ['funding', mean(values.map(point => numeric(point.fundingZ)).filter(value => value != null))],
+      ['premium', mean(values.map(point => numeric(point.premiumZ)).filter(value => value != null))],
+      ['oi', mean(values.map(point => numeric(point.oiZ)).filter(value => value != null))],
+    ].filter(([, value]) => value != null && value !== 0);
+    const sameSignDimensions = dimensions.length >= 2 && new Set(dimensions.map(([, value]) => Math.sign(value))).size === 1;
+    const crowdingStressZ = sameSignDimensions ? Math.max(...dimensions.map(([, value]) => Math.abs(value)))
+      * Math.sign(dimensions[0][1]) : null;
     return {
       eventTime: timestamp,
       completed: true,
       pitUniverseSize: values.length,
       members: values.map(point => ({...point, symbol: point.symbol || point.marketId, pitReturnRank: numeric(point.crossSectionalReturnRank ?? point.returnRank)})),
+      allFeaturePointCount: allMembers.length,
+      futureListedMemberCount: allMembers.filter(([symbol]) => {
+        const market = marketRows.find(row => row.symbol === symbol);
+        return market && timeNumber(market.activeStart || market.eligibleStart) > timestamp;
+      }).length,
+      postDelistMemberCount: allMembers.filter(([symbol]) => {
+        const market = marketRows.find(row => row.symbol === symbol);
+        return market && timeNumber(market.activeEnd || market.eligibleEnd) <= timestamp;
+      }).length,
+      liquidityUnavailableMemberCount: marketRows.length ? allMembers.filter(([symbol]) => !eligible?.has(symbol)).length : 0,
+      liquidityBucket: marketRows.length ? (values.length ? 'eligible' : 'unavailable') : null,
       breadthAbove50,
       positiveReturnBreadth: positive,
       negativeReturnBreadth: negative,
-      realizedVolZ: numeric(values.find(point => point.realizedVolZ != null)?.realizedVolZ),
-      previousDispersionZ: numeric(values.find(point => point.previousDispersionZ != null)?.previousDispersionZ),
-      dispersionZ: numeric(values.find(point => point.dispersionZ != null)?.dispersionZ),
-      crowdingStressZ: numeric(values.find(point => point.crowdingStressZ != null)?.crowdingStressZ),
-      fundingZ: numeric(values.find(point => point.fundingZ != null)?.fundingZ),
-      premiumZ: numeric(values.find(point => point.premiumZ != null)?.premiumZ),
-      oiZ: numeric(values.find(point => point.oiZ != null)?.oiZ),
+      volatilityProxy: mean(returns.map(value => value == null ? null : Math.abs(value)).filter(value => value != null)),
+      realizedVolZ: numeric(values.find(point => point.realizedVolZ != null)?.realizedVolZ) ?? null,
+      previousDispersionZ: numeric(values.find(point => point.previousDispersionZ != null)?.previousDispersionZ) ?? null,
+      dispersionProxy: dispersion,
+      dispersionZ: numeric(values.find(point => point.dispersionZ != null)?.dispersionZ) ?? null,
+      crowdingStressZ,
+      fundingZ: dimensions.find(([name]) => name === 'funding')?.[1] ?? null,
+      premiumZ: dimensions.find(([name]) => name === 'premium')?.[1] ?? null,
+      oiZ: dimensions.find(([name]) => name === 'oi')?.[1] ?? null,
       marketRegime: btc?.marketRegime || btc?.regime || null,
-      marketDirection: btc?.marketDirection || btc?.direction || null,
+      marketDirection: btc?.marketDirection || btc?.direction
+        || (() => {
+          const average = mean(returns.filter(value => value != null));
+          return average == null ? null : average > 0 ? 'long' : average < 0 ? 'short' : null;
+        })(),
     };
   });
+  for (let index = 0; index < built.length; index++) {
+    const current = built[index];
+    const priorDispersion = built.slice(Math.max(0, index - 30), index).map(row => row.dispersionProxy);
+    const priorVolatility = built.slice(Math.max(0, index - 30), index).map(row => row.volatilityProxy);
+    current.dispersionZ ??= zScore(current.dispersionProxy, priorDispersion);
+    current.realizedVolZ ??= zScore(current.volatilityProxy, priorVolatility);
+    current.previousDispersionZ ??= numeric(built[index - 1]?.dispersionZ);
+  }
+  return built;
+}
+
+function readFormalGzipRows(file) {
+  if (!file || !fs.existsSync(file)) return [];
+  try {
+    const text = zlib.gunzipSync(fs.readFileSync(file)).toString('utf8').trim();
+    const parsed = text ? JSON.parse(text) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function formalRows(dataRoot, kind, symbol) {
+  return readFormalGzipRows(path.join(dataRoot, kind, symbol + '.json.gz'))
+    .map(row => ({...row, t: timeNumber(row.t ?? row.openTime ?? row.fundingTime)}))
+    .filter(row => row.t != null)
+    .sort((left, right) => left.t - right.t);
+}
+
+function marketEpisodes(market, start, end) {
+  return (market?.activeEpisodes || [{activeStart: market?.activeStart, activeEnd: market?.activeEnd}])
+    .map(episode => ({
+      ...episode,
+      activeStart: timeNumber(episode.activeStart || episode.eligibleStart),
+      activeEnd: timeNumber(episode.activeEnd || episode.eligibleEnd),
+    }))
+    .filter(episode => episode.activeStart != null && episode.activeEnd != null
+      && episode.activeStart < episode.activeEnd && episode.activeStart < end && episode.activeEnd > start);
+}
+
+function canonicalForwardProfile(rows, fillTime, fillPrice, side, barrierTime, activeEnd) {
+  const direction = side === 'long' ? 1 : -1;
+  const eligible = rows.filter(row => row.t >= fillTime && row.t + 60_000 <= Math.min(barrierTime, activeEnd));
+  const forwardReturns = {};
+  for (const [hours, key] of [[4, 'h4'], [12, 'h12'], [24, 'h24'], [72, 'h72']]) {
+    const cutoff = fillTime + hours * 3_600_000;
+    const row = eligible.filter(item => item.t + 60_000 <= cutoff).at(-1);
+    forwardReturns[key] = row ? direction * (Number(row.c) / Number(fillPrice) - 1) : null;
+  }
+  const mfeValues = eligible.map(row => direction === 1
+    ? Number(row.h) / Number(fillPrice) - 1
+    : 1 - Number(row.l) / Number(fillPrice));
+  const maeValues = eligible.map(row => direction === 1
+    ? Number(row.l) / Number(fillPrice) - 1
+    : 1 - Number(row.h) / Number(fillPrice));
+  return {
+    forwardReturns,
+    mfe: mfeValues.length ? Math.max(...mfeValues) : null,
+    mae: maeValues.length ? Math.min(...maeValues) : null,
+  };
+}
+
+/*
+ * Create the real formal 1m outcome provider. It is independent of V9
+ * standalone outcomes: the stop comes from the feature point, the fill is
+ * the first executable minute after +20m, and settlement only uses completed
+ * minutes inside the lifecycle episode.
+ */
+export function createFormalEventOutcomeProvider({dataRoot, markets = [], featurePointsBySymbol = new Map(), start = M4_DEVELOPMENT_START, end = M4_DEVELOPMENT_END} = {}) {
+  const marketBySymbol = new Map((markets || []).map(row => [row.symbol, row]));
+  const minuteCache = new Map();
+  const fundingCache = new Map();
+  const pointsMap = featurePointsBySymbol instanceof Map
+    ? featurePointsBySymbol
+    : new Map(Object.entries(featurePointsBySymbol || {}));
+  const cachedRows = (cache, kind, symbol) => {
+    if (!cache.has(symbol)) cache.set(symbol, formalRows(dataRoot, kind, symbol));
+    return cache.get(symbol);
+  };
+  return event => {
+    const symbol = event.level === 'market' ? 'BTCUSDT' : event.symbol;
+    const market = marketBySymbol.get(symbol);
+    const point = (pointsMap.get(symbol) || []).find(row => Number(row.signalTime) === Number(event.eventTime));
+    const windows = marketEpisodes(market, start, end);
+    const episode = windows.find(row => row.activeStart <= Number(event.eventTime) && Number(event.eventTime) < row.activeEnd);
+    if (!market || !point || !episode) return {executable: false, canonicalExecutable: false, labelUsable: false, rejectionReason: 'canonical-outcome-unavailable'};
+    const stop = stopForPoint(point, event.sideHypothesis);
+    if (!stop) return {executable: false, canonicalExecutable: false, labelUsable: false, rejectionReason: 'deterministic-stop-unavailable'};
+    const activeEnd = Math.min(end, episode.activeEnd);
+    const allMinuteRows = cachedRows(minuteCache, 'minute', symbol);
+    const minuteRows = allMinuteRows
+      .filter(row => row.t >= episode.activeStart && row.t + 60_000 <= activeEnd
+        && Number(row.o) > 0 && Number(row.h) > 0 && Number(row.l) > 0 && Number(row.c) > 0
+        && row.complete !== false && row.isComplete !== false && row.closed !== false);
+    const fundingRows = cachedRows(fundingCache, 'funding', symbol)
+      .filter(row => row.t >= episode.activeStart - 24 * 3_600_000 && row.t < activeEnd);
+    const marketForAcceptance = {
+      ...market,
+      filters: market.marketFilters || market.filters || [],
+    };
+    const outcome = simulateCanonicalOutcome({
+      id: event.eventId,
+      marketId: symbol,
+      symbol,
+      instrument: symbol,
+      side: event.sideHypothesis,
+      family: event.eventFamily,
+      t: event.eventTime,
+      signalTime: event.eventTime,
+      entry: point.close,
+      sl: stop.stop,
+      targetR: CANONICAL_OUTCOME_CONTRACT.targetR,
+    }, {
+      market: marketForAcceptance,
+      minuteRows,
+      fundingRows,
+    });
+    const profile = outcome.canonicalExecutable
+      ? canonicalForwardProfile(minuteRows, Number(outcome.fillTime), Number(outcome.fillPrice), event.sideHypothesis, Number(outcome.canonicalBarrierTime), activeEnd)
+      : null;
+    return {
+      ...outcome,
+      labelUsable: outcome.canonicalExecutable === true && Number(outcome.exitTime) < end,
+      ...(profile || {}),
+      stopAlgorithm: 'priorLow4/priorHigh4 +/- 0.5 * ATR',
+      stopFeatureTimestamp: new Date(Number(point.signalTime)).toISOString(),
+      stopEventTime: new Date(Number(event.eventTime)).toISOString(),
+      stopUsesFutureData: false,
+    };
+  };
+}
+
+export function buildFormalControlObservations(featurePoints = [], {start = M4_DEVELOPMENT_START, end = M4_DEVELOPMENT_END, foldCount = 6} = {}) {
+  const points = Array.isArray(featurePoints) ? featurePoints : [...(featurePoints?.values?.() || [])].flat();
+  return points
+    .filter(point => {
+      const timestamp = pointTime(point);
+      return timestamp != null && timestamp >= start && timestamp < end && point.return4 != null;
+    })
+    .map(point => {
+      const timestamp = pointTime(point);
+      return {
+        id: 'control|' + (point.symbol || point.marketId) + '|' + timestamp,
+        signalTime: timestamp,
+        symbol: point.symbol || point.marketId,
+        side: Number(point.return4) > 0 ? 'long' : 'short',
+        marketRegime: point.marketRegime || point.regime || null,
+        liquidityBucket: point.liquidityBucket || 'eligible',
+        outerFold: outerFoldAt(timestamp, start, end, foldCount),
+        controlLevel: point.symbol === 'BTCUSDT' ? 'market' : 'symbol',
+        completed: true,
+      };
+    })
+    .sort((left, right) => left.signalTime - right.signalTime || left.id.localeCompare(right.id));
+}
+
+function formalSnapshotAudit(snapshots = []) {
+  const pitSizes = snapshots.map(row => Number(row.pitUniverseSize)).filter(Number.isFinite);
+  return {
+    count: snapshots.length,
+    firstTimestamp: snapshots.length ? new Date(pointTime(snapshots[0])).toISOString() : null,
+    lastTimestamp: snapshots.length ? new Date(pointTime(snapshots.at(-1))).toISOString() : null,
+    pitUniverse: {
+      min: pitSizes.length ? Math.min(...pitSizes) : 0,
+      mean: pitSizes.length ? mean(pitSizes) : null,
+      max: pitSizes.length ? Math.max(...pitSizes) : 0,
+    },
+    futureListedMemberCount: snapshots.reduce((sum, row) => sum + Number(row.futureListedMemberCount || 0), 0),
+    postDelistMemberCount: snapshots.reduce((sum, row) => sum + Number(row.postDelistMemberCount || 0), 0),
+    liquidityUnavailableMemberCount: snapshots.reduce((sum, row) => sum + Number(row.liquidityUnavailableMemberCount || 0), 0),
+    allSnapshotsCompleted: snapshots.every(row => row.completed !== false && row.isComplete !== false),
+  };
+}
+
+export function buildFormalEventInputs({pit, dataRoot, enhancedRoot, start = M4_DEVELOPMENT_START, end = M4_DEVELOPMENT_END} = {}) {
+  const features = buildM4FeaturePoints({dataRoot, enhancedRoot, markets: pit?.activeMarkets || [], start, end});
+  const snapshots = buildEventSnapshots({featurePoints: features.points, markets: pit?.activeMarkets || [], start, end});
+  const controls = buildFormalControlObservations(features.points, {start, end});
+  const outcomeForEvent = createFormalEventOutcomeProvider({
+    dataRoot,
+    markets: pit?.activeMarkets || [],
+    featurePointsBySymbol: features.pointsBySymbol,
+    start,
+    end,
+  });
+  return {
+    ...features,
+    snapshots,
+    controls,
+    snapshotAudit: formalSnapshotAudit(snapshots),
+    outcomeForEvent,
+  };
 }
 
 export function eventOutcome(event, {
@@ -236,7 +481,14 @@ function purgeAcrossOuterFolds(rows, start, end, foldCount = 6) {
     const purged = purgeEventLabels(training, {validationStart, purgeHours: EVENT_REFRACTORY_HOURS});
     for (const row of purged.excluded) excludedIds.add(String(row.eventId || row.id || pointTime(row)));
   }
-  return {excluded: excludedIds.size, labelOverlapFree: true};
+  const kept = rows.filter(row => !excludedIds.has(String(row.eventId || row.id || pointTime(row))));
+  return {excluded: excludedIds.size, kept, labelOverlapFree: kept.every(row => {
+    const exit = numeric(row.exitTime ?? row.labelEndTime ?? row.canonicalBarrierTime);
+    return exit == null || [...Array(Math.max(0, foldCount - 1)).keys()].every(fold => {
+      const validationStart = Number(start) + ((Number(end) - Number(start)) * (fold + 1)) / foldCount;
+      return pointTime(row) >= validationStart || exit < validationStart - EVENT_REFRACTORY_HOURS * 3_600_000;
+    });
+  })};
 }
 
 /**
@@ -279,7 +531,7 @@ export function runEventResearch({snapshots = [], featurePoints = [], markets = 
     else {
       statusesByFamily[event.eventFamily].push('MATCHED');
       const controlOutcome = eventOutcome({...event, eventId: `control:${control.id || control.eventId || pointTime(control)}`, sideHypothesis: control.side || event.sideHypothesis, eventTime: pointTime(control), level: event.level, symbol: event.symbol}, {outcomesByEvent, outcomeForEvent, marketDataBySymbol});
-      if (controlOutcome) controlRowsByFamily[event.eventFamily].push({...control, ...controlOutcome, outerFold: fold});
+      if (controlOutcome) controlRowsByFamily[event.eventFamily].push({...control, ...controlOutcome, eventId: event.eventId, pairedEventId: event.eventId, outerFold: fold});
     }
   }
   const families = {};
@@ -287,14 +539,17 @@ export function runEventResearch({snapshots = [], featurePoints = [], markets = 
   for (const family of EVENT_FAMILIES) {
     const rows = eventRowsByFamily[family];
     const kept = rows.filter(row => row.labelUsable !== false && (numeric(row.exitTime) == null || numeric(row.exitTime) < end));
-    horizonRows.push(...kept);
-    families[family] = familyReport(family, kept, controlRowsByFamily[family], statusesByFamily[family], forwardHorizonStudy(kept), {
+    const purged = purgeAcrossOuterFolds(kept, start, end);
+    const analysisRows = purged.kept;
+    const analysisIds = new Set(analysisRows.map(row => String(row.eventId || row.id || pointTime(row))));
+    const analysisControls = controlRowsByFamily[family].filter(row => analysisIds.has(String(row.pairedEventId || row.eventId || row.id || pointTime(row))));
+    horizonRows.push(...analysisRows);
+    families[family] = familyReport(family, analysisRows, analysisControls, statusesByFamily[family], forwardHorizonStudy(analysisRows), {
       rawCount: detected.rawEvents.filter(row => row.eventFamily === family).length,
       independentCount: detected.independentEvents.filter(row => row.eventFamily === family).length,
     });
-    const purged = purgeAcrossOuterFolds(kept, start, end);
     purgeExcluded += purged.excluded;
-    families[family].purge = {excludedByOutcomeOverlap: purged.excluded, kept: kept.length, labelOverlapFree: purged.labelOverlapFree};
+    families[family].purge = {excludedByOutcomeOverlap: purged.excluded, prePurge: kept.length, kept: analysisRows.length, labelOverlapFree: purged.labelOverlapFree};
   }
   const statuses = Object.values(families).map(row => row.status);
   const months = labeled.map(row => new Date(Number(row.eventTime)).toISOString().slice(0, 7));
@@ -346,6 +601,8 @@ This report uses the union of actual Binance Data Vision USD-M archive evidence 
 - Relist episode classification: ${report.relistEpisodeSymbols?.length || 0}
 - True lifecycle conflicts: ${report.trueLifecycleConflicts?.length || 0}
 - Ambiguous evidence matches: ${report.ambiguousEvidenceMatches?.length || 0}
+- Hourly boundary straddles accepted: ${report.hourlyBoundaryStraddleSymbols?.length || 0}
+- Archive interval alignments: ${report.archiveIntervalAlignmentSymbols?.length || 0}
 - M4_PIT_WINDOW_COMPLETE: **${report.m4PitWindowComplete}**
 - M4_GLOBAL_COMPLETE: **${report.m4GlobalComplete}**
 - M4 window data contract ready: **${report.m4WindowDataContractReady}**
@@ -422,9 +679,25 @@ ${rows}
 `;
 }
 
-function buildEventReport(pit, audits) {
-  const research = pit.m4PitWindowComplete
-    ? runEventResearch({snapshots: pit.eventSnapshots || [], markets: pit.activeMarkets, start: M4_DEVELOPMENT_START, end: M4_DEVELOPMENT_END})
+function buildEventReport(pit, audits, {dataRoot = DEFAULT_DATA_ROOT, enhancedRoot = DEFAULT_ENHANCED_ROOT, appDir = APP_DIR} = {}) {
+  let inputs = null;
+  let inputError = null;
+  if (pit.m4PitWindowComplete) {
+    try {
+      inputs = buildFormalEventInputs({pit, dataRoot, enhancedRoot, start: M4_DEVELOPMENT_START, end: M4_DEVELOPMENT_END});
+    } catch (error) {
+      inputError = error.message;
+    }
+  }
+  const research = inputs
+    ? runEventResearch({
+      snapshots: inputs.snapshots,
+      markets: pit.activeMarkets,
+      start: M4_DEVELOPMENT_START,
+      end: M4_DEVELOPMENT_END,
+      outcomeForEvent: inputs.outcomeForEvent,
+      controlObservations: inputs.controls,
+    })
     : null;
   const families = research?.families || Object.fromEntries(EVENT_FAMILIES.map(family => [family, emptyFamilyReport(family)]));
   return {
@@ -433,15 +706,26 @@ function buildEventReport(pit, audits) {
     eventDefinitionVersion: EVENT_DEFINITION_VERSION,
     developmentWindow: {start: new Date(M4_DEVELOPMENT_START).toISOString(), end: new Date(M4_DEVELOPMENT_END).toISOString()},
     m4Status: pit.status,
-    finalDecision: pit.m4PitWindowComplete ? eventResearchGate(families) : 'M4_BLOCKED',
+    finalDecision: pit.m4PitWindowComplete && research ? eventResearchGate(families) : 'M4_BLOCKED',
     families,
     totalKeep: research?.totalKeep ?? 0,
     totalStrongKeep: research?.totalStrongKeep ?? 0,
     eventFrequency: research?.eventFrequency ?? {mean: 0, median: 0, monthly: {}},
-    eventStudy: pit.m4PitWindowComplete
+    eventStudy: pit.m4PitWindowComplete && research
       ? {status: research?.status || 'DATA_UNAVAILABLE', horizons: ['4h', '12h', '24h', '72h'], rawEvents: research?.rawEvents?.length || 0, independentEvents: research?.independentEvents?.length || 0, purge: research?.purge || null}
       : {status: 'NOT_RUN_M4_BLOCKED', horizons: ['4h', '12h', '24h', '72h']},
-    controls: {method: 'deterministic exact month + side + regime + liquidity bucket matching; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded', audited: true, unmatched: research?.controls?.unmatched ?? null, noReuse: research?.controls?.noReuse ?? null},
+    formalPipeline: {
+      status: inputs ? 'REAL_FEATURE_SNAPSHOTS_READY' : pit.m4PitWindowComplete ? 'DATA_UNAVAILABLE' : 'NOT_RUN_M4_BLOCKED',
+      featureOnly: true,
+      featurePoints: inputs?.points?.length ?? null,
+      snapshotAudit: inputs?.snapshotAudit || null,
+      controlObservations: inputs?.controls?.length ?? null,
+      outcomeProvider: Boolean(inputs?.outcomeForEvent),
+      inputError,
+      dataRoot: path.relative(appDir, dataRoot).replaceAll('\\', '/'),
+      enhancedRoot: path.relative(appDir, enhancedRoot).replaceAll('\\', '/'),
+    },
+    controls: {method: 'deterministic exact month + side + regime + liquidity bucket matching; market controls use BTCUSDT; dispersion controls use the event symbol; nearest timestamp, stable event id tie-break; no reuse within family/fold; ±72h same-family contamination excluded', audited: Boolean(inputs), unmatched: research?.controls?.unmatched ?? null, noReuse: research?.controls?.noReuse ?? null},
     liquidity: {lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS, thresholdUsdt: M4_LIQUIDITY_THRESHOLD_USDT, completedOnly: true, pointInTime: true},
     walkForward: research?.walkForward
       ? {...research.walkForward, eventEndAware: true, randomSplit: false, validationFrozen: true}
@@ -454,12 +738,13 @@ function buildEventReport(pit, audits) {
     knownLimitations: [
       'M4 PIT window is blocked until all Development-active archive symbols have resolved entry/exit boundaries and required data coverage.',
       'Event family metrics are intentionally not computed while M4 is blocked; no point estimate is presented as evidence.',
+      'Formal feature points, snapshots, controls and outcome provider are only admitted from the real feature/data roots after the M4 gate passes.',
       'No Holdout was run and no Production configuration, schema, scheduler, SMTP or signal behavior was changed.',
     ],
   };
 }
 
-export function buildReports({appDir = APP_DIR, dataRoot = DEFAULT_DATA_ROOT, reportsDir = DEFAULT_REPORTS_DIR} = {}) {
+export function buildReports({appDir = APP_DIR, dataRoot = DEFAULT_DATA_ROOT, enhancedRoot = DEFAULT_ENHANCED_ROOT, reportsDir = DEFAULT_REPORTS_DIR} = {}) {
   const pit = buildPitUniverseFromFiles({appDir, dataRoot, start: M4_DEVELOPMENT_START, end: M4_DEVELOPMENT_END});
   const audits = {noOrder: auditRepoNoOrder(appDir), isolation: auditProductionIsolation(appDir, 'research/profit-engine-r1-r3')};
   const pitReport = {
@@ -472,7 +757,7 @@ export function buildReports({appDir = APP_DIR, dataRoot = DEFAULT_DATA_ROOT, re
     source: 'Binance official Data Vision USD-M archive index plus timestamped lifecycle evidence and exchangeInfo cross-check',
     survivorshipAudit: {currentListAlone: false, archiveUnionUsed: true, historicalDelistingsIncluded: (pit.historicalDelistedSymbols?.length || 0) > 0},
   };
-  const eventReport = buildEventReport(pitReport, audits);
+  const eventReport = buildEventReport(pitReport, audits, {appDir, dataRoot, enhancedRoot});
   const frozenConfig = {
     schemaVersion: 1,
     eventDefinitionVersion: EVENT_DEFINITION_VERSION,

@@ -21,6 +21,7 @@ function hashFile(file) {
 }
 
 export function timestampValue(value) {
+  if (value == null || value === '') return null;
   if (Number.isFinite(Number(value))) return Number(value);
   const parsed = Date.parse(value || '');
   return Number.isFinite(parsed) ? parsed : null;
@@ -84,6 +85,8 @@ function artifactSummary(appDir, artifact) {
     file,
     firstTimestamp: timestampValue(artifact?.firstTimestamp ?? artifact?.firstObservedTimestamp),
     lastTimestamp: timestampValue(artifact?.lastTimestamp ?? artifact?.lastObservedTimestamp),
+    firstObservedTimestamp: timestampValue(artifact?.firstObservedTimestamp),
+    lastObservedTimestamp: timestampValue(artifact?.lastObservedTimestamp),
     declaredActiveStart: timestampValue(artifact?.activeStart),
     declaredActiveEnd: timestampValue(artifact?.activeEnd),
     interval: artifact?.interval || null,
@@ -195,10 +198,24 @@ function evidenceMap(payload) {
 }
 
 function observedRange(artifacts) {
+  const minute = artifacts.get('minute');
   const price = artifacts.get('price');
   return {
-    first: timestampValue(price?.firstTimestamp ?? price?.firstObservedTimestamp),
-    last: timestampValue(price?.lastTimestamp ?? price?.lastObservedTimestamp),
+    first: timestampValue(minute?.firstObservedTimestamp ?? minute?.firstTimestamp
+      ?? price?.firstObservedTimestamp ?? price?.firstTimestamp),
+    last: timestampValue(minute?.lastObservedTimestamp ?? minute?.lastTimestamp
+      ?? price?.lastObservedTimestamp ?? price?.lastTimestamp),
+  };
+}
+
+export function boundaryObservations(artifacts, fallbackFirst = null, fallbackLast = null) {
+  const minute = artifacts?.get?.('minute') || {};
+  const price = artifacts?.get?.('price') || {};
+  return {
+    minuteFirst: timestampValue(minute.firstObservedTimestamp ?? minute.firstTimestamp),
+    minuteLast: timestampValue(minute.lastObservedTimestamp ?? minute.lastTimestamp),
+    hourlyFirst: timestampValue(price.firstObservedTimestamp ?? price.firstTimestamp ?? fallbackFirst),
+    hourlyLast: timestampValue(price.lastObservedTimestamp ?? price.lastTimestamp ?? fallbackLast),
   };
 }
 
@@ -438,7 +455,13 @@ function dataContract(appDir, artifactRows, activeStart, activeEnd) {
               : !Number.isFinite(last) || last >= activeEnd || last < activeEnd - lastIntervalMs ? 'funding-end-window-not-covered' : null,
         };
       })()
-      : coverageWindow(summary.firstTimestamp, summary.lastTimestamp, activeStart, activeEnd, interval);
+      : coverageWindow(
+        timestampValue(summary.firstObservedTimestamp ?? summary.firstTimestamp),
+        timestampValue(summary.lastObservedTimestamp ?? summary.lastTimestamp),
+        activeStart,
+        activeEnd,
+        interval,
+      );
     const {file: _internalFile, ...portableSummary} = summary;
     artifacts[kind] = {...portableSummary, coverage};
     if (!summary.present || !summary.nonEmpty) gaps.push({kind, reason: !summary.present ? 'missing-artifact' : 'empty-artifact'});
@@ -479,7 +502,7 @@ function episodeEvidence(record, kind, currentMarket, exchangeInfoEvidence, allo
   return result;
 }
 
-function episodeRows({symbol, start, end, months, observedFirst, observedLast, currentMarket, lifecycleRecord, exchangeInfoEvidence, archiveEvidence, snapshotAt, artifactRows, liquidityByMonth, liquidity30dAverageQuoteVolume, priceRows, appDir}) {
+function episodeRows({symbol, start, end, months, observedFirst, observedLast, boundary = {}, currentMarket, lifecycleRecord, exchangeInfoEvidence, archiveEvidence, snapshotAt, artifactRows, liquidityByMonth, liquidity30dAverageQuoteVolume, priceRows, appDir}) {
   const records = lifecycleEpisodes(lifecycleRecord);
   const currentDelivery = timestampValue(currentMarket?.deliveryDate);
   const currentActiveThroughEnd = Boolean(currentMarket) && Number.isFinite(snapshotAt) && snapshotAt >= end
@@ -510,16 +533,52 @@ function episodeRows({symbol, start, end, months, observedFirst, observedLast, c
     const likelyActiveInDevelopment = intervalOverlap && (episodeArchiveOverlap || listingInsideDevelopment || delistedInsideDevelopment);
     const conflicts = [];
     const conflictClasses = [];
+    const boundaryDiagnostics = [];
     const addConflict = (reason, conflictClass) => { conflicts.push(reason); if (!conflictClasses.includes(conflictClass)) conflictClasses.push(conflictClass); };
+    const addBoundaryDiagnostic = diagnostic => { if (!boundaryDiagnostics.includes(diagnostic)) boundaryDiagnostics.push(diagnostic); };
+    const minuteFirst = timestampValue(boundary.minuteFirst);
+    const minuteLast = timestampValue(boundary.minuteLast);
+    const hourlyFirst = timestampValue(boundary.hourlyFirst ?? observedFirst);
+    const hourlyLast = timestampValue(boundary.hourlyLast ?? observedLast);
+    let entryBoundaryEvidence = !listingInsideDevelopment || index !== 0;
+    let exitBoundaryEvidence = !delistedInsideDevelopment || index !== records.length - 1;
     // firstObserved/lastObserved are symbol-level diagnostics. For a
     // relisted symbol they can span several episodes, so only compare the
     // outer evidence boundaries against them; an inner relist naturally
     // occurs after the first observation and before the last observation.
-    if (index === 0 && Number.isFinite(listingTimestamp) && Number.isFinite(observedFirst) && listingTimestamp > observedFirst) {
-      addConflict('listing-after-first-observed', 'TRUE_LIFECYCLE_CONFLICT');
+    if (index === 0 && Number.isFinite(listingTimestamp)) {
+      if (Number.isFinite(minuteFirst)) {
+        if (minuteFirst < listingTimestamp) addConflict('listing-after-first-observed', 'TRUE_LIFECYCLE_CONFLICT');
+        else {
+          entryBoundaryEvidence = true;
+          addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+        }
+      } else if (Number.isFinite(hourlyFirst)
+        && hourlyFirst <= listingTimestamp && listingTimestamp < hourlyFirst + H1) {
+        entryBoundaryEvidence = true;
+        addBoundaryDiagnostic('HOURLY_BOUNDARY_STRADDLE');
+        addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+      } else if (Number.isFinite(hourlyFirst)) {
+        // An hourly open outside the listing interval is not minute-level
+        // evidence of a lifecycle conflict. Keep it unresolved and fail closed.
+        entryBoundaryEvidence = false;
+      }
     }
-    if (index === records.length - 1 && Number.isFinite(delistTimestamp) && Number.isFinite(observedLast) && observedLast >= delistTimestamp) {
-      addConflict('delist-at-or-before-last-observed', 'TRUE_LIFECYCLE_CONFLICT');
+    if (index === records.length - 1 && Number.isFinite(delistTimestamp)) {
+      if (Number.isFinite(minuteLast)) {
+        if (minuteLast >= delistTimestamp) addConflict('delist-at-or-before-last-observed', 'TRUE_LIFECYCLE_CONFLICT');
+        else {
+          exitBoundaryEvidence = true;
+          addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+        }
+      } else if (Number.isFinite(hourlyLast)
+        && hourlyLast < delistTimestamp && delistTimestamp <= hourlyLast + H1) {
+        exitBoundaryEvidence = true;
+        addBoundaryDiagnostic('HOURLY_BOUNDARY_STRADDLE');
+        addBoundaryDiagnostic('ARCHIVE_INTERVAL_ALIGNMENT');
+      } else if (Number.isFinite(hourlyLast)) {
+        exitBoundaryEvidence = false;
+      }
     }
     if (Number.isFinite(listingTimestamp) && Number.isFinite(delistTimestamp) && listingTimestamp >= delistTimestamp) {
       addConflict('listing-not-before-delist', 'TRUE_LIFECYCLE_CONFLICT');
@@ -530,12 +589,14 @@ function episodeRows({symbol, start, end, months, observedFirst, observedLast, c
     if (likelyActiveInDevelopment && delistedInsideDevelopment && !(delist.complete && delist.exact)) {
       addConflict('delist-evidence-missing-for-in-window-delist', 'EVIDENCE_MATCH_AMBIGUOUS');
     }
-    const entryBoundaryResolved = !likelyActiveInDevelopment || activeBeforeDevelopment || (listingInsideDevelopment && listing.complete);
+    const entryBoundaryResolved = !likelyActiveInDevelopment || activeBeforeDevelopment
+      || (listingInsideDevelopment && listing.complete && entryBoundaryEvidence);
     const exitBoundaryResolved = !likelyActiveInDevelopment || activeThroughDevelopmentEnd
       || (delistedInsideDevelopment && delist.complete && delist.exact)
       || (Number.isFinite(delistTimestamp) && delistTimestamp <= start && delist.complete && delist.exact);
+    const resolvedExitBoundary = exitBoundaryResolved && (!delistedInsideDevelopment || exitBoundaryEvidence);
     if (likelyActiveInDevelopment && !entryBoundaryResolved) addConflict('entry-boundary-unresolved', 'ENTRY_UNRESOLVED');
-    if (likelyActiveInDevelopment && !exitBoundaryResolved) addConflict('exit-boundary-unresolved', 'EXIT_UNRESOLVED');
+    if (likelyActiveInDevelopment && !resolvedExitBoundary) addConflict('exit-boundary-unresolved', 'EXIT_UNRESOLVED');
     // Multiple independently evidenced active intervals are a first-class
     // lifecycle shape, not by themselves a contradiction. Keep the relist
     // signal visible for audit without turning valid episodes into a block.
@@ -558,16 +619,17 @@ function episodeRows({symbol, start, end, months, observedFirst, observedLast, c
       delistEvidenceTimestamp: iso(delist.timestamp), delistEvidenceSource: delist.source,
       delistEvidenceUrl: delist.url, delistEvidencePath: delist.path, delistEvidenceSha256: delist.sha256,
       activeBeforeDevelopment, listingInsideDevelopment, delistedInsideDevelopment, activeThroughDevelopmentEnd,
-      likelyActiveInDevelopment, entryBoundaryResolved, exitBoundaryResolved,
+      likelyActiveInDevelopment, entryBoundaryResolved, exitBoundaryResolved: resolvedExitBoundary,
       noLifecycleConflict: conflicts.length === 0,
-      pitWindowResolved: !likelyActiveInDevelopment || (entryBoundaryResolved && exitBoundaryResolved && conflicts.length === 0),
-      lifecycleExact: !likelyActiveInDevelopment || (entryBoundaryResolved && exitBoundaryResolved && conflicts.length === 0),
+      pitWindowResolved: !likelyActiveInDevelopment || (entryBoundaryResolved && resolvedExitBoundary && conflicts.length === 0),
+      lifecycleExact: !likelyActiveInDevelopment || (entryBoundaryResolved && resolvedExitBoundary && conflicts.length === 0),
       lifecycleConflictReasons: conflicts, lifecycleConflictClasses: conflictClasses,
       entryEvidenceSource: entryEvidence.source || null, entryEvidenceTimestamp: iso(entryEvidence.timestamp),
       entryEvidencePath: entryEvidence.path || null, entryEvidenceUrl: entryEvidence.url || null, entryEvidenceSha256: entryEvidence.sha256 || null,
       exitEvidenceSource: exitEvidence.source || null, exitEvidenceTimestamp: iso(exitEvidence.timestamp),
       exitEvidencePath: exitEvidence.path || null, exitEvidenceUrl: exitEvidence.url || null, exitEvidenceSha256: exitEvidence.sha256 || null,
       archiveEvidenceOverlap: episodeArchiveOverlap,
+      lifecycleBoundaryDiagnostics: boundaryDiagnostics,
       data,
     };
   });
@@ -598,7 +660,8 @@ export function resolvePitWindow({
   const observedFirst = timestampValue(firstObserved);
   const observedLast = timestampValue(lastObserved);
   const snapshotAt = timestampValue(snapshotTimestamp);
-  const resolved = episodeRows({symbol, start, end, months, observedFirst, observedLast, currentMarket, lifecycleRecord, exchangeInfoEvidence, archiveEvidence, snapshotAt, artifactRows, liquidityByMonth, liquidity30dAverageQuoteVolume, priceRows, appDir});
+  const boundary = boundaryObservations(artifactRows, observedFirst, observedLast);
+  const resolved = episodeRows({symbol, start, end, months, observedFirst, observedLast, boundary, currentMarket, lifecycleRecord, exchangeInfoEvidence, archiveEvidence, snapshotAt, artifactRows, liquidityByMonth, liquidity30dAverageQuoteVolume, priceRows, appDir});
   const episodes = resolved.rows;
   const relevantEpisodes = episodes.filter(row => row.likelyActiveInDevelopment);
   const likelyActiveInDevelopment = relevantEpisodes.length > 0;
@@ -613,6 +676,7 @@ export function resolvePitWindow({
   const historicalDelisted = !currentMarket && (delistedInsideDevelopment || (lastArchiveMonth && lastArchiveMonth < monthKey(end)) || Boolean(lastEpisode.delistTimestamp));
   const conflicts = [...new Set(relevantEpisodes.flatMap(row => row.lifecycleConflictReasons || []))];
   const conflictClasses = [...new Set(relevantEpisodes.flatMap(row => row.lifecycleConflictClasses || []))];
+  const boundaryDiagnostics = [...new Set(relevantEpisodes.flatMap(row => row.lifecycleBoundaryDiagnostics || []))];
   const entryBoundaryResolved = !likelyActiveInDevelopment || relevantEpisodes.every(row => row.entryBoundaryResolved);
   const exitBoundaryResolved = !likelyActiveInDevelopment || relevantEpisodes.every(row => row.exitBoundaryResolved);
   const noLifecycleConflict = conflicts.length === 0;
@@ -659,8 +723,10 @@ export function resolvePitWindow({
     exitEvidenceSource: lastDelist.exitEvidenceSource || null, exitEvidenceTimestamp: lastDelist.exitEvidenceTimestamp || null,
     exitEvidencePath: lastDelist.exitEvidencePath || null, exitEvidenceUrl: lastDelist.exitEvidenceUrl || null, exitEvidenceSha256: lastDelist.exitEvidenceSha256 || null,
     lifecycleConflictReasons: conflicts, lifecycleConflictClasses: conflictClasses,
+    lifecycleBoundaryDiagnostics: boundaryDiagnostics,
     lifecycleConflictClass: conflictClasses[0] || null, activeEpisodes: episodes,
     currentMarketContractType: currentMarket?.contractType || null,
+    marketFilters: currentMarket?.filters || null,
     data, liquidityByMonth, liquidity30dAverageQuoteVolume,
     liquidity: {...liquidityEvidence, thresholdUsdt: M4_LIQUIDITY_THRESHOLD_USDT, lookbackDays: M4_LIQUIDITY_LOOKBACK_DAYS},
   };
@@ -773,10 +839,12 @@ function canonicalUniverseRow(row) {
     lifecycleConflictReasons: row.lifecycleConflictReasons,
     lifecycleConflictClasses: row.lifecycleConflictClasses,
     lifecycleConflictClass: row.lifecycleConflictClass,
+    lifecycleBoundaryDiagnostics: row.lifecycleBoundaryDiagnostics,
     activeEpisodes: row.activeEpisodes,
     requiredForDevelopment: row.requiredForDevelopment,
     likelyActiveInDevelopment: row.likelyActiveInDevelopment,
     currentMarketContractType: row.currentMarketContractType,
+    marketFilters: row.marketFilters,
   };
 }
 
@@ -821,7 +889,8 @@ export function buildPitUniverseFromFiles({
   const markets = discoveredSymbols.map(symbol => {
     const symbolArtifacts = new Map();
     for (const kind of M4_REQUIRED_ARTIFACTS) symbolArtifacts.set(kind, artifactSummary(appDir, artifacts.get(`${symbol}|${kind}`)));
-    const range = observedRange(new Map([['price', artifacts.get(`${symbol}|price`)]]));
+    const symbolArtifactRows = new Map([...M4_REQUIRED_ARTIFACTS].map(kind => [kind, artifacts.get(symbol + '|' + kind)]));
+    const range = observedRange(symbolArtifactRows);
     return resolvePitWindow({
       symbol,
       start,
@@ -923,10 +992,13 @@ export function buildPitUniverseFromFiles({
     markets,
     activeMarkets,
     unresolved,
+    resolvedLifecycleSymbols: activeMarkets.filter(row => row.pitWindowResolved).map(row => row.symbol).sort(),
     lifecycleConflicts: markets.filter(row => row.lifecycleConflictReasons.length).map(row => ({symbol: row.symbol, reasons: row.lifecycleConflictReasons, conflictClasses: row.lifecycleConflictClasses})),
     trueLifecycleConflicts: activeMarkets.filter(row => (row.lifecycleConflictClasses || []).includes('TRUE_LIFECYCLE_CONFLICT')).map(row => row.symbol).sort(),
     ambiguousEvidenceMatches: activeMarkets.filter(row => (row.lifecycleConflictClasses || []).includes('EVIDENCE_MATCH_AMBIGUOUS')).map(row => row.symbol).sort(),
     relistEpisodeSymbols: activeMarkets.filter(row => (row.lifecycleConflictClasses || []).includes('RELIST_EPISODE_DETECTED')).map(row => row.symbol).sort(),
+    hourlyBoundaryStraddleSymbols: activeMarkets.filter(row => (row.lifecycleBoundaryDiagnostics || []).includes('HOURLY_BOUNDARY_STRADDLE')).map(row => row.symbol).sort(),
+    archiveIntervalAlignmentSymbols: activeMarkets.filter(row => (row.lifecycleBoundaryDiagnostics || []).includes('ARCHIVE_INTERVAL_ALIGNMENT')).map(row => row.symbol).sort(),
     developmentActiveEpisodes: activeMarkets.flatMap(row => (row.activeEpisodes || []).filter(episode => episode.likelyActiveInDevelopment).map(episode => ({symbol: row.symbol, ...episode}))),
     multiEpisodeSymbols: activeMarkets.filter(row => (row.activeEpisodes || []).filter(episode => episode.likelyActiveInDevelopment).length > 1).map(row => row.symbol).sort(),
     monthlyPitUniverse: monthlyPitCounts(markets, start, end),
