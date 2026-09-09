@@ -47,23 +47,34 @@ export function auditRepoNoOrder(appDir, {roots = null} = {}) {
 export function auditProductionIsolation(appDir, baseRef = 'research/v9-derivatives-multifactor') {
   let changedFiles = [];
   try {
-    const committed = execFileSync('git', ['diff', '--name-only', `${baseRef}...HEAD`], {cwd: appDir, encoding: 'utf8'});
+    const candidates = [baseRef, `origin/${baseRef}`, `refs/remotes/origin/${baseRef}`];
+    const resolvedBaseRef = candidates.find(candidate => {
+      try {
+        execFileSync('git', ['rev-parse', '--verify', `${candidate}^{commit}`], {cwd: appDir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    if (!resolvedBaseRef) throw new Error('base-ref-not-found');
+    const committed = execFileSync('git', ['diff', '--name-only', `${resolvedBaseRef}...HEAD`], {cwd: appDir, encoding: 'utf8'});
     const working = execFileSync('git', ['diff', '--name-only', 'HEAD'], {cwd: appDir, encoding: 'utf8'});
     const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard'], {cwd: appDir, encoding: 'utf8'});
     changedFiles = [...new Set(`${committed}\n${working}\n${untracked}`.split(/\r?\n/).map(value => value.trim()).filter(Boolean))].sort();
+    const productionPrefixes = [
+      'api/', 'supabase/', 'vercel.json', '.vercel/',
+      'src/daemon.', 'src/config.', 'src/binance.', 'src/portfolio.',
+    ];
+    const productionFiles = changedFiles.filter(file => productionPrefixes.some(prefix => file === prefix || file.startsWith(prefix)));
+    return {
+      pass: productionFiles.length === 0,
+      baseRef,
+      resolvedBaseRef,
+      changedFiles,
+      productionFiles,
+      boundary: 'research-only; Production strategy, APIs, cron, SMTP, secrets and schema unchanged',
+    };
   } catch {
     return {pass: false, baseRef, changedFiles: [], productionFiles: [], error: 'unable-to-audit-git-diff'};
   }
-  const productionPrefixes = [
-    'api/', 'supabase/', 'vercel.json', '.vercel/',
-    'src/daemon.', 'src/config.', 'src/binance.', 'src/portfolio.',
-  ];
-  const productionFiles = changedFiles.filter(file => productionPrefixes.some(prefix => file === prefix || file.startsWith(prefix)));
-  return {
-    pass: productionFiles.length === 0,
-    baseRef,
-    changedFiles,
-    productionFiles,
-    boundary: 'research-only; Production strategy, APIs, cron, SMTP, secrets and schema unchanged',
-  };
 }
