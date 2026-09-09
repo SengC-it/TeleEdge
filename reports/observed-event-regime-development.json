@@ -1,0 +1,1831 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-08T22:03:24.771Z",
+  "eventDefinitionVersion": "m4-event-regime-v1",
+  "developmentWindow": {
+    "start": "2024-01-01T00:00:00.000Z",
+    "end": "2026-01-01T00:00:00.000Z"
+  },
+  "observedPitGate": {
+    "pass": true,
+    "status": "OBSERVED_PIT_READY",
+    "mean": 166.90264477884176,
+    "median": 163,
+    "min": 112,
+    "max": 254,
+    "monthly": {
+      "2024-01": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 166,
+        "median": 166,
+        "mean": 164.8494623655914,
+        "min": 149,
+        "max": 172,
+        "coreMedian": 36,
+        "expandedMedian": 130,
+        "dataLossObservations": 10602
+      },
+      "2024-02": {
+        "snapshots": 174,
+        "pitEligibleSymbols": 140,
+        "median": 140,
+        "mean": 140.66666666666666,
+        "min": 126,
+        "max": 165,
+        "coreMedian": 35,
+        "expandedMedian": 105,
+        "dataLossObservations": 9918
+      },
+      "2024-03": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 225,
+        "median": 225,
+        "mean": 214.6236559139785,
+        "min": 165,
+        "max": 236,
+        "coreMedian": 40,
+        "expandedMedian": 185,
+        "dataLossObservations": 10602
+      },
+      "2024-04": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 216,
+        "median": 216,
+        "mean": 211.95,
+        "min": 185,
+        "max": 237,
+        "coreMedian": 39,
+        "expandedMedian": 177,
+        "dataLossObservations": 10260
+      },
+      "2024-05": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 156.5,
+        "median": 156.5,
+        "mean": 163.13440860215053,
+        "min": 148,
+        "max": 186,
+        "coreMedian": 40,
+        "expandedMedian": 116.5,
+        "dataLossObservations": 10602
+      },
+      "2024-06": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 157,
+        "median": 157,
+        "mean": 155.5888888888889,
+        "min": 141,
+        "max": 164,
+        "coreMedian": 40,
+        "expandedMedian": 117,
+        "dataLossObservations": 10260
+      },
+      "2024-07": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 133,
+        "median": 133,
+        "mean": 132.747311827957,
+        "min": 126,
+        "max": 140,
+        "coreMedian": 39,
+        "expandedMedian": 93,
+        "dataLossObservations": 10602
+      },
+      "2024-08": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 132,
+        "median": 132,
+        "mean": 131.76344086021504,
+        "min": 127,
+        "max": 134,
+        "coreMedian": 40,
+        "expandedMedian": 92.5,
+        "dataLossObservations": 10602
+      },
+      "2024-09": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 117,
+        "median": 117,
+        "mean": 117.9,
+        "min": 112,
+        "max": 129,
+        "coreMedian": 39,
+        "expandedMedian": 78,
+        "dataLossObservations": 10260
+      },
+      "2024-10": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 138.5,
+        "median": 138.5,
+        "mean": 136.10752688172042,
+        "min": 122,
+        "max": 146,
+        "coreMedian": 39,
+        "expandedMedian": 98,
+        "dataLossObservations": 10602
+      },
+      "2024-11": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 154,
+        "median": 154,
+        "mean": 160.2,
+        "min": 135,
+        "max": 208,
+        "coreMedian": 43,
+        "expandedMedian": 111,
+        "dataLossObservations": 10260
+      },
+      "2024-12": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 247,
+        "median": 247,
+        "mean": 241.13978494623655,
+        "min": 208,
+        "max": 254,
+        "coreMedian": 46,
+        "expandedMedian": 201,
+        "dataLossObservations": 10602
+      },
+      "2025-01": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 193,
+        "median": 193,
+        "mean": 195.15591397849462,
+        "min": 181,
+        "max": 232,
+        "coreMedian": 47,
+        "expandedMedian": 146,
+        "dataLossObservations": 10602
+      },
+      "2025-02": {
+        "snapshots": 168,
+        "pitEligibleSymbols": 180,
+        "median": 180,
+        "mean": 181.625,
+        "min": 172,
+        "max": 195,
+        "coreMedian": 46,
+        "expandedMedian": 133,
+        "dataLossObservations": 9576
+      },
+      "2025-03": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 160,
+        "median": 160,
+        "mean": 161.7311827956989,
+        "min": 148,
+        "max": 179,
+        "coreMedian": 49,
+        "expandedMedian": 111,
+        "dataLossObservations": 10606
+      },
+      "2025-04": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 143.5,
+        "median": 143.5,
+        "mean": 146.7111111111111,
+        "min": 137,
+        "max": 163,
+        "coreMedian": 48,
+        "expandedMedian": 96,
+        "dataLossObservations": 10264
+      },
+      "2025-05": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 177,
+        "median": 177,
+        "mean": 171.84408602150538,
+        "min": 147,
+        "max": 190,
+        "coreMedian": 48,
+        "expandedMedian": 130,
+        "dataLossObservations": 10604
+      },
+      "2025-06": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 152,
+        "median": 152,
+        "mean": 160.8,
+        "min": 140,
+        "max": 185,
+        "coreMedian": 49,
+        "expandedMedian": 103,
+        "dataLossObservations": 10260
+      },
+      "2025-07": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 153,
+        "median": 153,
+        "mean": 159.75806451612902,
+        "min": 137,
+        "max": 193,
+        "coreMedian": 50,
+        "expandedMedian": 104,
+        "dataLossObservations": 10607
+      },
+      "2025-08": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 187,
+        "median": 187,
+        "mean": 186.33333333333334,
+        "min": 173,
+        "max": 201,
+        "coreMedian": 50,
+        "expandedMedian": 137,
+        "dataLossObservations": 10602
+      },
+      "2025-09": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 166,
+        "median": 166,
+        "mean": 165.76111111111112,
+        "min": 158,
+        "max": 174,
+        "coreMedian": 49,
+        "expandedMedian": 116,
+        "dataLossObservations": 10260
+      },
+      "2025-10": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 182,
+        "median": 182,
+        "mean": 180.6290322580645,
+        "min": 165,
+        "max": 192,
+        "coreMedian": 52,
+        "expandedMedian": 129,
+        "dataLossObservations": 10602
+      },
+      "2025-11": {
+        "snapshots": 180,
+        "pitEligibleSymbols": 176,
+        "median": 176,
+        "mean": 177.90555555555557,
+        "min": 164,
+        "max": 193,
+        "coreMedian": 55,
+        "expandedMedian": 120,
+        "dataLossObservations": 10260
+      },
+      "2025-12": {
+        "snapshots": 186,
+        "pitEligibleSymbols": 147,
+        "median": 147,
+        "mean": 145.2311827956989,
+        "min": 123,
+        "max": 166,
+        "coreMedian": 54,
+        "expandedMedian": 91.5,
+        "dataLossObservations": 10606
+      }
+    },
+    "monthlyMedianMin": 117,
+    "monthlyMedianPass": true,
+    "developmentMeanPass": true,
+    "btcOtherwiseEligibleObservations": 4386,
+    "btcDataLossObservations": 0,
+    "btcCoverage": 1,
+    "btcCoveragePass": true,
+    "nonCriticalDataLossObservations": 250021,
+    "criteria": {
+      "minimumMonthlyMedian": 100,
+      "minimumDevelopmentMean": 120,
+      "minimumBtcCoverage": 0.95
+    }
+  },
+  "finalDecision": "EVENT_RESEARCH_FAIL",
+  "families": {
+    "BREADTH_REGIME_TRANSITION": {
+      "family": "BREADTH_REGIME_TRANSITION",
+      "status": "REJECT",
+      "raw": 112,
+      "independent": 95,
+      "executable": 74,
+      "symbols": 1,
+      "months": 22,
+      "long": 32,
+      "short": 42,
+      "marketRegimes": [
+        "BEAR",
+        "BULL",
+        "SIDEWAYS"
+      ],
+      "wins": 31,
+      "losses": 43,
+      "winRate": 0.4189189189189189,
+      "profitFactor": 0.8897024333220311,
+      "expectancyR": -0.04405320202701042,
+      "confidenceInterval": {
+        "lower": -0.2456161891802861,
+        "upper": 0.15750978512626523,
+        "level": 0.95
+      },
+      "pnl": -186.06796953856548,
+      "maxDrawdownPct": 0.05872162298459607,
+      "positiveFolds": 6,
+      "eventControlExpectancyUpliftR": -0.24984631611890168,
+      "eventControlProfitFactorUplift": -0.5545999055068462,
+      "mfe": null,
+      "mae": null,
+      "forwardReturns": {
+        "h4": {
+          "n": 74,
+          "mean": 0.00013086137476512447,
+          "median": -0.0006319586123636478
+        },
+        "h12": {
+          "n": 74,
+          "mean": -0.0022191551713110357,
+          "median": -0.00021798169727299532
+        },
+        "h24": {
+          "n": 74,
+          "mean": -0.003179016359724102,
+          "median": -0.0011623492911216338
+        },
+        "h72": {
+          "n": 74,
+          "mean": -0.001758900075371235,
+          "median": -0.0015709876281966295
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "UNMATCHED_CONTROL",
+        "rows": 60,
+        "summary": {
+          "independent": 60,
+          "executable": 37,
+          "symbols": 1,
+          "wins": 20,
+          "losses": 17,
+          "winRate": 0.5405405405405406,
+          "profitFactor": 1.4443023388288774,
+          "expectancyR": 0.20579311409189124,
+          "confidenceInterval": {
+            "lower": -0.19593150293383774,
+            "upper": 0.6075177311176202,
+            "level": 0.95
+          },
+          "pnl": 440.3328117639035,
+          "maxDrawdownPct": 0.03568123349226244,
+          "positiveFolds": 6,
+          "folds": 6,
+          "symbolConcentration": 1
+        }
+      },
+      "folds": 6,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 0,
+        "prePurge": 74,
+        "kept": 74,
+        "labelOverlapFree": true
+      }
+    },
+    "MARKET_VOLATILITY_SHOCK": {
+      "family": "MARKET_VOLATILITY_SHOCK",
+      "status": "WATCH",
+      "raw": 0,
+      "independent": 0,
+      "executable": 0,
+      "symbols": 0,
+      "months": 0,
+      "long": 0,
+      "short": 0,
+      "marketRegimes": [],
+      "wins": 0,
+      "losses": 0,
+      "winRate": null,
+      "profitFactor": null,
+      "expectancyR": null,
+      "confidenceInterval": {
+        "lower": null,
+        "upper": null,
+        "level": 0.95
+      },
+      "pnl": 0,
+      "maxDrawdownPct": 0,
+      "positiveFolds": 0,
+      "eventControlExpectancyUpliftR": null,
+      "eventControlProfitFactorUplift": null,
+      "mfe": null,
+      "mae": null,
+      "forwardReturns": {
+        "h4": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h12": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h24": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h72": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "MATCHED",
+        "rows": 0,
+        "summary": {
+          "independent": 0,
+          "executable": 0,
+          "symbols": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "profitFactor": null,
+          "expectancyR": null,
+          "confidenceInterval": {
+            "lower": null,
+            "upper": null,
+            "level": 0.95
+          },
+          "pnl": 0,
+          "maxDrawdownPct": 0,
+          "positiveFolds": 0,
+          "folds": 0,
+          "symbolConcentration": null
+        }
+      },
+      "folds": 0,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 0,
+        "prePurge": 0,
+        "kept": 0,
+        "labelOverlapFree": true
+      }
+    },
+    "DISPERSION_ROTATION": {
+      "family": "DISPERSION_ROTATION",
+      "status": "WATCH",
+      "raw": 0,
+      "independent": 0,
+      "executable": 0,
+      "symbols": 0,
+      "months": 0,
+      "long": 0,
+      "short": 0,
+      "marketRegimes": [],
+      "wins": 0,
+      "losses": 0,
+      "winRate": null,
+      "profitFactor": null,
+      "expectancyR": null,
+      "confidenceInterval": {
+        "lower": null,
+        "upper": null,
+        "level": 0.95
+      },
+      "pnl": 0,
+      "maxDrawdownPct": 0,
+      "positiveFolds": 0,
+      "eventControlExpectancyUpliftR": null,
+      "eventControlProfitFactorUplift": null,
+      "mfe": null,
+      "mae": null,
+      "forwardReturns": {
+        "h4": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h12": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h24": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h72": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "MATCHED",
+        "rows": 0,
+        "summary": {
+          "independent": 0,
+          "executable": 0,
+          "symbols": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "profitFactor": null,
+          "expectancyR": null,
+          "confidenceInterval": {
+            "lower": null,
+            "upper": null,
+            "level": 0.95
+          },
+          "pnl": 0,
+          "maxDrawdownPct": 0,
+          "positiveFolds": 0,
+          "folds": 0,
+          "symbolConcentration": null
+        }
+      },
+      "folds": 0,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 0,
+        "prePurge": 0,
+        "kept": 0,
+        "labelOverlapFree": true
+      }
+    },
+    "LEVERAGE_STRESS_TRANSITION": {
+      "family": "LEVERAGE_STRESS_TRANSITION",
+      "status": "WATCH",
+      "raw": 0,
+      "independent": 0,
+      "executable": 0,
+      "symbols": 0,
+      "months": 0,
+      "long": 0,
+      "short": 0,
+      "marketRegimes": [],
+      "wins": 0,
+      "losses": 0,
+      "winRate": null,
+      "profitFactor": null,
+      "expectancyR": null,
+      "confidenceInterval": {
+        "lower": null,
+        "upper": null,
+        "level": 0.95
+      },
+      "pnl": 0,
+      "maxDrawdownPct": 0,
+      "positiveFolds": 0,
+      "eventControlExpectancyUpliftR": null,
+      "eventControlProfitFactorUplift": null,
+      "mfe": null,
+      "mae": null,
+      "forwardReturns": {
+        "h4": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h12": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h24": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h72": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "MATCHED",
+        "rows": 0,
+        "summary": {
+          "independent": 0,
+          "executable": 0,
+          "symbols": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "profitFactor": null,
+          "expectancyR": null,
+          "confidenceInterval": {
+            "lower": null,
+            "upper": null,
+            "level": 0.95
+          },
+          "pnl": 0,
+          "maxDrawdownPct": 0,
+          "positiveFolds": 0,
+          "folds": 0,
+          "symbolConcentration": null
+        }
+      },
+      "folds": 0,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 0,
+        "prePurge": 0,
+        "kept": 0,
+        "labelOverlapFree": true
+      }
+    },
+    "TREND_REGIME_TRANSITION": {
+      "family": "TREND_REGIME_TRANSITION",
+      "status": "REJECT",
+      "raw": 97,
+      "independent": 84,
+      "executable": 60,
+      "symbols": 1,
+      "months": 24,
+      "long": 30,
+      "short": 30,
+      "marketRegimes": [
+        "BEAR",
+        "BULL"
+      ],
+      "wins": 29,
+      "losses": 31,
+      "winRate": 0.48333333333333334,
+      "profitFactor": 0.8992544239112994,
+      "expectancyR": -0.04417962649142935,
+      "confidenceInterval": {
+        "lower": -0.28631243045215354,
+        "upper": 0.19795317746929483,
+        "level": 0.95
+      },
+      "pnl": -148.1489586069394,
+      "maxDrawdownPct": 0.030327204388845168,
+      "positiveFolds": 6,
+      "eventControlExpectancyUpliftR": 0.2894508784280678,
+      "eventControlProfitFactorUplift": 0.4210750747591662,
+      "mfe": null,
+      "mae": null,
+      "forwardReturns": {
+        "h4": {
+          "n": 60,
+          "mean": 0.0005849375693002367,
+          "median": 0.000670117642663004
+        },
+        "h12": {
+          "n": 60,
+          "mean": 0.0007107345001366024,
+          "median": -0.0012663203144055446
+        },
+        "h24": {
+          "n": 60,
+          "mean": 0.00032492331540867245,
+          "median": -0.0009429840047007199
+        },
+        "h72": {
+          "n": 60,
+          "mean": -0.000663008713081383,
+          "median": 0.0021631123496352878
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "UNMATCHED_CONTROL",
+        "rows": 55,
+        "summary": {
+          "independent": 55,
+          "executable": 34,
+          "symbols": 1,
+          "wins": 8,
+          "losses": 26,
+          "winRate": 0.23529411764705882,
+          "profitFactor": 0.47817934915213317,
+          "expectancyR": -0.3336305049194972,
+          "confidenceInterval": {
+            "lower": -0.6691240272357748,
+            "upper": 0.0018630173967803532,
+            "level": 0.95
+          },
+          "pnl": -666.0740166296059,
+          "maxDrawdownPct": 0.0869001619329605,
+          "positiveFolds": 3,
+          "folds": 6,
+          "symbolConcentration": null
+        }
+      },
+      "folds": 6,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 1,
+        "prePurge": 61,
+        "kept": 60,
+        "labelOverlapFree": true
+      }
+    }
+  },
+  "totalKeep": 0,
+  "totalStrongKeep": 0,
+  "rawEvents": 209,
+  "independentEvents": 179,
+  "suppressedEvents": 30,
+  "eventFrequency": {
+    "mean": 7.458333333333333,
+    "median": 8,
+    "monthly": {
+      "2024-01": 9,
+      "2024-02": 4,
+      "2024-03": 6,
+      "2024-04": 7,
+      "2024-05": 12,
+      "2024-06": 5,
+      "2024-07": 10,
+      "2024-08": 11,
+      "2024-09": 5,
+      "2024-10": 9,
+      "2024-11": 6,
+      "2024-12": 4,
+      "2025-01": 10,
+      "2025-02": 8,
+      "2025-03": 9,
+      "2025-04": 6,
+      "2025-05": 4,
+      "2025-06": 9,
+      "2025-07": 8,
+      "2025-08": 8,
+      "2025-09": 6,
+      "2025-10": 9,
+      "2025-11": 4,
+      "2025-12": 10
+    }
+  },
+  "horizonStudy": {
+    "h4": {
+      "n": 134,
+      "mean": 0.0003341790738106971,
+      "median": 0.000025652078230242736
+    },
+    "h12": {
+      "n": 134,
+      "mean": -0.0009072642736479141,
+      "median": -0.0008272209147263121
+    },
+    "h24": {
+      "n": 134,
+      "mean": -0.0016100881469780835,
+      "median": -0.0011306305767035951
+    },
+    "h72": {
+      "n": 134,
+      "mean": -0.001268202450465331,
+      "median": -0.00036156958547162166
+    }
+  },
+  "controls": {
+    "method": "frozen exact month + side + regime + liquidity; market=BTCUSDT; dispersion=same symbol; ±72h contamination; no reuse",
+    "matched": 184,
+    "unmatched": 25,
+    "noReuse": true
+  },
+  "sixFoldAudit": {
+    "outerFolds": 6,
+    "purgeHours": 72,
+    "noFitting": true,
+    "folds": 6,
+    "eventEndAware": true,
+    "status": "PASS"
+  },
+  "pitInvariantAudit": {
+    "futureRowsDoNotChangePastUniverse": true,
+    "futureListedMemberInvariant": true,
+    "futureDelistedKnowledgeInvariant": true,
+    "futureVolumeInvariant": true,
+    "currentExchangeInfoInvariant": true,
+    "announcementEvidenceInvariant": true,
+    "beforeSymbols": 1,
+    "afterSymbols": 1,
+    "pass": true
+  },
+  "announcementDiagnostics": {
+    "hardGate": false,
+    "disagreementCount": null,
+    "spotFuturesAmbiguityCount": null,
+    "archiveAnnouncementMismatch": null,
+    "spotFalseEvidenceRejected": true
+  },
+  "missingDataSensitivity": {
+    "status": "COMPUTED",
+    "top100": {
+      "BREADTH_REGIME_TRANSITION": {
+        "family": "BREADTH_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 120,
+        "independent": 101,
+        "executable": 78,
+        "symbols": 1,
+        "months": 24,
+        "long": 39,
+        "short": 39,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 31,
+        "losses": 47,
+        "winRate": 0.3974358974358974,
+        "profitFactor": 0.7550872238587681,
+        "expectancyR": -0.10324172898934268,
+        "confidenceInterval": {
+          "lower": -0.29828743760151943,
+          "upper": 0.09180397962283406,
+          "level": 0.95
+        },
+        "pnl": -468.2401480921993,
+        "maxDrawdownPct": 0.05726469370329069,
+        "positiveFolds": 6,
+        "eventControlExpectancyUpliftR": 0.028512986733232284,
+        "eventControlProfitFactorUplift": 0.024563261314423324,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 78,
+            "mean": 0.00002554874746018551,
+            "median": -0.00043585273574320293
+          },
+          "h12": {
+            "n": 78,
+            "mean": -0.0002499666377149211,
+            "median": 0.00012171073297762014
+          },
+          "h24": {
+            "n": 78,
+            "mean": 0.00040808362498043985,
+            "median": -0.0007206547880412306
+          },
+          "h72": {
+            "n": 78,
+            "mean": -0.004729877309165005,
+            "median": -0.003446338720441977
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 67,
+          "summary": {
+            "independent": 67,
+            "executable": 37,
+            "symbols": 1,
+            "wins": 15,
+            "losses": 22,
+            "winRate": 0.40540540540540543,
+            "profitFactor": 0.7305239625443448,
+            "expectancyR": -0.13175471572257497,
+            "confidenceInterval": {
+              "lower": -0.46190785348720126,
+              "upper": 0.19839842204205133,
+              "level": 0.95
+            },
+            "pnl": -292.5959360669083,
+            "maxDrawdownPct": 0.03933658512149686,
+            "positiveFolds": 6,
+            "folds": 6,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 78,
+          "kept": 78,
+          "labelOverlapFree": true
+        }
+      },
+      "MARKET_VOLATILITY_SHOCK": {
+        "family": "MARKET_VOLATILITY_SHOCK",
+        "status": "REJECT",
+        "raw": 281,
+        "independent": 177,
+        "executable": 138,
+        "symbols": 1,
+        "months": 24,
+        "long": 68,
+        "short": 70,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 55,
+        "losses": 83,
+        "winRate": 0.39855072463768115,
+        "profitFactor": 0.779136529547502,
+        "expectancyR": -0.09881628447425275,
+        "confidenceInterval": {
+          "lower": -0.25326247852802464,
+          "upper": 0.055629909579519105,
+          "level": 0.95
+        },
+        "pnl": -784.0510188682182,
+        "maxDrawdownPct": 0.10529022433881473,
+        "positiveFolds": 6,
+        "eventControlExpectancyUpliftR": 0.2307344226596326,
+        "eventControlProfitFactorUplift": 0.41774706343314566,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 138,
+            "mean": -0.0003227831443818917,
+            "median": -0.0007364687892292832
+          },
+          "h12": {
+            "n": 138,
+            "mean": 0.000329884604561319,
+            "median": 0.0007209236897906535
+          },
+          "h24": {
+            "n": 138,
+            "mean": -0.003879104700445622,
+            "median": -0.00488727945112255
+          },
+          "h72": {
+            "n": 138,
+            "mean": -0.0043654548770901795,
+            "median": -0.005807506258859285
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 79,
+          "summary": {
+            "independent": 79,
+            "executable": 45,
+            "symbols": 1,
+            "wins": 13,
+            "losses": 32,
+            "winRate": 0.28888888888888886,
+            "profitFactor": 0.36138946611435635,
+            "expectancyR": -0.32955070713388535,
+            "confidenceInterval": {
+              "lower": -0.5561459659667802,
+              "upper": -0.1029554483009904,
+              "level": 0.95
+            },
+            "pnl": -867.6359002893646,
+            "maxDrawdownPct": 0.08676359002893569,
+            "positiveFolds": 5,
+            "folds": 6,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 6,
+          "prePurge": 144,
+          "kept": 138,
+          "labelOverlapFree": true
+        }
+      },
+      "DISPERSION_ROTATION": {
+        "family": "DISPERSION_ROTATION",
+        "status": "REJECT",
+        "raw": 1752,
+        "independent": 1616,
+        "executable": 437,
+        "symbols": 231,
+        "months": 24,
+        "long": 140,
+        "short": 297,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 171,
+        "losses": 266,
+        "winRate": 0.391304347826087,
+        "profitFactor": 0.8643866623541966,
+        "expectancyR": -0.07151365661030806,
+        "confidenceInterval": {
+          "lower": -0.17641354902525722,
+          "upper": 0.03338623580464109,
+          "level": 0.95
+        },
+        "pnl": -1880.789727659047,
+        "maxDrawdownPct": 0.20734543296754118,
+        "positiveFolds": 6,
+        "eventControlExpectancyUpliftR": -0.047791556780589516,
+        "eventControlProfitFactorUplift": -0.09245862328199383,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 437,
+            "mean": -0.0016175955090344102,
+            "median": -0.0012953998694860136
+          },
+          "h12": {
+            "n": 437,
+            "mean": -0.003788912618546119,
+            "median": -0.0006732495511669878
+          },
+          "h24": {
+            "n": 437,
+            "mean": -0.004308302595473324,
+            "median": 0.0004095674967233842
+          },
+          "h72": {
+            "n": 437,
+            "mean": -0.011136877779886378,
+            "median": -0.005004076354333642
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 132,
+          "summary": {
+            "independent": 132,
+            "executable": 99,
+            "symbols": 69,
+            "wins": 40,
+            "losses": 59,
+            "winRate": 0.40404040404040403,
+            "profitFactor": 0.9568452856361904,
+            "expectancyR": -0.023722099829718547,
+            "confidenceInterval": {
+              "lower": -0.26050520500980673,
+              "upper": 0.21306100535036962,
+              "level": 0.95
+            },
+            "pnl": -139.95772063071536,
+            "maxDrawdownPct": 0.0850949777947504,
+            "positiveFolds": 6,
+            "folds": 6,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 11,
+          "prePurge": 448,
+          "kept": 437,
+          "labelOverlapFree": true
+        }
+      },
+      "LEVERAGE_STRESS_TRANSITION": {
+        "family": "LEVERAGE_STRESS_TRANSITION",
+        "status": "WATCH",
+        "raw": 0,
+        "independent": 0,
+        "executable": 0,
+        "symbols": 0,
+        "months": 0,
+        "long": 0,
+        "short": 0,
+        "marketRegimes": [],
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "profitFactor": null,
+        "expectancyR": null,
+        "confidenceInterval": {
+          "lower": null,
+          "upper": null,
+          "level": 0.95
+        },
+        "pnl": 0,
+        "maxDrawdownPct": 0,
+        "positiveFolds": 0,
+        "eventControlExpectancyUpliftR": null,
+        "eventControlProfitFactorUplift": null,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h12": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h24": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h72": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "MATCHED",
+          "rows": 0,
+          "summary": {
+            "independent": 0,
+            "executable": 0,
+            "symbols": 0,
+            "wins": 0,
+            "losses": 0,
+            "winRate": null,
+            "profitFactor": null,
+            "expectancyR": null,
+            "confidenceInterval": {
+              "lower": null,
+              "upper": null,
+              "level": 0.95
+            },
+            "pnl": 0,
+            "maxDrawdownPct": 0,
+            "positiveFolds": 0,
+            "folds": 0,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 0,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 0,
+          "kept": 0,
+          "labelOverlapFree": true
+        }
+      },
+      "TREND_REGIME_TRANSITION": {
+        "family": "TREND_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 97,
+        "independent": 84,
+        "executable": 60,
+        "symbols": 1,
+        "months": 24,
+        "long": 30,
+        "short": 30,
+        "marketRegimes": [
+          "BEAR",
+          "BULL"
+        ],
+        "wins": 29,
+        "losses": 31,
+        "winRate": 0.48333333333333334,
+        "profitFactor": 0.8992544239112994,
+        "expectancyR": -0.04417962649142935,
+        "confidenceInterval": {
+          "lower": -0.28631243045215354,
+          "upper": 0.19795317746929483,
+          "level": 0.95
+        },
+        "pnl": -148.1489586069394,
+        "maxDrawdownPct": 0.030327204388845168,
+        "positiveFolds": 6,
+        "eventControlExpectancyUpliftR": 0.2894508784280678,
+        "eventControlProfitFactorUplift": 0.4210750747591662,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 60,
+            "mean": 0.0005849375693002367,
+            "median": 0.000670117642663004
+          },
+          "h12": {
+            "n": 60,
+            "mean": 0.0007107345001366024,
+            "median": -0.0012663203144055446
+          },
+          "h24": {
+            "n": 60,
+            "mean": 0.00032492331540867245,
+            "median": -0.0009429840047007199
+          },
+          "h72": {
+            "n": 60,
+            "mean": -0.000663008713081383,
+            "median": 0.0021631123496352878
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 55,
+          "summary": {
+            "independent": 55,
+            "executable": 34,
+            "symbols": 1,
+            "wins": 8,
+            "losses": 26,
+            "winRate": 0.23529411764705882,
+            "profitFactor": 0.47817934915213317,
+            "expectancyR": -0.3336305049194972,
+            "confidenceInterval": {
+              "lower": -0.6691240272357748,
+              "upper": 0.0018630173967803532,
+              "level": 0.95
+            },
+            "pnl": -666.0740166296059,
+            "maxDrawdownPct": 0.0869001619329605,
+            "positiveFolds": 3,
+            "folds": 6,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 1,
+          "prePurge": 61,
+          "kept": 60,
+          "labelOverlapFree": true
+        }
+      }
+    },
+    "all": {
+      "BREADTH_REGIME_TRANSITION": {
+        "family": "BREADTH_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 112,
+        "independent": 95,
+        "executable": 74,
+        "symbols": 1,
+        "months": 22,
+        "long": 32,
+        "short": 42,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 31,
+        "losses": 43,
+        "winRate": 0.4189189189189189,
+        "profitFactor": 0.8897024333220311,
+        "expectancyR": -0.04405320202701042,
+        "confidenceInterval": {
+          "lower": -0.2456161891802861,
+          "upper": 0.15750978512626523,
+          "level": 0.95
+        },
+        "pnl": -186.06796953856548,
+        "maxDrawdownPct": 0.05872162298459607,
+        "positiveFolds": 6,
+        "eventControlExpectancyUpliftR": -0.24984631611890168,
+        "eventControlProfitFactorUplift": -0.5545999055068462,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 74,
+            "mean": 0.00013086137476512447,
+            "median": -0.0006319586123636478
+          },
+          "h12": {
+            "n": 74,
+            "mean": -0.0022191551713110357,
+            "median": -0.00021798169727299532
+          },
+          "h24": {
+            "n": 74,
+            "mean": -0.003179016359724102,
+            "median": -0.0011623492911216338
+          },
+          "h72": {
+            "n": 74,
+            "mean": -0.001758900075371235,
+            "median": -0.0015709876281966295
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 60,
+          "summary": {
+            "independent": 60,
+            "executable": 37,
+            "symbols": 1,
+            "wins": 20,
+            "losses": 17,
+            "winRate": 0.5405405405405406,
+            "profitFactor": 1.4443023388288774,
+            "expectancyR": 0.20579311409189124,
+            "confidenceInterval": {
+              "lower": -0.19593150293383774,
+              "upper": 0.6075177311176202,
+              "level": 0.95
+            },
+            "pnl": 440.3328117639035,
+            "maxDrawdownPct": 0.03568123349226244,
+            "positiveFolds": 6,
+            "folds": 6,
+            "symbolConcentration": 1
+          }
+        },
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 74,
+          "kept": 74,
+          "labelOverlapFree": true
+        }
+      },
+      "MARKET_VOLATILITY_SHOCK": {
+        "family": "MARKET_VOLATILITY_SHOCK",
+        "status": "WATCH",
+        "raw": 0,
+        "independent": 0,
+        "executable": 0,
+        "symbols": 0,
+        "months": 0,
+        "long": 0,
+        "short": 0,
+        "marketRegimes": [],
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "profitFactor": null,
+        "expectancyR": null,
+        "confidenceInterval": {
+          "lower": null,
+          "upper": null,
+          "level": 0.95
+        },
+        "pnl": 0,
+        "maxDrawdownPct": 0,
+        "positiveFolds": 0,
+        "eventControlExpectancyUpliftR": null,
+        "eventControlProfitFactorUplift": null,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h12": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h24": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h72": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "MATCHED",
+          "rows": 0,
+          "summary": {
+            "independent": 0,
+            "executable": 0,
+            "symbols": 0,
+            "wins": 0,
+            "losses": 0,
+            "winRate": null,
+            "profitFactor": null,
+            "expectancyR": null,
+            "confidenceInterval": {
+              "lower": null,
+              "upper": null,
+              "level": 0.95
+            },
+            "pnl": 0,
+            "maxDrawdownPct": 0,
+            "positiveFolds": 0,
+            "folds": 0,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 0,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 0,
+          "kept": 0,
+          "labelOverlapFree": true
+        }
+      },
+      "DISPERSION_ROTATION": {
+        "family": "DISPERSION_ROTATION",
+        "status": "WATCH",
+        "raw": 0,
+        "independent": 0,
+        "executable": 0,
+        "symbols": 0,
+        "months": 0,
+        "long": 0,
+        "short": 0,
+        "marketRegimes": [],
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "profitFactor": null,
+        "expectancyR": null,
+        "confidenceInterval": {
+          "lower": null,
+          "upper": null,
+          "level": 0.95
+        },
+        "pnl": 0,
+        "maxDrawdownPct": 0,
+        "positiveFolds": 0,
+        "eventControlExpectancyUpliftR": null,
+        "eventControlProfitFactorUplift": null,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h12": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h24": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h72": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "MATCHED",
+          "rows": 0,
+          "summary": {
+            "independent": 0,
+            "executable": 0,
+            "symbols": 0,
+            "wins": 0,
+            "losses": 0,
+            "winRate": null,
+            "profitFactor": null,
+            "expectancyR": null,
+            "confidenceInterval": {
+              "lower": null,
+              "upper": null,
+              "level": 0.95
+            },
+            "pnl": 0,
+            "maxDrawdownPct": 0,
+            "positiveFolds": 0,
+            "folds": 0,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 0,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 0,
+          "kept": 0,
+          "labelOverlapFree": true
+        }
+      },
+      "LEVERAGE_STRESS_TRANSITION": {
+        "family": "LEVERAGE_STRESS_TRANSITION",
+        "status": "WATCH",
+        "raw": 0,
+        "independent": 0,
+        "executable": 0,
+        "symbols": 0,
+        "months": 0,
+        "long": 0,
+        "short": 0,
+        "marketRegimes": [],
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "profitFactor": null,
+        "expectancyR": null,
+        "confidenceInterval": {
+          "lower": null,
+          "upper": null,
+          "level": 0.95
+        },
+        "pnl": 0,
+        "maxDrawdownPct": 0,
+        "positiveFolds": 0,
+        "eventControlExpectancyUpliftR": null,
+        "eventControlProfitFactorUplift": null,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h12": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h24": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h72": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "MATCHED",
+          "rows": 0,
+          "summary": {
+            "independent": 0,
+            "executable": 0,
+            "symbols": 0,
+            "wins": 0,
+            "losses": 0,
+            "winRate": null,
+            "profitFactor": null,
+            "expectancyR": null,
+            "confidenceInterval": {
+              "lower": null,
+              "upper": null,
+              "level": 0.95
+            },
+            "pnl": 0,
+            "maxDrawdownPct": 0,
+            "positiveFolds": 0,
+            "folds": 0,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 0,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 0,
+          "kept": 0,
+          "labelOverlapFree": true
+        }
+      },
+      "TREND_REGIME_TRANSITION": {
+        "family": "TREND_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 97,
+        "independent": 84,
+        "executable": 60,
+        "symbols": 1,
+        "months": 24,
+        "long": 30,
+        "short": 30,
+        "marketRegimes": [
+          "BEAR",
+          "BULL"
+        ],
+        "wins": 29,
+        "losses": 31,
+        "winRate": 0.48333333333333334,
+        "profitFactor": 0.8992544239112994,
+        "expectancyR": -0.04417962649142935,
+        "confidenceInterval": {
+          "lower": -0.28631243045215354,
+          "upper": 0.19795317746929483,
+          "level": 0.95
+        },
+        "pnl": -148.1489586069394,
+        "maxDrawdownPct": 0.030327204388845168,
+        "positiveFolds": 6,
+        "eventControlExpectancyUpliftR": 0.2894508784280678,
+        "eventControlProfitFactorUplift": 0.4210750747591662,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 60,
+            "mean": 0.0005849375693002367,
+            "median": 0.000670117642663004
+          },
+          "h12": {
+            "n": 60,
+            "mean": 0.0007107345001366024,
+            "median": -0.0012663203144055446
+          },
+          "h24": {
+            "n": 60,
+            "mean": 0.00032492331540867245,
+            "median": -0.0009429840047007199
+          },
+          "h72": {
+            "n": 60,
+            "mean": -0.000663008713081383,
+            "median": 0.0021631123496352878
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 55,
+          "summary": {
+            "independent": 55,
+            "executable": 34,
+            "symbols": 1,
+            "wins": 8,
+            "losses": 26,
+            "winRate": 0.23529411764705882,
+            "profitFactor": 0.47817934915213317,
+            "expectancyR": -0.3336305049194972,
+            "confidenceInterval": {
+              "lower": -0.6691240272357748,
+              "upper": 0.0018630173967803532,
+              "level": 0.95
+            },
+            "pnl": -666.0740166296059,
+            "maxDrawdownPct": 0.0869001619329605,
+            "positiveFolds": 3,
+            "folds": 6,
+            "symbolConcentration": null
+          }
+        },
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 1,
+          "prePurge": 61,
+          "kept": 60,
+          "labelOverlapFree": true
+        }
+      }
+    },
+    "directionReversal": true
+  },
+  "outcomeContract": {
+    "decisionLatencyMinutes": 20,
+    "executionInterval": "1m",
+    "targetR": 2,
+    "verticalBarrierHours": 72,
+    "sameMinuteTpSl": "SL",
+    "noInterpolation": true,
+    "researchOnly": true
+  },
+  "keepGate": {
+    "minimumExecutable": 60,
+    "minimumFoldsWithSamples": 4,
+    "minimumPositiveFolds": 4,
+    "minimumProfitFactor": 1.25,
+    "minimumExpectancyR": 0.1,
+    "minimumExpectancyUpliftR": 0.08,
+    "minimumProfitFactorUplift": 0.15,
+    "maximumDrawdownPct": 0.08,
+    "maximumSymbolContribution": 0.2
+  },
+  "holdout": {
+    "status": "NOT RUN",
+    "authorized": false
+  },
+  "repoNoOrderAudit": {
+    "pass": true,
+    "roots": [
+      "src",
+      "api",
+      "supabase/functions"
+    ],
+    "scannedFiles": [
+      "api/reviews.mjs",
+      "api/send-mail.mjs",
+      "api/status.mjs",
+      "src/backtest.mjs",
+      "src/binance.mjs",
+      "src/cli.mjs",
+      "src/config.mjs",
+      "src/daemon.mjs",
+      "src/fill-risk.mjs",
+      "src/funnel.mjs",
+      "src/indicators.mjs",
+      "src/m4/event-engine.mjs",
+      "src/m4/observed-pit-universe.mjs",
+      "src/m4/pit-universe.mjs",
+      "src/market-data.mjs",
+      "src/notifiable-alerts.mjs",
+      "src/notifier.mjs",
+      "src/portfolio.mjs",
+      "src/profit-engine/audits.mjs",
+      "src/profit-engine/calibration.mjs",
+      "src/profit-engine/canonical-outcome.mjs",
+      "src/profit-engine/features.mjs",
+      "src/profit-engine/labels.mjs",
+      "src/profit-engine/linear-models.mjs",
+      "src/profit-engine/meta-edge-model.mjs",
+      "src/profit-engine/metrics.mjs",
+      "src/profit-engine/nested-walk-forward.mjs",
+      "src/profit-engine/normalization.mjs",
+      "src/profit-engine/opportunity-model.mjs",
+      "src/profit-engine/portfolio.mjs",
+      "src/profit-engine/proposal-factory.mjs",
+      "src/profit-engine/provenance.mjs",
+      "src/profit-engine/ranking-model.mjs",
+      "src/reviews.mjs",
+      "src/risk.mjs",
+      "src/service.mjs",
+      "src/storage.mjs",
+      "src/strategy.mjs",
+      "src/v8-shadow.mjs",
+      "src/v81/alpha-common.mjs",
+      "src/v81/alpha-registry.mjs",
+      "src/v81/alphas/existing-v8.mjs",
+      "src/v81/alphas/failed-breakout.mjs",
+      "src/v81/alphas/funding-divergence.mjs",
+      "src/v81/alphas/mean-reversion.mjs",
+      "src/v81/alphas/relative-strength.mjs",
+      "src/v81/alphas/trend-pullback.mjs",
+      "src/v81/alphas/volatility-expansion.mjs",
+      "src/v81/dedupe.mjs",
+      "src/v81/episodes.mjs",
+      "src/v81/features.mjs",
+      "src/v81/metrics.mjs",
+      "src/v81/portfolio.mjs",
+      "src/v81/provenance.mjs",
+      "src/v81/replay.mjs",
+      "src/v81/scoring.mjs",
+      "src/v81/tiers.mjs",
+      "src/v81/walk-forward.mjs",
+      "src/v9/alphas.mjs",
+      "src/v9/features.mjs",
+      "src/v9/metrics.mjs",
+      "src/v9/registry.mjs",
+      "src/v9/replay.mjs",
+      "src/v9/scoring.mjs",
+      "src/v9/universe.mjs",
+      "supabase/functions/teleeg-reviews/index.ts",
+      "supabase/functions/teleeg-reviews/reviews.mjs",
+      "supabase/functions/teleeg-worker/auth.mjs",
+      "supabase/functions/teleeg-worker/finalize.mjs",
+      "supabase/functions/teleeg-worker/funnel.mjs",
+      "supabase/functions/teleeg-worker/index.ts",
+      "supabase/functions/teleeg-worker/risk.mjs",
+      "supabase/functions/teleeg-worker/strategy.mjs",
+      "supabase/functions/teleeg-worker/v8-shadow.mjs"
+    ],
+    "offendingPaths": [],
+    "findings": [],
+    "boundary": "market-data-only; no Binance order submission executable code"
+  },
+  "productionIsolation": {
+    "pass": true,
+    "baseRef": "research/m4-event-regime",
+    "changedFiles": [
+      "package.json",
+      "reports/observed-event-regime-development.json",
+      "reports/observed-event-regime-development.md",
+      "reports/observed-event-regime-frozen-config.json",
+      "reports/observed-pit-snapshots.ndjson",
+      "reports/observed-pit-universe.json",
+      "reports/observed-pit-universe.md",
+      "scripts/run-m4-event-regime.mjs",
+      "scripts/run-observed-pit-event.mjs",
+      "src/m4/event-engine.mjs",
+      "src/m4/observed-pit-universe.mjs",
+      "src/profit-engine/audits.mjs",
+      "test/observed-pit-event.test.mjs"
+    ],
+    "productionFiles": [],
+    "boundary": "research-only; Production strategy, APIs, cron, SMTP, secrets and schema unchanged"
+  },
+  "provenance": {
+    "observedPitUniverseSha256": "469647eb612e088fe7acc86dc26c61ab6fa6309692bea1ae8c674e38de18e4ee",
+    "eventEngineCodeSha256": "9857c3e5ea6435b4165da65650f50b6f0781cecd6430a6663a75d9cce26aefdf",
+    "eventFrozenConfigSha256": "1a691b6eab065b6493cf7f4a6279f3a9d69306bd07471c355107380888369ba8",
+    "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
+    "sourceArchiveIndexSha256": "7ff9cd5758ae99eaf66a6224ce75ae281007fd5a769cb076fabbb497cf49b169",
+    "snapshotDiagnosticsSha256": "ed8a7d085299111055f294c1f2819f79c385ea890f54ccf815f02b9e5178641a"
+  },
+  "knownLimitations": [
+    "Observed-tradability membership intentionally does not claim official listing/delist evidence.",
+    "Historical symbols without a historical market-filter artifact may be PIT members but cannot produce executable canonical outcomes under fail-closed acceptance.",
+    "The local archive snapshot ends at 2026-08-01; no Holdout data was read.",
+    "GAIBUSDT is retained in archive diagnostics but has no price artifact and is excluded only at its local timestamp."
+  ]
+}

@@ -49,7 +49,8 @@ export function auditProductionIsolation(appDir, baseRef = 'research/v9-derivati
   try {
     const committed = execFileSync('git', ['diff', '--name-only', `${baseRef}...HEAD`], {cwd: appDir, encoding: 'utf8'});
     const working = execFileSync('git', ['diff', '--name-only', 'HEAD'], {cwd: appDir, encoding: 'utf8'});
-    changedFiles = [...new Set(`${committed}\n${working}`.split(/\r?\n/).map(value => value.trim()).filter(Boolean))].sort();
+    const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard'], {cwd: appDir, encoding: 'utf8'});
+    changedFiles = [...new Set(`${committed}\n${working}\n${untracked}`.split(/\r?\n/).map(value => value.trim()).filter(Boolean))].sort();
   } catch {
     return {pass: false, baseRef, changedFiles: [], productionFiles: [], error: 'unable-to-audit-git-diff'};
   }

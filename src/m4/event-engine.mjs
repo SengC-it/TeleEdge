@@ -307,28 +307,95 @@ export function dedupeEventEpisodes(events, refractoryHours = EVENT_REFRACTORY_H
   return {rawEvents: sorted, independentEvents: independent, suppressedEvents: suppressed};
 }
 
+function controlStratumKey(row, level = row.level) {
+  const subject = level === 'symbol' ? String(row.symbol || '') : 'BTCUSDT';
+  const side = row.side ?? row.sideHypothesis ?? '';
+  const regime = row.marketRegime ?? row.regime ?? '';
+  const liquidity = row.liquidityBucket ?? '';
+  return [level || '', subject, side, month(eventTime(row)), regime, liquidity].join('\u001f');
+}
+
+function hasNearbyTimestamp(rows, timestamp) {
+  if (!rows?.length || timestamp == null) return false;
+  let low = 0; let high = rows.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle] < timestamp) low = middle + 1;
+    else high = middle;
+  }
+  const window = EVENT_REFRACTORY_HOURS * 3_600_000;
+  return (low < rows.length && Math.abs(rows[low] - timestamp) <= window)
+    || (low > 0 && Math.abs(rows[low - 1] - timestamp) <= window);
+}
+
+/**
+ * Build an index for exact event-control strata.  It is an execution aid for
+ * the formal research runner only; the indexed candidate set and
+ * contamination rules are identical to the linear matcher below.
+ */
+export function buildEventControlIndex(observations = [], eventRows = []) {
+  const byStratum = new Map();
+  for (const row of observations || []) {
+    if (row?.eventId || row?.eventFamily || row?.isEvent) continue;
+    if (row?.completed === false || row?.isComplete === false) continue;
+    const timestamp = eventTime(row);
+    if (timestamp == null) continue;
+    if (row.controlLevel === 'market' && (String(row.symbol || '') !== 'BTCUSDT')) continue;
+    const level = row.controlLevel === 'market' ? 'market' : 'symbol';
+    const key = controlStratumKey({...row, level}, level);
+    if (!byStratum.has(key)) byStratum.set(key, []);
+    byStratum.get(key).push(row);
+  }
+  for (const rows of byStratum.values()) rows.sort((left, right) => eventTime(left) - eventTime(right) || stableId(left).localeCompare(stableId(right)));
+  const eventTimesByFamily = new Map();
+  const unscopedEventTimes = [];
+  const allEventTimes = [];
+  for (const row of eventRows || []) {
+    const timestamp = eventTime(row);
+    if (timestamp == null) continue;
+    allEventTimes.push(timestamp);
+    if (row.eventFamily) {
+      if (!eventTimesByFamily.has(row.eventFamily)) eventTimesByFamily.set(row.eventFamily, []);
+      eventTimesByFamily.get(row.eventFamily).push(timestamp);
+    } else unscopedEventTimes.push(timestamp);
+  }
+  for (const rows of eventTimesByFamily.values()) rows.sort((left, right) => left - right);
+  unscopedEventTimes.sort((left, right) => left - right);
+  allEventTimes.sort((left, right) => left - right);
+  return {byStratum, eventTimesByFamily, unscopedEventTimes, allEventTimes};
+}
+
 export function matchEventControls(event, observations, {
   maxControls = 1,
   usedControlIds = null,
   eventRows = null,
   fold = null,
+  controlIndex = null,
 } = {}) {
   const eventMonth = month(event.eventTime);
   const side = event.sideHypothesis;
   if (!side) return [];
   const used = usedControlIds instanceof Set ? usedControlIds : new Set(usedControlIds || []);
-  const contamination = [...(eventRows || []), ...(observations || []).filter(row => row.eventId || row.eventFamily || row.isEvent)]
+  const indexed = controlIndex?.byStratum instanceof Map;
+  const contamination = indexed ? null : [...(eventRows || []), ...(observations || []).filter(row => row.eventId || row.eventFamily || row.isEvent)]
     .filter(row => !event.eventFamily || !row.eventFamily || row.eventFamily === event.eventFamily);
   const contaminated = row => {
     const timestamp = eventTime(row);
     if (timestamp == null) return true;
+    if (indexed) {
+      const familyRows = event.eventFamily ? controlIndex.eventTimesByFamily.get(event.eventFamily) : controlIndex.allEventTimes;
+      return hasNearbyTimestamp(familyRows, timestamp) || hasNearbyTimestamp(controlIndex.unscopedEventTimes, timestamp);
+    }
     return contamination.some(other => {
       const otherTime = eventTime(other);
       if (otherTime == null) return false;
       return Math.abs(otherTime - timestamp) <= EVENT_REFRACTORY_HOURS * 3_600_000;
     });
   };
-  const candidates = (observations || []).filter(row => {
+  const source = indexed
+    ? (controlIndex.byStratum.get(controlStratumKey(event, event.level)) || [])
+    : (observations || []);
+  const candidates = source.filter(row => {
     if (row.eventId || row.eventFamily || row.isEvent) return false;
     if (row.completed === false || row.isComplete === false) return false;
     const timestamp = eventTime(row);

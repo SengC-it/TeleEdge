@@ -12,6 +12,7 @@ import {
   EVENT_FAMILIES,
   EVENT_KEEP_GATE,
   EVENT_REFRACTORY_HOURS,
+  buildEventControlIndex,
   detectEvents,
   dedupeEventEpisodes,
   matchEventControls,
@@ -509,13 +510,14 @@ export function runEventResearch({snapshots = [], featurePoints = [], markets = 
   const statusesByFamily = Object.fromEntries(EVENT_FAMILIES.map(family => [family, []]));
   const usedByFamilyFold = new Map();
   const allControlObservations = controlObservations || observations;
+  const controlIndex = buildEventControlIndex(allControlObservations, detected.independentEvents);
   const labeled = [];
   let purgeExcluded = 0;
   for (const event of detected.independentEvents) {
     const fold = outerFoldAt(event.eventTime, start, end);
     const used = usedByFamilyFold.get(`${event.eventFamily}|${fold}`) || new Set();
     usedByFamilyFold.set(`${event.eventFamily}|${fold}`, used);
-    const controls = matchEventControls({...event, outerFold: fold}, allControlObservations, {eventRows: detected.independentEvents, usedControlIds: used, fold});
+    const controls = matchEventControls({...event, outerFold: fold}, allControlObservations, {eventRows: detected.independentEvents, usedControlIds: used, fold, controlIndex});
     const control = controls[0];
     const outcome = eventOutcome(event, {outcomesByEvent, outcomeForEvent, marketDataBySymbol});
     const row = {
