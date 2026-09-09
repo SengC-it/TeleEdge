@@ -30,6 +30,7 @@ import {
   monthlyObservedCoverage,
   observedAnnouncementEvidenceIsUsdM,
   observedPitGate,
+  observedPitDataLossSummary,
   observedPitInvariantAudit,
   normalizeHourlyRows,
   observedTradabilityCodeAt,
@@ -609,11 +610,88 @@ function snapshotDiagnostics(snapshots) {
     featureReadySymbols: row.featureReadyCount,
     finalPitSymbols: row.finalPitSymbols,
     dataLossSymbols: row.dataLossSymbols,
+    otherwiseEligibleObservations: row.otherwiseEligibleObservations,
+    corruptionLostObservations: row.corruptionLostObservations,
+    dataLossReasonCounts: row.dataLossReasonCounts,
+    derivativeReadyCount: row.derivativeReadyCount,
+    leverageFeatureAvailable: row.leverageFeatureAvailable,
   }));
 }
 
+function buildInvariantScenario({scenario, loaded, featurePointsBySymbol, pitStatusBySymbol, pitTimestamps, cutoff}) {
+  const markets = [...(loaded || [])];
+  const statusCodes = new Map(pitStatusBySymbol);
+  if (scenario === 'append-future-rows-after-cutoff' || scenario === 'append-future-high-volume-rows-after-cutoff') {
+    const btc = loaded.find(row => row.symbol === 'BTCUSDT');
+    if (btc?.rows?.length) {
+      const last = Number(btc.rows.at(-1).t);
+      const firstFuture = Math.max(Number(cutoff) + H1, last + H1);
+      const futureRows = [0, 1].map(index => ({
+        t: firstFuture + index * H1,
+        o: 100,
+        h: 101,
+        l: 99,
+        c: 100,
+        q: scenario === 'append-future-high-volume-rows-after-cutoff' ? 1_000_000_000_000 : 1,
+      }));
+      const perturbed = withRowIndexes({...btc, rows: [...btc.rows, ...futureRows]}, [...btc.rows, ...futureRows]);
+      statusCodes.set('BTCUSDT', precomputePitStatusCodes(perturbed, featurePointsBySymbol.get('BTCUSDT') || [], pitTimestamps));
+    }
+  } else if (scenario === 'add-future-listed-symbol') {
+    const futureMarket = {symbol: 'FUTURE_INVARIANT_USDT', core: false, rows: [], dataIntegrity: {priceComplete: false}, exchangeInfo: {onboardDate: Number(cutoff) + H1}};
+    markets.push(futureMarket);
+    statusCodes.set(futureMarket.symbol, new Uint8Array(pitTimestamps.length));
+  } else if (scenario === 'change-future-delist-knowledge') {
+    const index = markets.findIndex(row => row.symbol === 'BTCUSDT');
+    if (index >= 0) markets[index] = {...markets[index], activeEnd: Number(cutoff) + H1, futureDelistMetadata: {timestamp: Number(cutoff) + H1}};
+  } else if (scenario === 'change-current-exchangeInfo-survival-metadata') {
+    const index = markets.findIndex(row => row.symbol === 'BTCUSDT');
+    if (index >= 0) markets[index] = {...markets[index], exchangeInfo: {...(markets[index].exchangeInfo || {}), status: 'TRADING', survivalMetadata: {changed: true}}};
+  } else if (scenario === 'inject-listing-delisting-announcement-metadata') {
+    const index = markets.findIndex(row => row.symbol === 'BTCUSDT');
+    if (index >= 0) markets[index] = {...markets[index], announcementEvidence: [{type: 'listing'}, {type: 'delisting'}]};
+  }
+  return {markets, statusCodes};
+}
+
+function snapshotsForScenario(snapshots, statusCodes) {
+  return (snapshots || []).map((row, index) => ({
+    eventTime: row.eventTime,
+    finalPitSymbols: (row.finalPitSymbols || []).filter(symbol => ((Number(statusCodes.get(symbol)?.[index]) || 0) & 16) !== 0),
+  }));
+}
+
+function runInvariantScenarios(snapshots, cutoff, loaded, featurePointsBySymbol, pitStatusBySymbol, pitTimestamps) {
+  const scenarios = [
+    ['futureRowsInvariant', 'append-future-rows-after-cutoff'],
+    ['futureVolumeInvariant', 'append-future-high-volume-rows-after-cutoff'],
+    ['futureListingInvariant', 'add-future-listed-symbol'],
+    ['futureDelistInvariant', 'change-future-delist-knowledge'],
+    ['currentExchangeInfoInvariant', 'change-current-exchangeInfo-survival-metadata'],
+    ['announcementInvariant', 'inject-listing-delisting-announcement-metadata'],
+  ];
+  const result = {};
+  for (const [key, scenario] of scenarios) {
+    const mutated = buildInvariantScenario({scenario, loaded, featurePointsBySymbol, pitStatusBySymbol, pitTimestamps, cutoff});
+    const comparison = observedPitInvariantAudit({
+      before: loaded,
+      after: mutated.markets,
+      snapshotsBefore: snapshots,
+      snapshotsAfter: snapshotsForScenario(snapshots, mutated.statusCodes),
+      cutoff,
+    });
+    result[key] = {
+      pass: comparison.pass,
+      comparedHistoricalSnapshots: comparison.comparedHistoricalSnapshots,
+      changedHistoricalSnapshots: comparison.changedHistoricalSnapshots,
+      perturbation: scenario,
+    };
+  }
+  return result;
+}
+
 function emptyFamily(family, status) {
-  return {family, status, raw: null, independent: null, executable: null, symbols: null, months: null, long: null, short: null, profitFactor: null, expectancyR: null, confidenceInterval: null, pnl: null, maxDrawdownPct: null, positiveFolds: null, control: null, forwardReturns: null};
+  return {family, status, raw: null, independent: null, executable: null, symbols: null, months: null, long: null, short: null, profitFactor: null, expectancyR: null, confidenceInterval: null, pnl: null, maxDrawdownPct: null, positiveFolds: null, sampleFolds: null, positiveExpectancyFolds: null, foldMetrics: null, control: null, forwardReturns: null, mfe: null, mae: null};
 }
 
 function eventResearchSummary(research, pitReady, outcomeProvider, snapshots, controls, start, end) {
@@ -751,6 +829,11 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
   const snapshots = buildObservedPITSnapshots({markets: loaded, featurePointsBySymbol, pitStatusBySymbol, start, end, liquidityThresholdUsdt: OBSERVED_PIT_LIQUIDITY_THRESHOLD_USDT, includeSymbolLists: false});
   console.error(JSON.stringify({stage: 'snapshots-done', snapshots: snapshots.length, memory: process.memoryUsage()}));
   const coverage = observedPitGate(snapshots);
+  const dataLoss = observedPitDataLossSummary({markets: loaded, pitStatusBySymbol, timestamps: pitTimestamps});
+  coverage.topLossSymbols = dataLoss.topLossSymbols;
+  coverage.topLossReasons = dataLoss.topLossReasons;
+  coverage.lossSymbolCounts = dataLoss.lossSymbolCounts;
+  coverage.lossReasonCounts = dataLoss.lossReasonCounts;
   console.error(JSON.stringify({stage: 'pit-gate', status: coverage.status, mean: coverage.mean, median: coverage.median, memory: process.memoryUsage()}));
   const controls = buildControls(snapshots, start, end);
   const outcomeProvider = createOutcomeProvider({dataRoot, markets: loaded, featurePointsBySymbol, start, end, manifestByKey: manifestData.byKey, artifactTracker});
@@ -769,28 +852,35 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
     missingDataSensitivity = {status: 'COMPUTED', top100: sensitivityResearch.families, all: research.families, directionReversal};
   }
 
-  // The audit uses the same observed-membership implementation with and
-  // without future rows.  No lifecycle or current-symbol field is consulted.
-  const invariantMarket = loaded.find(row => row.symbol === 'BTCUSDT');
-  let pitInvariantAudit = {pass: false, futureRowsDoNotChangePastUniverse: false, currentExchangeInfoInvariant: true, announcementEvidenceInvariant: true};
-  if (invariantMarket) {
-    const pastMarket = {...invariantMarket, rows: invariantMarket.rows.filter(row => row.t < Number(end))};
-    const prefix = new Array(pastMarket.rows.length).fill(0);
-    const volumePrefix = new Array(pastMarket.rows.length + 1).fill(0);
-    for (let index = 1; index < pastMarket.rows.length; index++) prefix[index] = prefix[index - 1] + (pastMarket.rows[index].t - pastMarket.rows[index - 1].t === H1 ? 0 : 1);
-    for (let index = 0; index < pastMarket.rows.length; index++) volumePrefix[index + 1] = volumePrefix[index] + Number(pastMarket.rows[index].q || 0);
-    pastMarket.gapPrefix = prefix; pastMarket.volumePrefix = volumePrefix;
-    const before = buildObservedPITSnapshots({markets: [pastMarket], featurePointsBySymbol, start, end});
-    const after = buildObservedPITSnapshots({markets: [invariantMarket], featurePointsBySymbol, start, end});
-    pitInvariantAudit = observedPitInvariantAudit({before: [pastMarket], after: [invariantMarket], snapshotsBefore: before, snapshotsAfter: after});
-  }
+  const invariantCutoff = Date.parse('2025-01-01T00:00:00.000Z');
+  const invariantScenarios = runInvariantScenarios(snapshots, invariantCutoff, loaded, featurePointsBySymbol, pitStatusBySymbol, pitTimestamps);
   const spotFalseEvidenceRejected = !observedAnnouncementEvidenceIsUsdM({product: 'Spot', title: 'Delisting of AKRO/USDT spot trading pair', url: 'https://www.binance.com/en/support/announcement/spot-akro'});
-  pitInvariantAudit.announcementEvidenceInvariant = spotFalseEvidenceRejected;
-  pitInvariantAudit.pass = Boolean(pitInvariantAudit.futureRowsDoNotChangePastUniverse && pitInvariantAudit.currentExchangeInfoInvariant && pitInvariantAudit.announcementEvidenceInvariant);
+  const invariantBaseline = observedPitInvariantAudit({
+    before: loaded,
+    after: loaded,
+    snapshotsBefore: snapshots,
+    snapshotsAfter: snapshotsForScenario(snapshots, pitStatusBySymbol),
+    cutoff: invariantCutoff,
+  });
+  const pitInvariantAudit = {
+    ...invariantBaseline,
+    cutoff: iso(invariantCutoff),
+    scenarios: invariantScenarios,
+    futureRowsInvariant: invariantScenarios.futureRowsInvariant.pass,
+    futureVolumeInvariant: invariantScenarios.futureVolumeInvariant.pass,
+    futureListingInvariant: invariantScenarios.futureListingInvariant.pass,
+    futureDelistInvariant: invariantScenarios.futureDelistInvariant.pass,
+    currentExchangeInfoInvariant: invariantScenarios.currentExchangeInfoInvariant.pass,
+    announcementInvariant: invariantScenarios.announcementInvariant.pass && spotFalseEvidenceRejected,
+    announcementEvidenceInvariant: invariantScenarios.announcementInvariant.pass && spotFalseEvidenceRejected,
+    pass: Object.values(invariantScenarios).every(row => row.pass) && spotFalseEvidenceRejected,
+  };
 
   const noOrder = auditRepoNoOrder(APP_DIR);
   const isolation = auditProductionIsolation(APP_DIR, 'research/m4-event-regime');
   const monthly = monthlyObservedCoverage(snapshots);
+  const derivativeReadyCounts = snapshots.map(row => Number(row.derivativeReadyCount)).filter(Number.isFinite);
+  const leverageValidSnapshotCount = snapshots.filter(row => row.leverageFeatureAvailable === true).length;
   const coreSymbols = loaded.filter(row => row.core).length;
   const expandedSymbols = loaded.filter(row => !row.core).length;
   const priceBearing = loaded.filter(row => row.artifacts.price.present && row.artifacts.price.nonEmpty).length;
@@ -837,6 +927,13 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
     expandedSymbols,
     activeSymbolsByYear: activeSymbolsByYear(snapshots),
     coverage: {...coverage, monthly},
+    derivativeCoverage: {
+      min: derivativeReadyCounts.length ? Math.min(...derivativeReadyCounts) : null,
+      mean: derivativeReadyCounts.length ? mean(derivativeReadyCounts) : null,
+      median: derivativeReadyCounts.length ? median(derivativeReadyCounts) : null,
+      validSnapshotCount: leverageValidSnapshotCount,
+      minimumRequired: 100,
+    },
     artifacts: compactArtifactReport(loaded, artifactTracker),
     markets: marketReport,
     pitSnapshots: {count: snapshots.length, diagnosticsFile: path.relative(APP_DIR, diagnosticsFile).replaceAll('\\', '/'), diagnosticsSha256: sha256File(diagnosticsFile), firstTimestamp: iso(snapshots[0]?.eventTime), lastTimestamp: iso(snapshots.at(-1)?.eventTime)},
@@ -871,6 +968,7 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
     controls: eventSummary.controls,
     sixFoldAudit: eventSummary.sixFold,
     pitInvariantAudit,
+    derivativeCoverage: pitReport.derivativeCoverage,
     announcementDiagnostics: pitReport.announcementDiagnostics,
     missingDataSensitivity,
     outcomeContract: CANONICAL_OUTCOME_CONTRACT,
@@ -890,9 +988,10 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
   };
   fs.mkdirSync(reportsDir, {recursive: true});
   writeJson(path.join(reportsDir, 'observed-pit-universe.json'), pitReport);
-  atomicWrite(path.join(reportsDir, 'observed-pit-universe.md'), markdownPit(pitReport));
+  atomicWrite(path.join(reportsDir, 'observed-pit-universe.md'), `${markdownPit(pitReport)}\n## Corrected data-loss gate\n\n- Otherwise-eligible observations: ${coverage.otherwiseEligibleObservations}\n- Corruption-lost observations: ${coverage.corruptionLostObservations}\n- Corruption retention / loss: ${coverage.corruptionRetentionRate} / ${coverage.corruptionLossRate}\n- Top loss symbols: ${JSON.stringify(coverage.topLossSymbols || [])}\n- Top loss reasons: ${JSON.stringify(coverage.topLossReasons || [])}\n- Corruption gate: **${coverage.corruptionPass}**\n\n## PIT invariant perturbations\n\n${Object.entries(pitInvariantAudit.scenarios || {}).map(([key, row]) => `- ${key}: **${row.pass}**; compared ${row.comparedHistoricalSnapshots}; changed ${row.changedHistoricalSnapshots}`).join('\n')}\n`);
   writeJson(path.join(reportsDir, 'observed-event-regime-development.json'), eventReport);
-  atomicWrite(path.join(reportsDir, 'observed-event-regime-development.md'), markdownEventForReport(eventReport));
+  const familyDetails = Object.values(eventReport.families || {}).map(row => `### ${row.family}\n\n- Fold metrics: ${JSON.stringify(row.foldMetrics || [])}\n- Sample folds / positive expectancy folds: ${row.sampleFolds ?? '—'} / ${row.positiveExpectancyFolds ?? row.positiveFolds ?? '—'}\n- MFE: ${JSON.stringify(row.mfe)}\n- MAE: ${JSON.stringify(row.mae)}`).join('\n\n');
+  atomicWrite(path.join(reportsDir, 'observed-event-regime-development.md'), `${markdownEventForReport(eventReport)}\n## Fold and path diagnostics\n\n- Derivative-ready min / mean / median: ${eventReport.derivativeCoverage?.min ?? '—'} / ${eventReport.derivativeCoverage?.mean ?? '—'} / ${eventReport.derivativeCoverage?.median ?? '—'}\n- Leverage-valid snapshots: ${eventReport.derivativeCoverage?.validSnapshotCount ?? '—'}\n\n${familyDetails}\n`);
   writeJson(path.join(reportsDir, 'observed-event-regime-frozen-config.json'), frozenConfig);
   return {pit: pitReport, event: eventReport, markets: loaded, snapshots, featurePointsBySymbol, artifactTracker};
 }
@@ -900,18 +999,58 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   try {
     const result = runObservedPitEventResearch(parseArgs());
+    const families = Object.fromEntries(EVENT_FAMILIES.map(family => {
+      const row = result.event.families?.[family] || {};
+      return [family, {
+        status: row.status ?? null,
+        raw: row.raw ?? null,
+        independent: row.independent ?? null,
+        executable: row.executable ?? null,
+        profitFactor: row.profitFactor ?? null,
+        expectancyR: row.expectancyR ?? null,
+        pnl: row.pnl ?? null,
+        maxDrawdownPct: row.maxDrawdownPct ?? null,
+        positiveFolds: row.positiveFolds ?? null,
+        sampleFolds: row.sampleFolds ?? null,
+        positiveExpectancyFolds: row.positiveExpectancyFolds ?? null,
+        foldMetrics: row.foldMetrics ?? null,
+        mfe: row.mfe ?? null,
+        mae: row.mae ?? null,
+      }];
+    }));
     console.log(JSON.stringify({
       branchScope: 'research-only',
+      developmentWindow: result.pit.developmentWindow,
       sourceArchiveSymbols: result.pit.sourceArchiveSymbols,
+      coreSymbols: result.pit.coreSymbols,
+      expandedSymbols: result.pit.expandedSymbols,
+      historicalObservedSymbols: result.pit.historicalObservedSymbols,
       pitMean: result.pit.coverage.mean,
       pitMedian: result.pit.coverage.median,
+      pitMin: result.pit.coverage.min,
       monthlyMedianMin: result.pit.coverage.monthlyMedianMin,
       btcCoverage: result.pit.coverage.btcCoverage,
       observedPitGate: result.pit.coverage.status,
+      otherwiseEligibleObservations: result.pit.coverage.otherwiseEligibleObservations,
+      corruptionLostObservations: result.pit.coverage.corruptionLostObservations,
+      corruptionRetentionRate: result.pit.coverage.corruptionRetentionRate,
+      topLossSymbols: result.pit.coverage.topLossSymbols,
+      topLossReasons: result.pit.coverage.topLossReasons,
+      derivativeCoverage: result.event.derivativeCoverage,
+      pitInvariantAudit: result.event.pitInvariantAudit,
       eventDecision: result.event.finalDecision,
       rawEvents: result.event.rawEvents,
       independentEvents: result.event.independentEvents,
       totalKeep: result.event.totalKeep,
+      totalStrongKeep: result.event.totalStrongKeep,
+      eventFrequency: result.event.eventFrequency,
+      families,
+      sixFoldAudit: result.event.sixFoldAudit,
+      controls: result.event.controls,
+      repoNoOrderAudit: result.event.repoNoOrderAudit,
+      productionIsolation: result.event.productionIsolation,
+      provenance: result.event.provenance,
+      holdout: result.event.holdout,
       reports: ['reports/observed-pit-universe.json', 'reports/observed-pit-universe.md', 'reports/observed-event-regime-development.json', 'reports/observed-event-regime-development.md', 'reports/observed-event-regime-frozen-config.json'],
     }, null, 2));
   } catch (error) {

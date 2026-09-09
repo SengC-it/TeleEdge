@@ -1,6 +1,6 @@
 # Observed PIT Event / Regime Development
 
-Final decision: **EVENT_RESEARCH_FAIL**
+Final decision: **OBSERVED_PIT_DATA_BLOCKED**
 
 No strategy thresholds, event families, Production code, scheduler, secrets, or Holdout were changed. The five event families and KEEP gates are frozen from PR #8.
 
@@ -14,30 +14,70 @@ Outcome contract: {"decisionLatencyMinutes":20,"executionInterval":"1m","targetR
 
 | Family | Status | Raw | Independent | Executable | PF | Expectancy R | Control uplift R |
 |---|---|---:|---:|---:|---:|---:|---:|
-| BREADTH_REGIME_TRANSITION | REJECT | 112 | 95 | 74 | 0.8897024333220311 | -0.04405320202701042 | -0.24984631611890168 |
-| MARKET_VOLATILITY_SHOCK | WATCH | 0 | 0 | 0 | — | — | — |
-| DISPERSION_ROTATION | WATCH | 0 | 0 | 0 | — | — | — |
-| LEVERAGE_STRESS_TRANSITION | WATCH | 0 | 0 | 0 | — | — | — |
-| TREND_REGIME_TRANSITION | REJECT | 97 | 84 | 60 | 0.8992544239112994 | -0.04417962649142935 | 0.2894508784280678 |
+| BREADTH_REGIME_TRANSITION | NOT_RUN_OBSERVED_PIT_DATA_BLOCKED | — | — | — | — | — | — |
+| MARKET_VOLATILITY_SHOCK | NOT_RUN_OBSERVED_PIT_DATA_BLOCKED | — | — | — | — | — | — |
+| DISPERSION_ROTATION | NOT_RUN_OBSERVED_PIT_DATA_BLOCKED | — | — | — | — | — | — |
+| LEVERAGE_STRESS_TRANSITION | NOT_RUN_OBSERVED_PIT_DATA_BLOCKED | — | — | — | — | — | — |
+| TREND_REGIME_TRANSITION | NOT_RUN_OBSERVED_PIT_DATA_BLOCKED | — | — | — | — | — | — |
 
 ## Gate and audits
 
-- Observed PIT gate: **OBSERVED_PIT_READY**
+- Observed PIT gate: **OBSERVED_PIT_DATA_BLOCKED**
 - Total KEEP / STRONG_KEEP: 0 / 0
-- Event/month: 7.458333333333333 (median 8)
-- Controls: matched 184; unmatched 25; no reuse true
-- Six-fold audit: PASS
+- Event/month: — (median —)
+- Controls: matched —; unmatched —; no reuse true
+- Six-fold audit: NOT_RUN
 - PIT invariant audit: true
 - Announcement mismatch diagnostics: {"hardGate":false,"disagreementCount":null,"spotFuturesAmbiguityCount":null,"archiveAnnouncementMismatch":null,"spotFalseEvidenceRejected":true}
-- Missing-data sensitivity: COMPUTED
+- Missing-data sensitivity: NOT_RUN_OBSERVED_PIT_DATA_BLOCKED
 - Holdout: **NOT RUN**
 
 ## Final interpretation
 
-Event results are research diagnostics only; no Production promotion is implied.
+Formal event metrics were not run because the observed PIT data gate failed; no profitability conclusion is made.
 
 ## Provenance
 
-- Event engine SHA-256: 9857c3e5ea6435b4165da65650f50b6f0781cecd6430a6663a75d9cce26aefdf
+- Event engine SHA-256: 1682df2ff2018ce0fa5a5102acf4d1b604a60ba71d3d32becc059928d2fffb22
 - Frozen event configuration SHA-256: 1a691b6eab065b6493cf7f4a6279f3a9d69306bd07471c355107380888369ba8
 - Dataset manifest SHA-256: 79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a
+
+## Fold and path diagnostics
+
+- Derivative-ready min / mean / median: 112 / 166.90264477884176 / 163
+- Leverage-valid snapshots: 4386
+
+### BREADTH_REGIME_TRANSITION
+
+- Fold metrics: []
+- Sample folds / positive expectancy folds: — / —
+- MFE: null
+- MAE: null
+
+### MARKET_VOLATILITY_SHOCK
+
+- Fold metrics: []
+- Sample folds / positive expectancy folds: — / —
+- MFE: null
+- MAE: null
+
+### DISPERSION_ROTATION
+
+- Fold metrics: []
+- Sample folds / positive expectancy folds: — / —
+- MFE: null
+- MAE: null
+
+### LEVERAGE_STRESS_TRANSITION
+
+- Fold metrics: []
+- Sample folds / positive expectancy folds: — / —
+- MFE: null
+- MAE: null
+
+### TREND_REGIME_TRANSITION
+
+- Fold metrics: []
+- Sample folds / positive expectancy folds: — / —
+- MFE: null
+- MAE: null

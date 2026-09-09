@@ -455,8 +455,8 @@ function forwardHorizonStudy(rows) {
 }
 
 function familyReport(family, eventRows, controlRows, controlStatuses, horizonStudy, {rawCount = eventRows.length, independentCount = eventRows.length} = {}) {
-  const summary = summarizeEventOutcomes(eventRows);
-  const control = summarizeEventOutcomes(controlRows);
+  const summary = summarizeEventOutcomes(eventRows, {foldCount: 6});
+  const control = summarizeEventOutcomes(controlRows, {foldCount: 6});
   const comparison = compareEventToControl(eventRows, controlRows);
   const status = evaluateEventKeepGate({...summary, expectancyUpliftR: comparison.expectancyUpliftR, profitFactorUplift: comparison.profitFactorUplift}, {strong: true});
   const long = eventRows.filter(row => row.sideHypothesis === 'long').length;

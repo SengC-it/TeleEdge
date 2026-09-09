@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-08T22:03:24.614Z",
-  "status": "OBSERVED_PIT_READY",
+  "generatedAt": "2026-09-09T03:21:10.239Z",
+  "status": "OBSERVED_PIT_DATA_BLOCKED",
   "source": "Binance official Data Vision USD-M archive union; current exchangeInfo classification-only; announcements diagnostics-only",
   "developmentWindow": {
     "start": "2024-01-01T00:00:00.000Z",
@@ -861,8 +861,8 @@
     }
   },
   "coverage": {
-    "pass": true,
-    "status": "OBSERVED_PIT_READY",
+    "pass": false,
+    "status": "OBSERVED_PIT_DATA_BLOCKED",
     "mean": 166.90264477884176,
     "median": 163,
     "min": 112,
@@ -1141,11 +1141,182 @@
     "btcCoverage": 1,
     "btcCoveragePass": true,
     "nonCriticalDataLossObservations": 250021,
+    "otherwiseEligibleObservations": 982056,
+    "corruptionLostObservations": 250021,
+    "corruptionRetentionRate": 0.7454106486799124,
+    "corruptionLossRate": 0.25458935132008764,
+    "corruptionPass": false,
+    "topLossSymbols": [
+      {
+        "symbol": "1000BTTCUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "ACUUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "AIGENSYNUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "AKROUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "ANCUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "ARXUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "AZTECUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BASEDUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BILLUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BIRBUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BSBUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BTTUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BTWUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "BZRXUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "CAPUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "CFGUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "CHIPUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "CTRUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "DATAIPUSDT",
+        "count": 4386
+      },
+      {
+        "symbol": "DODOUSDT",
+        "count": 4386
+      }
+    ],
+    "topLossReasons": [
+      {
+        "reason": "missing-or-incomplete-price-artifact",
+        "count": 250021
+      }
+    ],
     "criteria": {
       "minimumMonthlyMedian": 100,
       "minimumDevelopmentMean": 120,
-      "minimumBtcCoverage": 0.95
+      "minimumBtcCoverage": 0.95,
+      "minimumCorruptionRetention": 0.95
+    },
+    "lossSymbolCounts": {
+      "1000BTTCUSDT": 4386,
+      "ACUUSDT": 4386,
+      "AERGOUSDT": 2,
+      "AIGENSYNUSDT": 4386,
+      "AKROUSDT": 4386,
+      "ANCUSDT": 4386,
+      "ARXUSDT": 4386,
+      "AZTECUSDT": 4386,
+      "BASEDUSDT": 4386,
+      "BILLUSDT": 4386,
+      "BIRBUSDT": 4386,
+      "BSBUSDT": 4386,
+      "BTTUSDT": 4386,
+      "BTWUSDT": 4386,
+      "BZRXUSDT": 4386,
+      "CAPUSDT": 4386,
+      "CFGUSDT": 4386,
+      "CHIPUSDT": 4386,
+      "CTKUSDT": 2,
+      "CTRUSDT": 4386,
+      "CVCUSDT": 2,
+      "CVXUSDT": 2,
+      "DATAIPUSDT": 4386,
+      "DODOUSDT": 4386,
+      "DOTECOUSDT": 4386,
+      "EDGEUSDT": 4386,
+      "ELSAUSDT": 4386,
+      "ESPUSDT": 4386,
+      "FIGHTUSDT": 4386,
+      "FOGOUSDT": 4386,
+      "FRAXUSDT": 4386,
+      "GAIBUSDT": 4386,
+      "GENIUSUSDT": 4386,
+      "GRAMUSDT": 4386,
+      "GRVTUSDT": 4386,
+      "GWEIUSDT": 4386,
+      "INXUSDT": 4386,
+      "KATUSDT": 4386,
+      "KEEPUSDT": 4386,
+      "LENDUSDT": 4386,
+      "LITUSDT": 4,
+      "LUNAUSDT": 4386,
+      "MANTRAUSDT": 4386,
+      "MAVIAUSDT": 4,
+      "MEGAUSDT": 4386,
+      "NUUSDT": 4386,
+      "OPGUSDT": 4386,
+      "OPNUSDT": 4386,
+      "OUSDT": 4386,
+      "PHAROSUSDT": 4386,
+      "PRLUSDT": 4386,
+      "PUMPUSDT": 1,
+      "REUSDT": 4386,
+      "ROBOUSDT": 4386,
+      "SKRUSDT": 4386,
+      "SLPUSDT": 2,
+      "SLXUSDT": 4386,
+      "SPACEUSDT": 4386,
+      "SPORTFUNUSDT": 4386,
+      "STARUSDT": 4386,
+      "TRIAUSDT": 4386,
+      "XAUTUSDT": 4386,
+      "YFIIUSDT": 4386,
+      "ZAMAUSDT": 4386,
+      "ZESTUSDT": 4386
+    },
+    "lossReasonCounts": {
+      "missing-or-incomplete-price-artifact": 250021
     }
+  },
+  "derivativeCoverage": {
+    "min": 112,
+    "mean": 166.90264477884176,
+    "median": 163,
+    "validSnapshotCount": 4386,
+    "minimumRequired": 100
   },
   "artifacts": {
     "price": {
@@ -1166,7 +1337,7 @@
       "markets": 678,
       "present": 676,
       "nonEmpty": 676,
-      "hashVerified": 414,
+      "hashVerified": 0,
       "missingSymbols": [
         "GAIBUSDT",
         "LENDUSDT"
@@ -44465,20 +44636,65 @@
   "pitSnapshots": {
     "count": 4386,
     "diagnosticsFile": "reports/observed-pit-snapshots.ndjson",
-    "diagnosticsSha256": "ed8a7d085299111055f294c1f2819f79c385ea890f54ccf815f02b9e5178641a",
+    "diagnosticsSha256": "bdd9a25877380d3d40ad024baad77b527a3f37282f082d4306c8c5b33c00a832",
     "firstTimestamp": "2024-01-01T00:00:00.000Z",
     "lastTimestamp": "2025-12-31T20:00:00.000Z"
   },
   "pitInvariantAudit": {
     "futureRowsDoNotChangePastUniverse": true,
+    "futureRowsInvariant": true,
     "futureListedMemberInvariant": true,
+    "futureListingInvariant": true,
     "futureDelistedKnowledgeInvariant": true,
+    "futureDelistInvariant": true,
     "futureVolumeInvariant": true,
     "currentExchangeInfoInvariant": true,
     "announcementEvidenceInvariant": true,
-    "beforeSymbols": 1,
-    "afterSymbols": 1,
-    "pass": true
+    "announcementInvariant": true,
+    "beforeSymbols": 678,
+    "afterSymbols": 678,
+    "comparedHistoricalSnapshots": 2196,
+    "changedHistoricalSnapshots": 0,
+    "pass": true,
+    "cutoff": "2025-01-01T00:00:00.000Z",
+    "scenarios": {
+      "futureRowsInvariant": {
+        "pass": true,
+        "comparedHistoricalSnapshots": 2196,
+        "changedHistoricalSnapshots": 0,
+        "perturbation": "append-future-rows-after-cutoff"
+      },
+      "futureVolumeInvariant": {
+        "pass": true,
+        "comparedHistoricalSnapshots": 2196,
+        "changedHistoricalSnapshots": 0,
+        "perturbation": "append-future-high-volume-rows-after-cutoff"
+      },
+      "futureListingInvariant": {
+        "pass": true,
+        "comparedHistoricalSnapshots": 2196,
+        "changedHistoricalSnapshots": 0,
+        "perturbation": "add-future-listed-symbol"
+      },
+      "futureDelistInvariant": {
+        "pass": true,
+        "comparedHistoricalSnapshots": 2196,
+        "changedHistoricalSnapshots": 0,
+        "perturbation": "change-future-delist-knowledge"
+      },
+      "currentExchangeInfoInvariant": {
+        "pass": true,
+        "comparedHistoricalSnapshots": 2196,
+        "changedHistoricalSnapshots": 0,
+        "perturbation": "change-current-exchangeInfo-survival-metadata"
+      },
+      "announcementInvariant": {
+        "pass": true,
+        "comparedHistoricalSnapshots": 2196,
+        "changedHistoricalSnapshots": 0,
+        "perturbation": "inject-listing-delisting-announcement-metadata"
+      }
+    }
   },
   "announcementDiagnostics": {
     "hardGate": false,
@@ -44580,7 +44796,9 @@
   "productionIsolation": {
     "pass": true,
     "baseRef": "research/m4-event-regime",
+    "resolvedBaseRef": "research/m4-event-regime",
     "changedFiles": [
+      ".github/workflows/ci.yml",
       "package.json",
       "reports/observed-event-regime-development.json",
       "reports/observed-event-regime-development.md",
@@ -44593,6 +44811,7 @@
       "src/m4/event-engine.mjs",
       "src/m4/observed-pit-universe.mjs",
       "src/profit-engine/audits.mjs",
+      "test/m4-event-regime.test.mjs",
       "test/observed-pit-event.test.mjs"
     ],
     "productionFiles": [],

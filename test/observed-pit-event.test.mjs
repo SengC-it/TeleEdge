@@ -11,12 +11,16 @@ import {auditProductionIsolation, auditRepoNoOrder} from '../src/profit-engine/a
 import {
   OBSERVED_PIT_HISTORY_HOURS,
   OBSERVED_PIT_LIQUIDITY_THRESHOLD_USDT,
+  addObservedSnapshotEventFeatures,
   observedTradabilityCodeAt,
   buildObservedMarket,
+  buildObservedPITSnapshot,
   buildObservedPITSnapshots,
   isPlainCryptoArchiveSymbol,
   observedAnnouncementEvidenceIsUsdM,
   observedPitGate,
+  observedPitDataLossSummary,
+  observedPitInvariantAudit,
   observedTradabilityAt,
   normalizeHourlyRows,
 } from '../src/m4/observed-pit-universe.mjs';
@@ -99,6 +103,53 @@ test('future rows and future volume do not change a historical PIT decision', ()
   assert.deepEqual(observedTradabilityAt(withFuture, timestamp, {featurePoint: point}), observedTradabilityAt(baseline, timestamp, {featurePoint: point}));
 });
 
+test('PIT invariant audit requires a non-empty historical comparison and reports changed snapshots', () => {
+  const snapshots = [0, 1, 2].map(index => ({eventTime: start + index * H4, finalPitSymbols: ['BTCUSDT']}));
+  const pass = observedPitInvariantAudit({snapshotsBefore: snapshots, snapshotsAfter: snapshots.map(row => ({...row, finalPitSymbols: [...row.finalPitSymbols]})), cutoff: start + 3 * H4});
+  assert.equal(pass.comparedHistoricalSnapshots, 3);
+  assert.equal(pass.changedHistoricalSnapshots, 0);
+  assert.equal(pass.pass, true);
+  const changed = observedPitInvariantAudit({snapshotsBefore: snapshots, snapshotsAfter: snapshots.map((row, index) => ({...row, finalPitSymbols: index === 1 ? [] : [...row.finalPitSymbols]})), cutoff: start + 3 * H4});
+  assert.equal(changed.changedHistoricalSnapshots, 1);
+  assert.equal(changed.pass, false);
+  const empty = observedPitInvariantAudit({snapshotsBefore: snapshots, snapshotsAfter: [], cutoff: start + 3 * H4});
+  assert.equal(empty.comparedHistoricalSnapshots, 0);
+  assert.equal(empty.pass, false);
+});
+
+test('PIT data-loss retention gate counts corruption and fails closed below 95 percent', () => {
+  const pass = observedPitGate(Array.from({length: 20}, (_, index) => ({
+    eventTime: start + index * H4,
+    pitUniverseSize: 120,
+    otherwiseEligibleObservations: 100,
+    corruptionLostObservations: 4,
+    btcOtherwiseEligible: true,
+    btcDataLoss: false,
+  })));
+  assert.equal(pass.otherwiseEligibleObservations, 2_000);
+  assert.equal(pass.corruptionLostObservations, 80);
+  assert.equal(pass.corruptionRetentionRate, 0.96);
+  assert.equal(pass.corruptionPass, true);
+  const blocked = observedPitGate(Array.from({length: 20}, (_, index) => ({
+    eventTime: start + index * H4,
+    pitUniverseSize: 120,
+    otherwiseEligibleObservations: 100,
+    corruptionLostObservations: 6,
+    btcOtherwiseEligible: true,
+    btcDataLoss: false,
+  })));
+  assert.equal(blocked.corruptionRetentionRate, 0.94);
+  assert.equal(blocked.status, 'OBSERVED_PIT_DATA_BLOCKED');
+});
+
+test('compact PIT data-loss summary reports symbol and reason counts', () => {
+  const timestamps = [start, start + H4];
+  const markets = [{symbol: 'BROKENUSDT', dataIntegrity: {priceComplete: false}}];
+  const summary = observedPitDataLossSummary({markets, timestamps, pitStatusBySymbol: new Map([['BROKENUSDT', Uint8Array.from([32, 32])]])});
+  assert.deepEqual(summary.topLossSymbols, [{symbol: 'BROKENUSDT', count: 2}]);
+  assert.equal(summary.topLossReasons[0].reason, 'missing-or-incomplete-price-artifact');
+});
+
 test('local gap fails closed for one symbol without globally blocking another', () => {
   const timestamp = start + OBSERVED_PIT_HISTORY_HOURS * H1;
   const broken = syntheticMarket(hourlyRows(OBSERVED_PIT_HISTORY_HOURS + 1, {gaps: [400]}), 'BROKENUSDT');
@@ -176,6 +227,65 @@ test('compact PIT status codes preserve snapshot membership and diagnostics', ()
   assert.deepEqual(compact.map(row => row.finalPitSymbols), [['BTCUSDT'], ['BTCUSDT']]);
   assert.deepEqual(compact.map(row => row.pitUniverseSize), [1, 1]);
   assert.deepEqual(compact.map(row => row.btcFinalEligible), [true, true]);
+});
+
+test('formal observed snapshots compute volatility and dispersion z-scores from prior completed history only', () => {
+  const snapshots = Array.from({length: 9}, (_, index) => ({
+    eventTime: start + index * H4,
+    completed: true,
+    volatilityProxy: 1,
+    dispersionProxy: 1,
+  }));
+  snapshots[7].volatilityProxy = 1.2;
+  snapshots[7].dispersionProxy = 1.2;
+  snapshots[8].volatilityProxy = 10;
+  snapshots[8].dispersionProxy = 10;
+  const enriched = addObservedSnapshotEventFeatures(snapshots);
+  assert.equal(enriched[7].realizedVolZ, null);
+  assert.equal(enriched[8].realizedVolZ >= 2, true);
+  assert.equal(enriched[8].dispersionZ >= 2, true);
+  assert.equal(enriched[8].previousDispersionZ, null);
+  const withFuture = addObservedSnapshotEventFeatures([...snapshots, {eventTime: start + 9 * H4, volatilityProxy: 10_000, dispersionProxy: 10_000}]);
+  assert.equal(withFuture[8].realizedVolZ, enriched[8].realizedVolZ);
+  assert.equal(withFuture[8].dispersionZ, enriched[8].dispersionZ);
+});
+
+test('formal observed snapshot event features reach both frozen volatility and dispersion detectors', async () => {
+  const {detectDispersionRotations, detectVolatilityShocks} = await import('../src/m4/event-engine.mjs');
+  const rows = Array.from({length: 9}, (_, index) => ({
+    eventTime: start + index * H4,
+    completed: true,
+    volatilityProxy: 1,
+    dispersionProxy: 1,
+    positiveReturnBreadth: 0.70,
+    negativeReturnBreadth: 0.10,
+    members: [{symbol: 'AUSDT', pitReturnRank: 1}],
+  }));
+  rows[7].volatilityProxy = 1.2;
+  rows[7].dispersionProxy = 1.2;
+  rows[8].volatilityProxy = 10;
+  rows[8].dispersionProxy = 10;
+  const enriched = addObservedSnapshotEventFeatures(rows);
+  // A transition fixture uses the historical z-score stream generated by the
+  // same formal adapter; its detector thresholds remain the frozen 1 -> 1.5.
+  enriched[8].previousDispersionZ = 0.9;
+  enriched[8].dispersionZ = 1.6;
+  assert.equal(detectVolatilityShocks(enriched).length, 1);
+  assert.equal(detectDispersionRotations(enriched).length, 2);
+});
+
+test('leverage feature is unavailable below 100 derivative-ready PIT symbols and available at 100', () => {
+  const member = index => ({symbol: `S${index}USDT`, fundingZ: 2, premiumZ: 1.5, oiZ: 1, fundingValid: true});
+  const stats = {archiveObservedCount: 0, historyReadyCount: 0, liquidityReadyCount: 0, featureReadyCount: 0, dataLossCount: 0, otherwiseEligibleCount: 0, corruptionLostCount: 0, dataLossReasonCounts: {}, liquidityUnavailableMemberCount: 0, futureListedMemberCount: 0, postDelistMemberCount: 0, btcStatus: null};
+  const build = members => buildObservedPITSnapshot({timestamp: start, precomputedMembers: members, precomputedStats: stats, includeSymbolLists: false});
+  const below = build(Array.from({length: 99}, (_, index) => member(index)));
+  const ready = build(Array.from({length: 100}, (_, index) => member(index)));
+  assert.equal(below.derivativeReadyCount, 99);
+  assert.equal(below.leverageFeatureAvailable, false);
+  assert.equal(below.crowdingStressZ, null);
+  assert.equal(ready.derivativeReadyCount, 100);
+  assert.equal(ready.leverageFeatureAvailable, true);
+  assert.equal(ready.crowdingStressZ, 2);
 });
 
 test('observed PIT gate fails on BTC critical data loss, not on a non-critical local issue', () => {

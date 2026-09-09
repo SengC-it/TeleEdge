@@ -37,6 +37,28 @@ function standardDeviation(values) {
   return Math.sqrt(usable.reduce((sum, value) => sum + (value - average) ** 2, 0) / (usable.length - 1));
 }
 
+function rollingZScore(value, history, minimumHistory = 8) {
+  const current = finite(value);
+  const prior = history.map(Number).filter(Number.isFinite).slice(-30);
+  if (current == null || prior.length < minimumHistory) return null;
+  const deviation = standardDeviation(prior);
+  return deviation != null && deviation > 1e-12 ? (current - mean(prior)) / deviation : 0;
+}
+
+function dataLossReason({archiveObserved, historyReady, liquidityReady, featureReady, dataLoss}) {
+  if (!dataLoss) return null;
+  if (!archiveObserved) return 'missing-or-incomplete-price-artifact';
+  if (!historyReady) return 'local-1h-gap';
+  if (!liquidityReady) return 'liquidity-data-unresolved';
+  if (!featureReady) return 'required-feature-unavailable';
+  return 'data-quality-unresolved';
+}
+
+function derivativeReady(point) {
+  if (!point || point.fundingValid === false) return false;
+  return [point.fundingZ, point.premiumZ, point.oiZ].filter(value => finite(value) != null).length >= 2;
+}
+
 function monthKey(timestamp) {
   const date = new Date(Number(timestamp));
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
@@ -499,6 +521,9 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
   let liquidityReadyCount = 0;
   let featureReadyCount = 0;
   let dataLossCount = 0;
+  let otherwiseEligibleCount = 0;
+  let corruptionLostCount = 0;
+  const dataLossReasonCounts = {...(precomputedStats?.dataLossReasonCounts || {})};
   let liquidityUnavailableMemberCount = 0;
   let futureListedMemberCount = 0;
   let postDelistMemberCount = 0;
@@ -509,6 +534,8 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
     liquidityReadyCount = precomputedStats.liquidityReadyCount;
     featureReadyCount = precomputedStats.featureReadyCount;
     dataLossCount = precomputedStats.dataLossCount;
+    otherwiseEligibleCount = precomputedStats.otherwiseEligibleCount || 0;
+    corruptionLostCount = precomputedStats.corruptionLostCount || 0;
     liquidityUnavailableMemberCount = precomputedStats.liquidityUnavailableMemberCount;
     futureListedMemberCount = precomputedStats.futureListedMemberCount;
     postDelistMemberCount = precomputedStats.postDelistMemberCount;
@@ -528,6 +555,7 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
     let featureReadyValue;
     let finalEligible;
     let dataLoss;
+    let lossReason;
     let futureListed;
     let postDelist;
     if (statusCodesAtTimestamp instanceof Map && statusCodesAtTimestamp.has(market.symbol)) {
@@ -538,6 +566,7 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
       featureReadyValue = (bits & OBSERVED_STATUS_BITS.featureReady) !== 0;
       finalEligible = (bits & OBSERVED_STATUS_BITS.finalEligible) !== 0;
       dataLoss = (bits & OBSERVED_STATUS_BITS.dataLoss) !== 0;
+      lossReason = dataLossReason({archiveObserved, historyReady, liquidityReady, featureReady: featureReadyValue, dataLoss});
       futureListed = (bits & OBSERVED_STATUS_BITS.futureListed) !== 0;
       postDelist = (bits & OBSERVED_STATUS_BITS.postDelist) !== 0;
     } else {
@@ -551,6 +580,7 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
       featureReadyValue = status.featureReady;
       finalEligible = status.finalEligible;
       dataLoss = status.dataLoss;
+      lossReason = status.dataLossReason || (dataLoss ? status.rejectionReason : null);
       futureListed = !archiveObserved && status.rejectionReason === 'not-listed-yet';
       postDelist = !archiveObserved && status.rejectionReason === 'not-observed-at-timestamp';
     }
@@ -559,6 +589,12 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
     if (liquidityReady) { liquidityReadyCount++; if (liquidityReadySymbols) liquidityReadySymbols.push(market.symbol); }
     if (featureReadyValue) { featureReadyCount++; if (featureReadySymbols) featureReadySymbols.push(market.symbol); }
     if (dataLoss) { dataLossCount++; if (dataLossSymbols) dataLossSymbols.push(market.symbol); }
+    if (finalEligible || dataLoss) otherwiseEligibleCount++;
+    if (dataLoss) {
+      corruptionLostCount++;
+      const key = lossReason || 'data-quality-unresolved';
+      dataLossReasonCounts[key] = Number(dataLossReasonCounts[key] || 0) + 1;
+    }
     if (archiveObserved && !liquidityReady) liquidityUnavailableMemberCount++;
     if (!archiveObserved && futureListed) futureListedMemberCount++;
     if (!archiveObserved && postDelist) postDelistMemberCount++;
@@ -581,6 +617,7 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
   const positive = values.filter(value => value > 0).length;
   const negative = values.filter(value => value < 0).length;
   const btc = ranked.find(point => point.symbol === 'BTCUSDT');
+  const derivativeReadyCount = ranked.filter(derivativeReady).length;
   const funding = validDimension(ranked.filter(point => point.fundingValid !== false).map(point => point.fundingZ));
   const premium = validDimension(ranked.map(point => point.premiumZ));
   const oi = validDimension(ranked.map(point => point.oiZ));
@@ -607,6 +644,13 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
     featureReadyCount: statuses ? statuses.filter(row => row.featureReady).length : featureReadyCount,
     dataLossSymbols: dataLossSymbols || (statuses ? statuses.filter(row => row.dataLoss).map(row => row.symbol) : null),
     dataLossCount: statuses ? statuses.filter(row => row.dataLoss).length : dataLossCount,
+    otherwiseEligibleObservations: statuses
+      ? statuses.filter(row => row.finalEligible || row.dataLoss).length
+      : otherwiseEligibleCount,
+    corruptionLostObservations: statuses
+      ? statuses.filter(row => row.dataLoss).length
+      : corruptionLostCount,
+    dataLossReasonCounts,
     liquidityUnavailableMemberCount: statuses ? statuses.filter(row => row.archiveObserved && !row.liquidityReady).length : liquidityUnavailableMemberCount,
     futureListedMemberCount: statuses ? statuses.filter(row => !row.archiveObserved && row.rejectionReason === 'not-listed-yet').length : futureListedMemberCount,
     postDelistMemberCount: statuses ? statuses.filter(row => !row.archiveObserved && row.rejectionReason === 'not-observed-at-timestamp').length : postDelistMemberCount,
@@ -624,10 +668,13 @@ export function buildObservedPITSnapshot({timestamp, markets = [], featurePoints
     liquidityBucket: ranked.length ? 'eligible' : 'unavailable',
     volatilityProxy: values.length ? mean(values.map(value => Math.abs(value))) : null,
     dispersionProxy: standardDeviation(values),
-    fundingZ: funding,
-    premiumZ: premium,
-    oiZ: oi,
-    crowdingStressZ,
+    derivativeReadyCount,
+    derivativeFeatureAvailable: derivativeReadyCount >= 100,
+    leverageFeatureAvailable: derivativeReadyCount >= 100,
+    fundingZ: derivativeReadyCount >= 100 ? funding : null,
+    premiumZ: derivativeReadyCount >= 100 ? premium : null,
+    oiZ: derivativeReadyCount >= 100 ? oi : null,
+    crowdingStressZ: derivativeReadyCount >= 100 ? crowdingStressZ : null,
     btcOtherwiseEligible: Boolean(btcStatus?.historyReady && btcStatus?.featureReady),
     btcFinalEligible: Boolean(btcStatus?.finalEligible),
     btcDataLoss: Boolean(btcStatus?.dataLoss),
@@ -649,6 +696,9 @@ export function buildObservedPITSnapshots({markets = [], featurePointsBySymbol =
         liquidityReadyCount: 0,
         featureReadyCount: 0,
         dataLossCount: 0,
+        otherwiseEligibleCount: 0,
+        corruptionLostCount: 0,
+        dataLossReasonCounts: {},
         liquidityUnavailableMemberCount: 0,
         futureListedMemberCount: 0,
         postDelistMemberCount: 0,
@@ -681,6 +731,12 @@ export function buildObservedPITSnapshots({markets = [], featurePointsBySymbol =
         if (liquidityReady) { stats.liquidityReadyCount++; if (stats.liquidityReadySymbols) stats.liquidityReadySymbols.push(market.symbol); }
         if (featureReadyValue) { stats.featureReadyCount++; if (stats.featureReadySymbols) stats.featureReadySymbols.push(market.symbol); }
         if (dataLoss) { stats.dataLossCount++; if (stats.dataLossSymbols) stats.dataLossSymbols.push(market.symbol); }
+        if (finalEligible || dataLoss) stats.otherwiseEligibleCount++;
+        if (dataLoss) {
+          stats.corruptionLostCount++;
+          const key = dataLossReason({archiveObserved, historyReady, liquidityReady, featureReady: featureReadyValue, dataLoss}) || 'data-quality-unresolved';
+          stats.dataLossReasonCounts[key] = Number(stats.dataLossReasonCounts[key] || 0) + 1;
+        }
         if (archiveObserved && !liquidityReady) stats.liquidityUnavailableMemberCount++;
         if (!archiveObserved && (bits & OBSERVED_STATUS_BITS.futureListed)) stats.futureListedMemberCount++;
         if (!archiveObserved && (bits & OBSERVED_STATUS_BITS.postDelist)) stats.postDelistMemberCount++;
@@ -695,7 +751,7 @@ export function buildObservedPITSnapshots({markets = [], featurePointsBySymbol =
       }
       snapshots.push(buildObservedPITSnapshot({timestamp, markets: orderedMarkets, marketsSorted: true, featurePointsBySymbol, featurePointCountAt, precomputedMembers: members, precomputedStats: stats, liquidityThresholdUsdt, includeSymbolLists}));
     }
-    return snapshots;
+    return addObservedSnapshotEventFeatures(snapshots);
   }
   for (let timestamp = first; timestamp < Number(end); timestamp += Number(snapshotInterval), snapshotIndex++) {
     const pointsAtTimestamp = new Map();
@@ -718,7 +774,47 @@ export function buildObservedPITSnapshots({markets = [], featurePointsBySymbol =
     }
     snapshots.push(buildObservedPITSnapshot({timestamp, markets: orderedMarkets, marketsSorted: true, featurePointsBySymbol, featurePointsAtTimestamp: pointsAtTimestamp, featurePointCountAt, statusCodesAtTimestamp, liquidityThresholdUsdt, includeSymbolLists}));
   }
-  return snapshots;
+  return addObservedSnapshotEventFeatures(snapshots);
+}
+
+/**
+ * Add the frozen event-engine's historical feature semantics to completed
+ * observed-PIT snapshots.  Each z-score reads only the prior 30 completed
+ * observations and requires eight finite historical values; the current row
+ * is never included in its own baseline and no future row is consulted.
+ */
+export function addObservedSnapshotEventFeatures(snapshots = [], {historyLength = 30, minimumHistory = 8} = {}) {
+  const ordered = [...(snapshots || [])].sort((left, right) => Number(left.eventTime) - Number(right.eventTime));
+  const dispersionHistory = [];
+  const volatilityHistory = [];
+  let previousDispersionZ = null;
+  return ordered.map(snapshot => {
+    const currentDispersion = finite(snapshot.dispersionProxy);
+    const currentVolatility = finite(snapshot.volatilityProxy);
+    const realizedVolZ = rollingZScore(currentVolatility, volatilityHistory.slice(-historyLength), minimumHistory);
+    const dispersionZ = rollingZScore(currentDispersion, dispersionHistory.slice(-historyLength), minimumHistory);
+    const output = {
+      ...snapshot,
+      realizedVolZ,
+      dispersionZ,
+      previousDispersionZ,
+      eventFeatures: {
+        realizedVolZ,
+        previousDispersionZ,
+        dispersionZ,
+        historyLength,
+        availableHistory: Math.max(dispersionHistory.length, volatilityHistory.length),
+        minimumHistory,
+        lookbackCompletedOnly: true,
+      },
+    };
+    if (currentDispersion != null) dispersionHistory.push(currentDispersion);
+    if (currentVolatility != null) volatilityHistory.push(currentVolatility);
+    while (dispersionHistory.length > historyLength) dispersionHistory.shift();
+    while (volatilityHistory.length > historyLength) volatilityHistory.shift();
+    previousDispersionZ = dispersionZ;
+    return output;
+  });
 }
 
 export function monthlyObservedCoverage(snapshots = []) {
@@ -731,8 +827,8 @@ export function monthlyObservedCoverage(snapshots = []) {
   return Object.fromEntries([...grouped.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([month, rows]) => {
     const sizes = rows.map(row => Number(row.pitUniverseSize));
     const medianSize = median(sizes);
-    const core = rows.map(row => row.members.filter(member => member.core).length);
-    const expanded = rows.map(row => row.members.filter(member => !member.core).length);
+    const core = rows.map(row => (row.members || []).filter(member => member.core).length);
+    const expanded = rows.map(row => (row.members || []).filter(member => !member.core).length);
     return [month, {
       snapshots: rows.length,
       pitEligibleSymbols: medianSize,
@@ -755,10 +851,23 @@ export function observedPitGate(snapshots = [], {minimumMonthlyMedian = 100, min
   const btcDataLoss = snapshots.filter(row => row.btcOtherwiseEligible && row.btcDataLoss).length;
   const btcCoverage = btcOtherwise ? (btcOtherwise - btcDataLoss) / btcOtherwise : 0;
   const nonCriticalDataLoss = snapshots.reduce((sum, row) => sum + (row.dataLossSymbols ? row.dataLossSymbols.filter(symbol => symbol !== 'BTCUSDT').length : Math.max(0, Number(row.dataLossCount || 0) - (row.btcDataLoss ? 1 : 0))), 0);
+  const otherwiseEligibleObservations = snapshots.reduce((sum, row) => sum + Number(row.otherwiseEligibleObservations ?? Number(row.pitUniverseSize || 0) + Number(row.dataLossCount || 0)), 0);
+  const corruptionLostObservations = snapshots.reduce((sum, row) => sum + Number(row.corruptionLostObservations ?? row.dataLossCount ?? 0), 0);
+  const corruptionRetentionRate = otherwiseEligibleObservations > 0
+    ? (otherwiseEligibleObservations - corruptionLostObservations) / otherwiseEligibleObservations
+    : 0;
+  const corruptionLossRate = otherwiseEligibleObservations > 0 ? corruptionLostObservations / otherwiseEligibleObservations : 1;
+  const lossReasonCounts = {};
+  for (const row of snapshots) for (const [reason, count] of Object.entries(row.dataLossReasonCounts || {})) lossReasonCounts[reason] = Number(lossReasonCounts[reason] || 0) + Number(count || 0);
+  const lossSymbolCounts = {};
+  for (const row of snapshots) for (const symbol of row.dataLossSymbols || []) lossSymbolCounts[symbol] = Number(lossSymbolCounts[symbol] || 0) + 1;
+  const topLossSymbols = Object.entries(lossSymbolCounts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 20).map(([symbol, count]) => ({symbol, count}));
+  const topLossReasons = Object.entries(lossReasonCounts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 20).map(([reason, count]) => ({reason, count}));
   const monthlyPass = monthlyMedians.length > 0 && Math.min(...monthlyMedians) >= minimumMonthlyMedian;
   const meanPass = pitSizes.length > 0 && mean(pitSizes) >= minimumDevelopmentMean;
   const btcPass = btcOtherwise > 0 && btcCoverage >= minimumBtcCoverage;
-  const pass = monthlyPass && meanPass && btcPass;
+  const corruptionPass = otherwiseEligibleObservations > 0 && corruptionRetentionRate >= 0.95;
+  const pass = monthlyPass && meanPass && btcPass && corruptionPass;
   return {
     pass,
     status: pass ? 'OBSERVED_PIT_READY' : 'OBSERVED_PIT_DATA_BLOCKED',
@@ -775,7 +884,47 @@ export function observedPitGate(snapshots = [], {minimumMonthlyMedian = 100, min
     btcCoverage,
     btcCoveragePass: btcPass,
     nonCriticalDataLossObservations: nonCriticalDataLoss,
-    criteria: {minimumMonthlyMedian, minimumDevelopmentMean, minimumBtcCoverage},
+    otherwiseEligibleObservations,
+    corruptionLostObservations,
+    corruptionRetentionRate,
+    corruptionLossRate,
+    corruptionPass,
+    topLossSymbols,
+    topLossReasons,
+    criteria: {minimumMonthlyMedian, minimumDevelopmentMean, minimumBtcCoverage, minimumCorruptionRetention: 0.95},
+  };
+}
+
+/**
+ * Reconstruct compact data-loss diagnostics without retaining one symbol list
+ * on every formal snapshot.  The status code is produced from the same
+ * point-in-time evaluator as the PIT membership, so this is a diagnostic
+ * projection rather than a second eligibility rule.
+ */
+export function observedPitDataLossSummary({markets = [], pitStatusBySymbol = new Map(), timestamps = []} = {}) {
+  const symbolCounts = {};
+  const reasonCounts = {};
+  const orderedMarkets = [...(markets || [])].sort((left, right) => String(left.symbol).localeCompare(String(right.symbol)));
+  const add = (bucket, key) => { bucket[key] = Number(bucket[key] || 0) + 1; };
+  for (const market of orderedMarkets) {
+    const codes = pitStatusBySymbol instanceof Map ? pitStatusBySymbol.get(market.symbol) : null;
+    if (!codes) continue;
+    for (let index = 0; index < Math.min(codes.length, timestamps.length); index++) {
+      const bits = Number(codes[index]) || 0;
+      if ((bits & OBSERVED_STATUS_BITS.dataLoss) === 0) continue;
+      add(symbolCounts, market.symbol);
+      const archiveObserved = (bits & OBSERVED_STATUS_BITS.archiveObserved) !== 0;
+      const historyReady = (bits & OBSERVED_STATUS_BITS.historyReady) !== 0;
+      const liquidityReady = (bits & OBSERVED_STATUS_BITS.liquidityReady) !== 0;
+      const featureReadyValue = (bits & OBSERVED_STATUS_BITS.featureReady) !== 0;
+      add(reasonCounts, dataLossReason({archiveObserved, historyReady, liquidityReady, featureReady: featureReadyValue, dataLoss: true}) || 'data-quality-unresolved');
+    }
+  }
+  return {
+    lossSymbolCounts: symbolCounts,
+    lossReasonCounts: reasonCounts,
+    topLossSymbols: Object.entries(symbolCounts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 20).map(([symbol, count]) => ({symbol, count})),
+    topLossReasons: Object.entries(reasonCounts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).slice(0, 20).map(([reason, count]) => ({reason, count})),
   };
 }
 
@@ -785,22 +934,40 @@ export function observedAnnouncementEvidenceIsUsdM(record) {
   return /usd[- ]?m|futures|perpetual|contract/.test(text) && !/delivery contract|quarterly/.test(text);
 }
 
-export function observedPitInvariantAudit({before, after, snapshotsBefore = [], snapshotsAfter = []} = {}) {
+export function observedPitInvariantAudit({before, after, snapshotsBefore = [], snapshotsAfter = [], cutoff = null, invariants = {}} = {}) {
   const beforeByTime = new Map(snapshotsBefore.map(row => [Number(row.eventTime), row.finalPitSymbols.join('|')]));
   const afterByTime = new Map(snapshotsAfter.map(row => [Number(row.eventTime), row.finalPitSymbols.join('|')]));
-  const historicalTimestamps = [...beforeByTime.keys()].filter(timestamp => timestamp < Math.min(...snapshotsAfter.map(row => Number(row.eventTime)).filter(Number.isFinite), Infinity));
-  const universeUnchanged = historicalTimestamps.every(timestamp => beforeByTime.get(timestamp) === afterByTime.get(timestamp));
+  const cutoffTime = finite(cutoff);
+  const historicalTimestamps = [...beforeByTime.keys()]
+    .filter(timestamp => cutoffTime == null || timestamp < cutoffTime)
+    .filter(timestamp => afterByTime.has(timestamp))
+    .sort((left, right) => left - right);
+  const changedHistoricalSnapshots = historicalTimestamps.filter(timestamp => beforeByTime.get(timestamp) !== afterByTime.get(timestamp)).length;
+  const universeUnchanged = historicalTimestamps.length > 0 && changedHistoricalSnapshots === 0;
   const beforeSymbols = new Set((before || []).map(row => row.symbol));
   const afterSymbols = new Set((after || []).map(row => row.symbol));
+  const resultFor = name => invariants[name] == null ? universeUnchanged : Boolean(invariants[name]);
+  const futureRowsInvariant = resultFor('futureRowsInvariant');
+  const futureVolumeInvariant = resultFor('futureVolumeInvariant');
+  const futureListingInvariant = resultFor('futureListingInvariant');
+  const futureDelistInvariant = resultFor('futureDelistInvariant');
+  const currentExchangeInfoInvariant = resultFor('currentExchangeInfoInvariant');
+  const announcementInvariant = resultFor('announcementInvariant');
   return {
     futureRowsDoNotChangePastUniverse: universeUnchanged,
-    futureListedMemberInvariant: universeUnchanged,
-    futureDelistedKnowledgeInvariant: universeUnchanged,
-    futureVolumeInvariant: universeUnchanged,
-    currentExchangeInfoInvariant: true,
-    announcementEvidenceInvariant: true,
+    futureRowsInvariant,
+    futureListedMemberInvariant: futureListingInvariant,
+    futureListingInvariant,
+    futureDelistedKnowledgeInvariant: futureDelistInvariant,
+    futureDelistInvariant,
+    futureVolumeInvariant,
+    currentExchangeInfoInvariant,
+    announcementEvidenceInvariant: announcementInvariant,
+    announcementInvariant,
     beforeSymbols: beforeSymbols.size,
     afterSymbols: afterSymbols.size,
-    pass: universeUnchanged,
+    comparedHistoricalSnapshots: historicalTimestamps.length,
+    changedHistoricalSnapshots,
+    pass: universeUnchanged && futureRowsInvariant && futureVolumeInvariant && futureListingInvariant && futureDelistInvariant && currentExchangeInfoInvariant && announcementInvariant,
   };
 }
