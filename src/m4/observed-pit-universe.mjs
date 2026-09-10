@@ -64,6 +64,67 @@ function monthKey(timestamp) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
+function timestampValue(value) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) return numeric;
+  const parsed = Date.parse(String(value || ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function observedLifecycleAt(market, timestamp) {
+  const t = Number(timestamp);
+  const episodes = (Array.isArray(market?.activeEpisodes) && market.activeEpisodes.length
+    ? market.activeEpisodes
+    : Array.isArray(market?.episodes) ? market.episodes : [])
+    .map(episode => ({
+      start: timestampValue(episode?.observedStart ?? episode?.activeStart),
+      end: timestampValue(episode?.observedEnd ?? episode?.activeEnd),
+    }))
+    .filter(episode => episode.start != null && episode.end != null && episode.start < episode.end)
+    .sort((left, right) => left.start - right.start);
+  if (episodes.length) {
+    if (episodes.some(episode => episode.start <= t && t < episode.end)) return {state: 'active'};
+    if (t < episodes[0].start) return {state: 'future'};
+    const next = episodes.find(episode => episode.start > t);
+    const previous = [...episodes].reverse().find(episode => episode.end <= t);
+    if (next && previous && next.start - previous.end <= H1) return {state: 'possible-active'};
+    return {state: 'post'};
+  }
+
+  const first = timestampValue(market?.actualFirstObserved ?? market?.artifacts?.price?.firstTimestamp);
+  const last = timestampValue(market?.actualLastObserved ?? market?.artifacts?.price?.lastTimestamp);
+  if (first != null && last != null) {
+    if (t < first) return {state: 'future'};
+    if (t > last) return {state: 'post'};
+    return {state: 'active'};
+  }
+
+  const archiveKeys = [
+    ...(market?.archiveKeys?.klines || []),
+    ...(market?.archiveKeys?.funding || []),
+  ];
+  const months = archiveMonths(archiveKeys);
+  const firstMonth = market?.actualFirstArchiveMonth || months[0] || null;
+  const lastMonth = market?.actualLastArchiveMonth || months.at(-1) || null;
+  const targetMonth = Number.isFinite(t) ? monthKey(t) : null;
+  if (firstMonth && lastMonth && targetMonth) {
+    if (targetMonth < firstMonth) return {state: 'future'};
+    if (targetMonth > lastMonth) return {state: 'post'};
+    return {state: 'possible-active'};
+  }
+  return {state: 'unknown'};
+}
+
+function lifecycleBoundaryBits(lifecycle) {
+  if (lifecycle?.state === 'future') return OBSERVED_STATUS_BITS.futureListed;
+  if (lifecycle?.state === 'post') return OBSERVED_STATUS_BITS.postDelist;
+  return 0;
+}
+
+function lifecycleCanHaveData(lifecycle) {
+  return lifecycle?.state === 'active' || lifecycle?.state === 'possible-active';
+}
+
 function lowerBound(rows, timestamp) {
   let low = 0;
   let high = rows.length;
@@ -386,22 +447,32 @@ function decodeObservedStatus(symbol, timestamp, code) {
 export function observedTradabilityCodeAt(market, timestamp, {featurePoint = null, rowIndex = null, historyHours = OBSERVED_PIT_HISTORY_HOURS, liquidityThresholdUsdt = OBSERVED_PIT_LIQUIDITY_THRESHOLD_USDT} = {}) {
   const t = Number(timestamp);
   const rows = market?.rows || (Array.isArray(market) ? market : []);
-  if (!rows.length || market?.dataIntegrity?.priceComplete === false) return OBSERVED_STATUS_BITS.dataLoss;
   const latestExpected = t - H1;
+  const lifecycle = observedLifecycleAt(market, latestExpected);
+  const boundaryBits = lifecycleBoundaryBits(lifecycle);
+  if (boundaryBits) return boundaryBits;
+  if (!rows.length) return lifecycleCanHaveData(lifecycle) ? OBSERVED_STATUS_BITS.dataLoss : 0;
+  if (market?.dataIntegrity?.priceComplete === false) return lifecycleCanHaveData(lifecycle) || lifecycle.state === 'unknown' ? OBSERVED_STATUS_BITS.dataLoss : 0;
   const endIndex = Number.isInteger(rowIndex) ? rowIndex : lowerBound(rows, latestExpected);
   if (endIndex >= rows.length || Number(rows[endIndex]?.t) !== latestExpected) {
     const hasPrior = endIndex > 0;
     const hasLater = endIndex < rows.length;
-    return (hasPrior && hasLater ? OBSERVED_STATUS_BITS.dataLoss : 0)
-      | (hasLater ? OBSERVED_STATUS_BITS.futureListed : OBSERVED_STATUS_BITS.postDelist);
+    const missingActiveRow = lifecycleCanHaveData(lifecycle) || (hasPrior && hasLater);
+    return missingActiveRow
+      ? OBSERVED_STATUS_BITS.dataLoss
+      : hasLater ? OBSERVED_STATUS_BITS.futureListed : OBSERVED_STATUS_BITS.postDelist;
   }
   let code = OBSERVED_STATUS_BITS.archiveObserved;
   const firstIndex = endIndex - historyHours + 1;
   const expectedFirst = latestExpected - (historyHours - 1) * H1;
   if (firstIndex < 0) {
-    return code | (Number(rows[0]?.t) <= expectedFirst ? OBSERVED_STATUS_BITS.dataLoss : 0);
+    const firstObserved = timestampValue(market?.actualFirstObserved ?? rows[0]?.t);
+    return code | (firstObserved != null && firstObserved <= expectedFirst ? OBSERVED_STATUS_BITS.dataLoss : 0);
   }
-  if (Number(rows[firstIndex]?.t) !== expectedFirst) return code;
+  if (Number(rows[firstIndex]?.t) !== expectedFirst) {
+    const firstObserved = timestampValue(market?.actualFirstObserved ?? rows[0]?.t);
+    return code | (firstObserved != null && firstObserved <= expectedFirst ? OBSERVED_STATUS_BITS.dataLoss : 0);
+  }
   const gaps = market?.gapPrefix
     ? Number(market.gapPrefix[endIndex] || 0) - Number(market.gapPrefix[firstIndex] || 0)
     : rows.slice(firstIndex + 1, endIndex + 1).some((row, index) => Number(row.t) - Number(rows[firstIndex + index].t) !== H1);
@@ -426,32 +497,51 @@ export function observedTradabilityAt(market, timestamp, {featurePoint = null, h
   const t = Number(timestamp);
   const result = statusBase(market?.symbol || market?.marketId, t);
   const rows = market?.rows || (Array.isArray(market) ? market : []);
-  if (!rows.length || market?.dataIntegrity?.priceComplete === false) {
-    result.rejectionReason = !rows.length ? 'missing-price-artifact' : 'price-artifact-invalid';
+  const latestExpected = t - H1;
+  const lifecycle = observedLifecycleAt(market, latestExpected);
+  const boundaryBits = lifecycleBoundaryBits(lifecycle);
+  if (boundaryBits & OBSERVED_STATUS_BITS.futureListed) {
+    result.rejectionReason = 'not-listed-yet';
+    return result;
+  }
+  if (boundaryBits & OBSERVED_STATUS_BITS.postDelist) {
+    result.rejectionReason = 'not-observed-at-timestamp';
+    return result;
+  }
+  if (!rows.length) {
+    result.rejectionReason = lifecycleCanHaveData(lifecycle) ? 'missing-price-artifact' : 'not-observed-at-timestamp';
+    result.dataLoss = lifecycleCanHaveData(lifecycle);
+    return result;
+  }
+  if (market?.dataIntegrity?.priceComplete === false) {
+    result.rejectionReason = 'price-artifact-invalid';
     result.dataLoss = true;
     return result;
   }
-  const latestExpected = t - H1;
   const endIndex = lowerBound(rows, latestExpected);
   if (endIndex >= rows.length || Number(rows[endIndex]?.t) !== latestExpected) {
     // lowerBound already partitions the sorted rows; avoid scanning each
     // symbol's retained history for every 4h snapshot.
     const hasPrior = endIndex > 0;
     const hasLater = endIndex < rows.length;
-    result.rejectionReason = hasPrior && hasLater ? 'internal-latest-hour-gap' : Number(rows[0]?.t) > latestExpected ? 'not-listed-yet' : 'not-observed-at-timestamp';
-    result.dataLoss = hasPrior && hasLater;
+    const missingActiveRow = lifecycleCanHaveData(lifecycle) || (hasPrior && hasLater);
+    result.rejectionReason = missingActiveRow ? 'internal-latest-hour-gap' : Number(rows[0]?.t) > latestExpected ? 'not-listed-yet' : 'not-observed-at-timestamp';
+    result.dataLoss = missingActiveRow;
     return result;
   }
   result.archiveObserved = true;
   const firstIndex = endIndex - historyHours + 1;
   const expectedFirst = latestExpected - (historyHours - 1) * H1;
   if (firstIndex < 0) {
-    result.rejectionReason = Number(rows[0]?.t) <= expectedFirst ? 'local-1h-gap' : '30d-warmup-incomplete';
+    const firstObserved = timestampValue(market?.actualFirstObserved ?? rows[0]?.t);
+    result.rejectionReason = firstObserved != null && firstObserved <= expectedFirst ? 'local-1h-gap' : '30d-warmup-incomplete';
     result.dataLoss = result.rejectionReason === 'local-1h-gap';
     return result;
   }
   if (Number(rows[firstIndex]?.t) !== expectedFirst) {
-    result.rejectionReason = '30d-warmup-incomplete';
+    const firstObserved = timestampValue(market?.actualFirstObserved ?? rows[0]?.t);
+    result.rejectionReason = firstObserved != null && firstObserved <= expectedFirst ? 'local-1h-gap' : '30d-warmup-incomplete';
+    result.dataLoss = result.rejectionReason === 'local-1h-gap';
     return result;
   }
   const gaps = market?.gapPrefix

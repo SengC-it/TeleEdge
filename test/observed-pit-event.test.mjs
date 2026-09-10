@@ -54,6 +54,23 @@ function syntheticMarket(rows, symbol = 'TESTUSDT') {
   return market;
 }
 
+function metadataOnlyMarket(rows, symbol = 'ARCHIVE_ONLYUSDT') {
+  const normalized = normalizeHourlyRows(rows);
+  const market = buildObservedMarket({
+    symbol,
+    rows: [],
+    rawRows: [],
+    lifecycleRows: normalized.rows,
+    artifactRows: normalized.rows,
+    archiveKeys: {klines: [`${symbol}-2024-01.zip`], funding: []},
+  });
+  market.dataIntegrity.priceComplete = true;
+  market.artifacts.price.present = true;
+  market.artifacts.price.nonEmpty = true;
+  market.artifacts.price.hashVerified = true;
+  return market;
+}
+
 function featurePoint(timestamp, overrides = {}) {
   return {
     signalTime: timestamp,
@@ -79,6 +96,60 @@ test('observed PIT excludes pre-listing timestamps and requires a 30d warm-up', 
   assert.equal(observedTradabilityAt(market, start - H1).finalEligible, false);
   assert.equal(observedTradabilityAt(market, beforeWarmup, {featurePoint: featurePoint(beforeWarmup)}).historyReady, false);
   assert.equal(observedTradabilityAt(market, afterWarmup, {featurePoint: featurePoint(afterWarmup)}).historyReady, true);
+});
+
+test('lifecycle-only pre-listing and post-delist observations are not corruption', () => {
+  const future = metadataOnlyMarket(hourlyRows(24, {from: Date.parse('2026-01-01T00:00:00.000Z')}), 'FUTUREUSDT');
+  const historical = metadataOnlyMarket(hourlyRows(24, {from: start - 48 * H1}), 'HISTORICALUSDT');
+  const timestamps = [start, start + H4, start + 2 * H4];
+  for (const timestamp of timestamps) {
+    assert.equal(observedTradabilityAt(future, timestamp).dataLoss, false);
+    assert.equal(observedTradabilityAt(historical, timestamp).dataLoss, false);
+    assert.equal(observedTradabilityCodeAt(future, timestamp) & 32, 0);
+    assert.equal(observedTradabilityCodeAt(historical, timestamp) & 32, 0);
+  }
+});
+
+test('an empty truncated feature view uses full artifact lifecycle before classifying loss', () => {
+  const market = metadataOnlyMarket(hourlyRows(24, {from: Date.parse('2026-01-01T00:00:00.000Z')}), 'TRUNCATEDUSDT');
+  const status = observedTradabilityAt(market, start);
+  const code = observedTradabilityCodeAt(market, start);
+  assert.equal(status.rejectionReason, 'not-listed-yet');
+  assert.equal(status.dataLoss, false);
+  assert.equal(code & 32, 0);
+  assert.equal(code & 64, 64);
+});
+
+test('confirmed active internal 1h gap and hash failure are corruption', () => {
+  const timestamp = start + OBSERVED_PIT_HISTORY_HOURS * H1;
+  const gap = syntheticMarket(hourlyRows(OBSERVED_PIT_HISTORY_HOURS + 1, {gaps: [400]}), 'GAPUSDT');
+  const gapStatus = observedTradabilityAt(gap, timestamp, {featurePoint: featurePoint(timestamp)});
+  assert.equal(gapStatus.dataLoss, true);
+  const missingLatest = observedTradabilityAt(gap, start + 401 * H1);
+  assert.equal(missingLatest.dataLoss, true);
+  const hashFailure = syntheticMarket(hourlyRows(OBSERVED_PIT_HISTORY_HOURS + 1), 'HASHFAILUSDT');
+  hashFailure.dataIntegrity.priceComplete = false;
+  const hashStatus = observedTradabilityAt(hashFailure, timestamp, {featurePoint: featurePoint(timestamp)});
+  assert.equal(hashStatus.dataLoss, true);
+  assert.equal(observedTradabilityCodeAt(hashFailure, timestamp) & 32, 32);
+});
+
+test('warm-up and below-liquidity rejections are not corruption', () => {
+  const rows = hourlyRows(OBSERVED_PIT_HISTORY_HOURS + 1, {quoteVolume: 1});
+  const market = syntheticMarket(rows, 'WARMUPLOWVOLUSDT');
+  const warmup = observedTradabilityAt(market, start + (OBSERVED_PIT_HISTORY_HOURS - 1) * H1, {featurePoint: featurePoint(start)});
+  const lowLiquidity = observedTradabilityAt(market, start + OBSERVED_PIT_HISTORY_HOURS * H1, {featurePoint: featurePoint(start + OBSERVED_PIT_HISTORY_HOURS * H1)});
+  assert.equal(warmup.dataLoss, false);
+  assert.equal(lowLiquidity.liquidityReady, false);
+  assert.equal(lowLiquidity.dataLoss, false);
+});
+
+test('lifecycle-only symbols do not become full-window loss leaders', () => {
+  const market = metadataOnlyMarket(hourlyRows(24, {from: Date.parse('2026-01-01T00:00:00.000Z')}), 'NO_OVERLAPUSDT');
+  const timestamps = [start, start + H4, start + 2 * H4];
+  const codes = Uint8Array.from(timestamps.map(timestamp => observedTradabilityCodeAt(market, timestamp)));
+  const summary = observedPitDataLossSummary({markets: [market], timestamps, pitStatusBySymbol: new Map([[market.symbol, codes]])});
+  assert.deepEqual(summary.topLossSymbols, []);
 });
 
 test('post-delist disappearance and relisting require a fresh contiguous warm-up', () => {

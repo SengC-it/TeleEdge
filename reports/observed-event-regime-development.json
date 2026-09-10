@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-09T03:21:10.441Z",
+  "generatedAt": "2026-09-09T11:43:06.584Z",
   "eventDefinitionVersion": "m4-event-regime-v1",
   "developmentWindow": {
     "start": "2024-01-01T00:00:00.000Z",
     "end": "2026-01-01T00:00:00.000Z"
   },
   "observedPitGate": {
-    "pass": false,
-    "status": "OBSERVED_PIT_DATA_BLOCKED",
+    "pass": true,
+    "status": "OBSERVED_PIT_READY",
     "mean": 166.90264477884176,
     "median": 163,
     "min": 112,
@@ -23,7 +23,7 @@
         "max": 172,
         "coreMedian": 36,
         "expandedMedian": 130,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-02": {
         "snapshots": 174,
@@ -34,7 +34,7 @@
         "max": 165,
         "coreMedian": 35,
         "expandedMedian": 105,
-        "dataLossObservations": 9918
+        "dataLossObservations": 0
       },
       "2024-03": {
         "snapshots": 186,
@@ -45,7 +45,7 @@
         "max": 236,
         "coreMedian": 40,
         "expandedMedian": 185,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-04": {
         "snapshots": 180,
@@ -56,7 +56,7 @@
         "max": 237,
         "coreMedian": 39,
         "expandedMedian": 177,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-05": {
         "snapshots": 186,
@@ -67,7 +67,7 @@
         "max": 186,
         "coreMedian": 40,
         "expandedMedian": 116.5,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-06": {
         "snapshots": 180,
@@ -78,7 +78,7 @@
         "max": 164,
         "coreMedian": 40,
         "expandedMedian": 117,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-07": {
         "snapshots": 186,
@@ -89,7 +89,7 @@
         "max": 140,
         "coreMedian": 39,
         "expandedMedian": 93,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-08": {
         "snapshots": 186,
@@ -100,7 +100,7 @@
         "max": 134,
         "coreMedian": 40,
         "expandedMedian": 92.5,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-09": {
         "snapshots": 180,
@@ -111,7 +111,7 @@
         "max": 129,
         "coreMedian": 39,
         "expandedMedian": 78,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-10": {
         "snapshots": 186,
@@ -122,7 +122,7 @@
         "max": 146,
         "coreMedian": 39,
         "expandedMedian": 98,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-11": {
         "snapshots": 180,
@@ -133,7 +133,7 @@
         "max": 208,
         "coreMedian": 43,
         "expandedMedian": 111,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-12": {
         "snapshots": 186,
@@ -144,7 +144,7 @@
         "max": 254,
         "coreMedian": 46,
         "expandedMedian": 201,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2025-01": {
         "snapshots": 186,
@@ -155,7 +155,7 @@
         "max": 232,
         "coreMedian": 47,
         "expandedMedian": 146,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2025-02": {
         "snapshots": 168,
@@ -166,7 +166,7 @@
         "max": 195,
         "coreMedian": 46,
         "expandedMedian": 133,
-        "dataLossObservations": 9576
+        "dataLossObservations": 0
       },
       "2025-03": {
         "snapshots": 186,
@@ -177,7 +177,7 @@
         "max": 179,
         "coreMedian": 49,
         "expandedMedian": 111,
-        "dataLossObservations": 10606
+        "dataLossObservations": 31
       },
       "2025-04": {
         "snapshots": 180,
@@ -188,7 +188,7 @@
         "max": 163,
         "coreMedian": 48,
         "expandedMedian": 96,
-        "dataLossObservations": 10264
+        "dataLossObservations": 239
       },
       "2025-05": {
         "snapshots": 186,
@@ -199,7 +199,7 @@
         "max": 190,
         "coreMedian": 48,
         "expandedMedian": 130,
-        "dataLossObservations": 10604
+        "dataLossObservations": 363
       },
       "2025-06": {
         "snapshots": 180,
@@ -210,7 +210,7 @@
         "max": 185,
         "coreMedian": 49,
         "expandedMedian": 103,
-        "dataLossObservations": 10260
+        "dataLossObservations": 86
       },
       "2025-07": {
         "snapshots": 186,
@@ -221,7 +221,7 @@
         "max": 193,
         "coreMedian": 50,
         "expandedMedian": 104,
-        "dataLossObservations": 10607
+        "dataLossObservations": 232
       },
       "2025-08": {
         "snapshots": 186,
@@ -232,7 +232,7 @@
         "max": 201,
         "coreMedian": 50,
         "expandedMedian": 137,
-        "dataLossObservations": 10602
+        "dataLossObservations": 308
       },
       "2025-09": {
         "snapshots": 180,
@@ -243,7 +243,7 @@
         "max": 174,
         "coreMedian": 49,
         "expandedMedian": 116,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2025-10": {
         "snapshots": 186,
@@ -254,7 +254,7 @@
         "max": 192,
         "coreMedian": 52,
         "expandedMedian": 129,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2025-11": {
         "snapshots": 180,
@@ -265,7 +265,7 @@
         "max": 193,
         "coreMedian": 55,
         "expandedMedian": 120,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2025-12": {
         "snapshots": 186,
@@ -276,7 +276,7 @@
         "max": 166,
         "coreMedian": 54,
         "expandedMedian": 91.5,
-        "dataLossObservations": 10606
+        "dataLossObservations": 49
       }
     },
     "monthlyMedianMin": 117,
@@ -286,98 +286,50 @@
     "btcDataLossObservations": 0,
     "btcCoverage": 1,
     "btcCoveragePass": true,
-    "nonCriticalDataLossObservations": 250021,
-    "otherwiseEligibleObservations": 982056,
-    "corruptionLostObservations": 250021,
-    "corruptionRetentionRate": 0.7454106486799124,
-    "corruptionLossRate": 0.25458935132008764,
-    "corruptionPass": false,
+    "nonCriticalDataLossObservations": 1308,
+    "otherwiseEligibleObservations": 733343,
+    "corruptionLostObservations": 1308,
+    "corruptionRetentionRate": 0.998216387147624,
+    "corruptionLossRate": 0.001783612852376037,
+    "corruptionPass": true,
     "topLossSymbols": [
       {
-        "symbol": "1000BTTCUSDT",
-        "count": 4386
+        "symbol": "AERGOUSDT",
+        "count": 180
       },
       {
-        "symbol": "ACUUSDT",
-        "count": 4386
+        "symbol": "CTKUSDT",
+        "count": 180
       },
       {
-        "symbol": "AIGENSYNUSDT",
-        "count": 4386
+        "symbol": "CVXUSDT",
+        "count": 180
       },
       {
-        "symbol": "AKROUSDT",
-        "count": 4386
+        "symbol": "MAVIAUSDT",
+        "count": 180
       },
       {
-        "symbol": "ANCUSDT",
-        "count": 4386
+        "symbol": "PUMPUSDT",
+        "count": 180
       },
       {
-        "symbol": "ARXUSDT",
-        "count": 4386
+        "symbol": "SLPUSDT",
+        "count": 180
       },
       {
-        "symbol": "AZTECUSDT",
-        "count": 4386
+        "symbol": "CVCUSDT",
+        "count": 179
       },
       {
-        "symbol": "BASEDUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BILLUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BIRBUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BSBUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BTTUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BTWUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BZRXUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CAPUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CFGUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CHIPUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CTRUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "DATAIPUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "DODOUSDT",
-        "count": 4386
+        "symbol": "LITUSDT",
+        "count": 49
       }
     ],
     "topLossReasons": [
       {
-        "reason": "missing-or-incomplete-price-artifact",
-        "count": 250021
+        "reason": "local-1h-gap",
+        "count": 1308
       }
     ],
     "criteria": {
@@ -387,216 +339,1077 @@
       "minimumCorruptionRetention": 0.95
     },
     "lossSymbolCounts": {
-      "1000BTTCUSDT": 4386,
-      "ACUUSDT": 4386,
-      "AERGOUSDT": 2,
-      "AIGENSYNUSDT": 4386,
-      "AKROUSDT": 4386,
-      "ANCUSDT": 4386,
-      "ARXUSDT": 4386,
-      "AZTECUSDT": 4386,
-      "BASEDUSDT": 4386,
-      "BILLUSDT": 4386,
-      "BIRBUSDT": 4386,
-      "BSBUSDT": 4386,
-      "BTTUSDT": 4386,
-      "BTWUSDT": 4386,
-      "BZRXUSDT": 4386,
-      "CAPUSDT": 4386,
-      "CFGUSDT": 4386,
-      "CHIPUSDT": 4386,
-      "CTKUSDT": 2,
-      "CTRUSDT": 4386,
-      "CVCUSDT": 2,
-      "CVXUSDT": 2,
-      "DATAIPUSDT": 4386,
-      "DODOUSDT": 4386,
-      "DOTECOUSDT": 4386,
-      "EDGEUSDT": 4386,
-      "ELSAUSDT": 4386,
-      "ESPUSDT": 4386,
-      "FIGHTUSDT": 4386,
-      "FOGOUSDT": 4386,
-      "FRAXUSDT": 4386,
-      "GAIBUSDT": 4386,
-      "GENIUSUSDT": 4386,
-      "GRAMUSDT": 4386,
-      "GRVTUSDT": 4386,
-      "GWEIUSDT": 4386,
-      "INXUSDT": 4386,
-      "KATUSDT": 4386,
-      "KEEPUSDT": 4386,
-      "LENDUSDT": 4386,
-      "LITUSDT": 4,
-      "LUNAUSDT": 4386,
-      "MANTRAUSDT": 4386,
-      "MAVIAUSDT": 4,
-      "MEGAUSDT": 4386,
-      "NUUSDT": 4386,
-      "OPGUSDT": 4386,
-      "OPNUSDT": 4386,
-      "OUSDT": 4386,
-      "PHAROSUSDT": 4386,
-      "PRLUSDT": 4386,
-      "PUMPUSDT": 1,
-      "REUSDT": 4386,
-      "ROBOUSDT": 4386,
-      "SKRUSDT": 4386,
-      "SLPUSDT": 2,
-      "SLXUSDT": 4386,
-      "SPACEUSDT": 4386,
-      "SPORTFUNUSDT": 4386,
-      "STARUSDT": 4386,
-      "TRIAUSDT": 4386,
-      "XAUTUSDT": 4386,
-      "YFIIUSDT": 4386,
-      "ZAMAUSDT": 4386,
-      "ZESTUSDT": 4386
+      "AERGOUSDT": 180,
+      "CTKUSDT": 180,
+      "CVCUSDT": 179,
+      "CVXUSDT": 180,
+      "LITUSDT": 49,
+      "MAVIAUSDT": 180,
+      "PUMPUSDT": 180,
+      "SLPUSDT": 180
     },
     "lossReasonCounts": {
-      "missing-or-incomplete-price-artifact": 250021
+      "local-1h-gap": 1308
     }
   },
-  "finalDecision": "OBSERVED_PIT_DATA_BLOCKED",
+  "finalDecision": "EVENT_RESEARCH_FAIL",
   "families": {
     "BREADTH_REGIME_TRANSITION": {
       "family": "BREADTH_REGIME_TRANSITION",
-      "status": "NOT_RUN_OBSERVED_PIT_DATA_BLOCKED",
-      "raw": null,
-      "independent": null,
-      "executable": null,
-      "symbols": null,
-      "months": null,
-      "long": null,
-      "short": null,
-      "profitFactor": null,
-      "expectancyR": null,
-      "confidenceInterval": null,
-      "pnl": null,
-      "maxDrawdownPct": null,
-      "positiveFolds": null,
-      "sampleFolds": null,
-      "positiveExpectancyFolds": null,
-      "foldMetrics": null,
-      "control": null,
-      "forwardReturns": null,
-      "mfe": null,
-      "mae": null
+      "status": "REJECT",
+      "raw": 112,
+      "independent": 95,
+      "executable": 74,
+      "symbols": 1,
+      "months": 22,
+      "long": 32,
+      "short": 42,
+      "marketRegimes": [
+        "BEAR",
+        "BULL",
+        "SIDEWAYS"
+      ],
+      "wins": 31,
+      "losses": 43,
+      "winRate": 0.4189189189189189,
+      "profitFactor": 0.8897024333220311,
+      "expectancyR": -0.04405320202701042,
+      "confidenceInterval": {
+        "lower": -0.2456161891802861,
+        "upper": 0.15750978512626523,
+        "level": 0.95
+      },
+      "pnl": -186.06796953856548,
+      "maxDrawdownPct": 0.05872162298459607,
+      "positiveFolds": 3,
+      "eventControlExpectancyUpliftR": -0.24984631611890168,
+      "eventControlProfitFactorUplift": -0.5545999055068462,
+      "mfe": {
+        "n": 74,
+        "mean": 0.03095535474241421,
+        "median": 0.0245419756159021,
+        "max": 0.10942948166679689
+      },
+      "mae": {
+        "n": 74,
+        "mean": -0.03334015825851092,
+        "median": -0.023924437783986396,
+        "min": -0.175936215653693
+      },
+      "forwardReturns": {
+        "h4": {
+          "n": 74,
+          "mean": 0.00013086137476512447,
+          "median": -0.0006319586123636478
+        },
+        "h12": {
+          "n": 74,
+          "mean": -0.0022191551713110357,
+          "median": -0.00021798169727299532
+        },
+        "h24": {
+          "n": 74,
+          "mean": -0.003179016359724102,
+          "median": -0.0011623492911216338
+        },
+        "h72": {
+          "n": 74,
+          "mean": -0.001758900075371235,
+          "median": -0.0015709876281966295
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "UNMATCHED_CONTROL",
+        "rows": 60,
+        "summary": {
+          "independent": 60,
+          "executable": 37,
+          "symbols": 1,
+          "wins": 20,
+          "losses": 17,
+          "winRate": 0.5405405405405406,
+          "profitFactor": 1.4443023388288774,
+          "expectancyR": 0.20579311409189124,
+          "confidenceInterval": {
+            "lower": -0.19593150293383774,
+            "upper": 0.6075177311176202,
+            "level": 0.95
+          },
+          "pnl": 440.3328117639035,
+          "maxDrawdownPct": 0.03568123349226244,
+          "positiveFolds": 4,
+          "sampleFolds": 6,
+          "positiveExpectancyFolds": 4,
+          "foldMetrics": [
+            {
+              "fold": 0,
+              "n": 4,
+              "profitFactor": 1.1007171820771933,
+              "expectancyR": 0.045334940221825104,
+              "pnl": 11.932329931096987
+            },
+            {
+              "fold": 1,
+              "n": 10,
+              "profitFactor": 3.469485816600258,
+              "expectancyR": 0.7446942569484645,
+              "pnl": 441.00469459638066
+            },
+            {
+              "fold": 2,
+              "n": 4,
+              "profitFactor": 0.22415724489906472,
+              "expectancyR": -0.6078480011296887,
+              "pnl": -143.40663314191937
+            },
+            {
+              "fold": 3,
+              "n": 9,
+              "profitFactor": 1.0941123833046233,
+              "expectancyR": 0.044215876934515896,
+              "pnl": 22.818231245595015
+            },
+            {
+              "fold": 4,
+              "n": 4,
+              "profitFactor": 0.609422695638838,
+              "expectancyR": -0.3132512442841173,
+              "pnl": -73.49236322473298
+            },
+            {
+              "fold": 5,
+              "n": 6,
+              "profitFactor": 3.3103321265395684,
+              "expectancyR": 0.5454194967121021,
+              "pnl": 181.4765523574832
+            }
+          ],
+          "folds": 6,
+          "symbolConcentration": 1,
+          "mfe": {
+            "n": 37,
+            "mean": 0.03932078808544092,
+            "median": 0.02907791397317705,
+            "max": 0.18992946182537618
+          },
+          "mae": {
+            "n": 37,
+            "mean": -0.03710090547713506,
+            "median": -0.021575428099595895,
+            "min": -0.12103817672475792
+          }
+        }
+      },
+      "sampleFolds": 6,
+      "positiveExpectancyFolds": 3,
+      "foldMetrics": [
+        {
+          "fold": 0,
+          "n": 13,
+          "profitFactor": 0.3462070160926219,
+          "expectancyR": -0.22319503916577374,
+          "pnl": -166.6309390547873
+        },
+        {
+          "fold": 1,
+          "n": 18,
+          "profitFactor": 0.424927704460796,
+          "expectancyR": -0.2901123150041426,
+          "pnl": -306.59301911628404
+        },
+        {
+          "fold": 2,
+          "n": 11,
+          "profitFactor": 1.2997538591680995,
+          "expectancyR": 0.11277584404999366,
+          "pnl": 72.70671898949993
+        },
+        {
+          "fold": 3,
+          "n": 12,
+          "profitFactor": 1.5538522814857498,
+          "expectancyR": 0.16188254446002723,
+          "pnl": 111.45553931605804
+        },
+        {
+          "fold": 4,
+          "n": 10,
+          "profitFactor": 0.6642216291927583,
+          "expectancyR": -0.14994190221347664,
+          "pnl": -88.78838226865176
+        },
+        {
+          "fold": 5,
+          "n": 10,
+          "profitFactor": 2.005463497223925,
+          "expectancyR": 0.317991443329536,
+          "pnl": 191.78211259559964
+        }
+      ],
+      "folds": 6,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 0,
+        "prePurge": 74,
+        "kept": 74,
+        "labelOverlapFree": true
+      }
     },
     "MARKET_VOLATILITY_SHOCK": {
       "family": "MARKET_VOLATILITY_SHOCK",
-      "status": "NOT_RUN_OBSERVED_PIT_DATA_BLOCKED",
-      "raw": null,
-      "independent": null,
-      "executable": null,
-      "symbols": null,
-      "months": null,
-      "long": null,
-      "short": null,
-      "profitFactor": null,
-      "expectancyR": null,
-      "confidenceInterval": null,
-      "pnl": null,
-      "maxDrawdownPct": null,
-      "positiveFolds": null,
-      "sampleFolds": null,
-      "positiveExpectancyFolds": null,
-      "foldMetrics": null,
-      "control": null,
-      "forwardReturns": null,
-      "mfe": null,
-      "mae": null
+      "status": "REJECT",
+      "raw": 277,
+      "independent": 180,
+      "executable": 142,
+      "symbols": 1,
+      "months": 24,
+      "long": 62,
+      "short": 80,
+      "marketRegimes": [
+        "BEAR",
+        "BULL",
+        "SIDEWAYS"
+      ],
+      "wins": 52,
+      "losses": 90,
+      "winRate": 0.36619718309859156,
+      "profitFactor": 0.7071616423207084,
+      "expectancyR": -0.14126121565695882,
+      "confidenceInterval": {
+        "lower": -0.2950173390972349,
+        "upper": 0.012494907783317244,
+        "level": 0.95
+      },
+      "pnl": -1153.6744117510395,
+      "maxDrawdownPct": 0.12889601141571694,
+      "positiveFolds": 1,
+      "eventControlExpectancyUpliftR": 0.1046378660720462,
+      "eventControlProfitFactorUplift": 0.17405449047518406,
+      "mfe": {
+        "n": 142,
+        "mean": 0.03534956032170051,
+        "median": 0.02550221729120189,
+        "max": 0.19193655558163436
+      },
+      "mae": {
+        "n": 142,
+        "mean": -0.03721712922514308,
+        "median": -0.028523239037099746,
+        "min": -0.18530176389317043
+      },
+      "forwardReturns": {
+        "h4": {
+          "n": 142,
+          "mean": -0.001886299116697494,
+          "median": -0.0014607590970469042
+        },
+        "h12": {
+          "n": 142,
+          "mean": -0.0005344556558968527,
+          "median": -0.0002658990275699047
+        },
+        "h24": {
+          "n": 142,
+          "mean": -0.005141003506331598,
+          "median": -0.006265477797972874
+        },
+        "h72": {
+          "n": 142,
+          "mean": -0.006528787397443698,
+          "median": -0.010525423808571133
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "UNMATCHED_CONTROL",
+        "rows": 88,
+        "summary": {
+          "independent": 88,
+          "executable": 55,
+          "symbols": 1,
+          "wins": 18,
+          "losses": 37,
+          "winRate": 0.32727272727272727,
+          "profitFactor": 0.5331071518455244,
+          "expectancyR": -0.24589908172900501,
+          "confidenceInterval": {
+            "lower": -0.4817733112185253,
+            "upper": -0.01002485223948471,
+            "level": 0.95
+          },
+          "pnl": -784.1122152649599,
+          "maxDrawdownPct": 0.08222468769895987,
+          "positiveFolds": 0,
+          "sampleFolds": 6,
+          "positiveExpectancyFolds": 0,
+          "foldMetrics": [
+            {
+              "fold": 0,
+              "n": 11,
+              "profitFactor": 0.49935976239918506,
+              "expectancyR": -0.3167136015536162,
+              "pnl": -207.00149349506958
+            },
+            {
+              "fold": 1,
+              "n": 8,
+              "profitFactor": 0.9609344605319369,
+              "expectancyR": -0.02310250037996317,
+              "pnl": -9.447635161183143
+            },
+            {
+              "fold": 2,
+              "n": 11,
+              "profitFactor": 0.289342685924679,
+              "expectancyR": -0.35990635397040366,
+              "pnl": -229.93649743692637
+            },
+            {
+              "fold": 3,
+              "n": 13,
+              "profitFactor": 0.4246821187658118,
+              "expectancyR": -0.3519185984857227,
+              "pnl": -260.4052324967622
+            },
+            {
+              "fold": 4,
+              "n": 6,
+              "profitFactor": 0.6055290118032122,
+              "expectancyR": -0.199069541512965,
+              "pnl": -69.88753893845745
+            },
+            {
+              "fold": 5,
+              "n": 6,
+              "profitFactor": 0.8949453479722562,
+              "expectancyR": -0.02124182531652741,
+              "pnl": -7.433817736560837
+            }
+          ],
+          "folds": 6,
+          "symbolConcentration": null,
+          "mfe": {
+            "n": 55,
+            "mean": 0.025785103845110662,
+            "median": 0.021953406749720794,
+            "max": 0.10603069142933874
+          },
+          "mae": {
+            "n": 55,
+            "mean": -0.03270817634131533,
+            "median": -0.028045841553367312,
+            "min": -0.08435720637462807
+          }
+        }
+      },
+      "sampleFolds": 6,
+      "positiveExpectancyFolds": 1,
+      "foldMetrics": [
+        {
+          "fold": 0,
+          "n": 25,
+          "profitFactor": 1.0021013674406807,
+          "expectancyR": -0.0008523577860092769,
+          "pnl": 1.3732690783492743
+        },
+        {
+          "fold": 1,
+          "n": 23,
+          "profitFactor": 1.137493136535577,
+          "expectancyR": 0.05216279818644214,
+          "pnl": 76.1248799441378
+        },
+        {
+          "fold": 2,
+          "n": 25,
+          "profitFactor": 0.42235567717733835,
+          "expectancyR": -0.3356151551357383,
+          "pnl": -486.7195225331069
+        },
+        {
+          "fold": 3,
+          "n": 28,
+          "profitFactor": 0.6594174588711966,
+          "expectancyR": -0.14978031567516673,
+          "pnl": -247.70766708248277
+        },
+        {
+          "fold": 4,
+          "n": 18,
+          "profitFactor": 0.5738810839986874,
+          "expectancyR": -0.20955494966203428,
+          "pnl": -211.3355692469227
+        },
+        {
+          "fold": 5,
+          "n": 23,
+          "profitFactor": 0.571842120870028,
+          "expectancyR": -0.21223092285701514,
+          "pnl": -285.4098019110142
+        }
+      ],
+      "folds": 6,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 7,
+        "prePurge": 149,
+        "kept": 142,
+        "labelOverlapFree": true
+      }
     },
     "DISPERSION_ROTATION": {
       "family": "DISPERSION_ROTATION",
-      "status": "NOT_RUN_OBSERVED_PIT_DATA_BLOCKED",
-      "raw": null,
-      "independent": null,
-      "executable": null,
-      "symbols": null,
-      "months": null,
-      "long": null,
-      "short": null,
-      "profitFactor": null,
-      "expectancyR": null,
-      "confidenceInterval": null,
-      "pnl": null,
-      "maxDrawdownPct": null,
-      "positiveFolds": null,
-      "sampleFolds": null,
-      "positiveExpectancyFolds": null,
-      "foldMetrics": null,
-      "control": null,
-      "forwardReturns": null,
-      "mfe": null,
-      "mae": null
+      "status": "REJECT",
+      "raw": 1740,
+      "independent": 1614,
+      "executable": 449,
+      "symbols": 233,
+      "months": 24,
+      "long": 146,
+      "short": 303,
+      "marketRegimes": [
+        "BEAR",
+        "BULL",
+        "SIDEWAYS"
+      ],
+      "wins": 185,
+      "losses": 264,
+      "winRate": 0.41202672605790647,
+      "profitFactor": 0.9337134544862894,
+      "expectancyR": -0.033995706104394306,
+      "confidenceInterval": {
+        "lower": -0.13824607512287398,
+        "upper": 0.07025466291408539,
+        "level": 0.95
+      },
+      "pnl": -919.4680501088161,
+      "maxDrawdownPct": 0.1630505886014327,
+      "positiveFolds": 1,
+      "eventControlExpectancyUpliftR": -0.1353405360373386,
+      "eventControlProfitFactorUplift": -0.271368583663795,
+      "mfe": {
+        "n": 449,
+        "mean": 0.09460702363895104,
+        "median": 0.0727634194831015,
+        "max": 0.561808409737591
+      },
+      "mae": {
+        "n": 449,
+        "mean": -0.1067401093535338,
+        "median": -0.07164160162446853,
+        "min": -0.8847487001733099
+      },
+      "forwardReturns": {
+        "h4": {
+          "n": 449,
+          "mean": -0.0007570499264450717,
+          "median": -0.0007590132827326457
+        },
+        "h12": {
+          "n": 449,
+          "mean": -0.004073448313662138,
+          "median": -0.000038257742410507944
+        },
+        "h24": {
+          "n": 449,
+          "mean": -0.0032369598398411465,
+          "median": 0.0015783674320259955
+        },
+        "h72": {
+          "n": 449,
+          "mean": -0.0015390655881169708,
+          "median": 0.007507340097372417
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "UNMATCHED_CONTROL",
+        "rows": 122,
+        "summary": {
+          "independent": 122,
+          "executable": 95,
+          "symbols": 75,
+          "wins": 41,
+          "losses": 54,
+          "winRate": 0.43157894736842106,
+          "profitFactor": 1.2050820381500844,
+          "expectancyR": 0.10134482993294427,
+          "confidenceInterval": {
+            "lower": -0.14575752206581094,
+            "upper": 0.3484471819316995,
+            "level": 0.95
+          },
+          "pnl": 578.397621166034,
+          "maxDrawdownPct": 0.09224678547282165,
+          "positiveFolds": 3,
+          "sampleFolds": 6,
+          "positiveExpectancyFolds": 3,
+          "foldMetrics": [
+            {
+              "fold": 0,
+              "n": 4,
+              "profitFactor": 0.27120425965524114,
+              "expectancyR": -0.42411708697763945,
+              "pnl": -101.74020809749994
+            },
+            {
+              "fold": 1,
+              "n": 20,
+              "profitFactor": 0.15071135048437023,
+              "expectancyR": -0.5587530382271609,
+              "pnl": -669.8818630237887
+            },
+            {
+              "fold": 2,
+              "n": 28,
+              "profitFactor": 2.9966458134218263,
+              "expectancyR": 0.5780989966445051,
+              "pnl": 971.3567601587628
+            },
+            {
+              "fold": 3,
+              "n": 14,
+              "profitFactor": 1.4765520262392604,
+              "expectancyR": 0.2492944413844199,
+              "pnl": 209.40073511242352
+            },
+            {
+              "fold": 4,
+              "n": 19,
+              "profitFactor": 1.3987093574342828,
+              "expectancyR": 0.1963841108506462,
+              "pnl": 223.74383051383026
+            },
+            {
+              "fold": 5,
+              "n": 10,
+              "profitFactor": 0.8654421834336831,
+              "expectancyR": -0.09089042355068296,
+              "pnl": -54.4816334976945
+            }
+          ],
+          "folds": 6,
+          "symbolConcentration": 0.26744633121781963,
+          "mfe": {
+            "n": 95,
+            "mean": 0.09803955890301279,
+            "median": 0.07430856381206263,
+            "max": 1.101728640716329
+          },
+          "mae": {
+            "n": 95,
+            "mean": -0.08452829821803194,
+            "median": -0.05467665834027202,
+            "min": -0.5324954135602482
+          }
+        }
+      },
+      "sampleFolds": 6,
+      "positiveExpectancyFolds": 1,
+      "foldMetrics": [
+        {
+          "fold": 0,
+          "n": 76,
+          "profitFactor": 0.7927254192413521,
+          "expectancyR": -0.1127769845466753,
+          "pnl": -514.2733130363298
+        },
+        {
+          "fold": 1,
+          "n": 86,
+          "profitFactor": 1.2115330342397415,
+          "expectancyR": 0.09857367682657871,
+          "pnl": 508.28117129268924
+        },
+        {
+          "fold": 2,
+          "n": 129,
+          "profitFactor": 0.9446886074380053,
+          "expectancyR": -0.028342420151319995,
+          "pnl": -222.70531715048557
+        },
+        {
+          "fold": 3,
+          "n": 56,
+          "profitFactor": 0.9751132422856323,
+          "expectancyR": -0.012872747536268199,
+          "pnl": -42.92816987774858
+        },
+        {
+          "fold": 4,
+          "n": 67,
+          "profitFactor": 0.9526115859705014,
+          "expectancyR": -0.023794251241627398,
+          "pnl": -95.723289754418
+        },
+        {
+          "fold": 5,
+          "n": 35,
+          "profitFactor": 0.545895222209302,
+          "expectancyR": -0.26283132936203285,
+          "pnl": -552.1191315825233
+        }
+      ],
+      "folds": 6,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 11,
+        "prePurge": 460,
+        "kept": 449,
+        "labelOverlapFree": true
+      }
     },
     "LEVERAGE_STRESS_TRANSITION": {
       "family": "LEVERAGE_STRESS_TRANSITION",
-      "status": "NOT_RUN_OBSERVED_PIT_DATA_BLOCKED",
-      "raw": null,
-      "independent": null,
-      "executable": null,
-      "symbols": null,
-      "months": null,
-      "long": null,
-      "short": null,
+      "status": "WATCH",
+      "raw": 0,
+      "independent": 0,
+      "executable": 0,
+      "symbols": 0,
+      "months": 0,
+      "long": 0,
+      "short": 0,
+      "marketRegimes": [],
+      "wins": 0,
+      "losses": 0,
+      "winRate": null,
       "profitFactor": null,
       "expectancyR": null,
-      "confidenceInterval": null,
-      "pnl": null,
-      "maxDrawdownPct": null,
-      "positiveFolds": null,
-      "sampleFolds": null,
-      "positiveExpectancyFolds": null,
-      "foldMetrics": null,
-      "control": null,
-      "forwardReturns": null,
+      "confidenceInterval": {
+        "lower": null,
+        "upper": null,
+        "level": 0.95
+      },
+      "pnl": 0,
+      "maxDrawdownPct": 0,
+      "positiveFolds": 0,
+      "eventControlExpectancyUpliftR": null,
+      "eventControlProfitFactorUplift": null,
       "mfe": null,
-      "mae": null
+      "mae": null,
+      "forwardReturns": {
+        "h4": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h12": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h24": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        },
+        "h72": {
+          "n": 0,
+          "mean": null,
+          "median": null
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "MATCHED",
+        "rows": 0,
+        "summary": {
+          "independent": 0,
+          "executable": 0,
+          "symbols": 0,
+          "wins": 0,
+          "losses": 0,
+          "winRate": null,
+          "profitFactor": null,
+          "expectancyR": null,
+          "confidenceInterval": {
+            "lower": null,
+            "upper": null,
+            "level": 0.95
+          },
+          "pnl": 0,
+          "maxDrawdownPct": 0,
+          "positiveFolds": 0,
+          "sampleFolds": 0,
+          "positiveExpectancyFolds": 0,
+          "foldMetrics": [
+            {
+              "fold": 0,
+              "n": 0,
+              "profitFactor": null,
+              "expectancyR": null,
+              "pnl": 0
+            },
+            {
+              "fold": 1,
+              "n": 0,
+              "profitFactor": null,
+              "expectancyR": null,
+              "pnl": 0
+            },
+            {
+              "fold": 2,
+              "n": 0,
+              "profitFactor": null,
+              "expectancyR": null,
+              "pnl": 0
+            },
+            {
+              "fold": 3,
+              "n": 0,
+              "profitFactor": null,
+              "expectancyR": null,
+              "pnl": 0
+            },
+            {
+              "fold": 4,
+              "n": 0,
+              "profitFactor": null,
+              "expectancyR": null,
+              "pnl": 0
+            },
+            {
+              "fold": 5,
+              "n": 0,
+              "profitFactor": null,
+              "expectancyR": null,
+              "pnl": 0
+            }
+          ],
+          "folds": 0,
+          "symbolConcentration": null,
+          "mfe": null,
+          "mae": null
+        }
+      },
+      "sampleFolds": 0,
+      "positiveExpectancyFolds": 0,
+      "foldMetrics": [
+        {
+          "fold": 0,
+          "n": 0,
+          "profitFactor": null,
+          "expectancyR": null,
+          "pnl": 0
+        },
+        {
+          "fold": 1,
+          "n": 0,
+          "profitFactor": null,
+          "expectancyR": null,
+          "pnl": 0
+        },
+        {
+          "fold": 2,
+          "n": 0,
+          "profitFactor": null,
+          "expectancyR": null,
+          "pnl": 0
+        },
+        {
+          "fold": 3,
+          "n": 0,
+          "profitFactor": null,
+          "expectancyR": null,
+          "pnl": 0
+        },
+        {
+          "fold": 4,
+          "n": 0,
+          "profitFactor": null,
+          "expectancyR": null,
+          "pnl": 0
+        },
+        {
+          "fold": 5,
+          "n": 0,
+          "profitFactor": null,
+          "expectancyR": null,
+          "pnl": 0
+        }
+      ],
+      "folds": 0,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 0,
+        "prePurge": 0,
+        "kept": 0,
+        "labelOverlapFree": true
+      }
     },
     "TREND_REGIME_TRANSITION": {
       "family": "TREND_REGIME_TRANSITION",
-      "status": "NOT_RUN_OBSERVED_PIT_DATA_BLOCKED",
-      "raw": null,
-      "independent": null,
-      "executable": null,
-      "symbols": null,
-      "months": null,
-      "long": null,
-      "short": null,
-      "profitFactor": null,
-      "expectancyR": null,
-      "confidenceInterval": null,
-      "pnl": null,
-      "maxDrawdownPct": null,
-      "positiveFolds": null,
-      "sampleFolds": null,
-      "positiveExpectancyFolds": null,
-      "foldMetrics": null,
-      "control": null,
-      "forwardReturns": null,
-      "mfe": null,
-      "mae": null
+      "status": "REJECT",
+      "raw": 97,
+      "independent": 84,
+      "executable": 60,
+      "symbols": 1,
+      "months": 24,
+      "long": 30,
+      "short": 30,
+      "marketRegimes": [
+        "BEAR",
+        "BULL"
+      ],
+      "wins": 29,
+      "losses": 31,
+      "winRate": 0.48333333333333334,
+      "profitFactor": 0.8992544239112994,
+      "expectancyR": -0.04417962649142935,
+      "confidenceInterval": {
+        "lower": -0.28631243045215354,
+        "upper": 0.19795317746929483,
+        "level": 0.95
+      },
+      "pnl": -148.1489586069394,
+      "maxDrawdownPct": 0.030327204388845168,
+      "positiveFolds": 1,
+      "eventControlExpectancyUpliftR": 0.2894508784280678,
+      "eventControlProfitFactorUplift": 0.4210750747591662,
+      "mfe": {
+        "n": 60,
+        "mean": 0.03269368178614263,
+        "median": 0.023904038622611368,
+        "max": 0.17594448311957134
+      },
+      "mae": {
+        "n": 60,
+        "mean": -0.033865825002451784,
+        "median": -0.024796061684268844,
+        "min": -0.15371039523544028
+      },
+      "forwardReturns": {
+        "h4": {
+          "n": 60,
+          "mean": 0.0005849375693002367,
+          "median": 0.000670117642663004
+        },
+        "h12": {
+          "n": 60,
+          "mean": 0.0007107345001366024,
+          "median": -0.0012663203144055446
+        },
+        "h24": {
+          "n": 60,
+          "mean": 0.00032492331540867245,
+          "median": -0.0009429840047007199
+        },
+        "h72": {
+          "n": 60,
+          "mean": -0.000663008713081383,
+          "median": 0.0021631123496352878
+        }
+      },
+      "eventStudy": "COMPLETED",
+      "control": {
+        "status": "UNMATCHED_CONTROL",
+        "rows": 55,
+        "summary": {
+          "independent": 55,
+          "executable": 34,
+          "symbols": 1,
+          "wins": 8,
+          "losses": 26,
+          "winRate": 0.23529411764705882,
+          "profitFactor": 0.47817934915213317,
+          "expectancyR": -0.3336305049194972,
+          "confidenceInterval": {
+            "lower": -0.6691240272357748,
+            "upper": 0.0018630173967803532,
+            "level": 0.95
+          },
+          "pnl": -666.0740166296059,
+          "maxDrawdownPct": 0.0869001619329605,
+          "positiveFolds": 3,
+          "sampleFolds": 6,
+          "positiveExpectancyFolds": 3,
+          "foldMetrics": [
+            {
+              "fold": 0,
+              "n": 7,
+              "profitFactor": 1.0690325549016597,
+              "expectancyR": 0.025259352018704932,
+              "pnl": 13.10400774066094
+            },
+            {
+              "fold": 1,
+              "n": 9,
+              "profitFactor": 0,
+              "expectancyR": -0.9059459628201778,
+              "pnl": -477.47517441840637
+            },
+            {
+              "fold": 2,
+              "n": 4,
+              "profitFactor": 1.061838982811113,
+              "expectancyR": 0.033315909152016154,
+              "pnl": 7.855176763937877
+            },
+            {
+              "fold": 3,
+              "n": 8,
+              "profitFactor": 1.7829392311768635,
+              "expectancyR": 0.27010582294162916,
+              "pnl": 119.68854151515787
+            },
+            {
+              "fold": 4,
+              "n": 1,
+              "profitFactor": 0,
+              "expectancyR": -1.0945728709794682,
+              "pnl": -63.333080887743
+            },
+            {
+              "fold": 5,
+              "n": 5,
+              "profitFactor": 0,
+              "expectancyR": -0.9132552630347737,
+              "pnl": -265.9134873432133
+            }
+          ],
+          "folds": 6,
+          "symbolConcentration": null,
+          "mfe": {
+            "n": 34,
+            "mean": 0.03198100096722065,
+            "median": 0.01809109969799788,
+            "max": 0.12844803039605623
+          },
+          "mae": {
+            "n": 34,
+            "mean": -0.049234827260397525,
+            "median": -0.043163071359745286,
+            "min": -0.1230424162936351
+          }
+        }
+      },
+      "sampleFolds": 6,
+      "positiveExpectancyFolds": 1,
+      "foldMetrics": [
+        {
+          "fold": 0,
+          "n": 10,
+          "profitFactor": 0.4743782436440192,
+          "expectancyR": -0.2062042177647699,
+          "pnl": -118.32118433941416
+        },
+        {
+          "fold": 1,
+          "n": 12,
+          "profitFactor": 1.8226584948253026,
+          "expectancyR": 0.2768723686421011,
+          "pnl": 193.87776857650314
+        },
+        {
+          "fold": 2,
+          "n": 9,
+          "profitFactor": 0.6103933213034689,
+          "expectancyR": -0.12968956635947998,
+          "pnl": -70.88748137453597
+        },
+        {
+          "fold": 3,
+          "n": 9,
+          "profitFactor": 0.6692979939676251,
+          "expectancyR": -0.14708848564151555,
+          "pnl": -73.71723856702316
+        },
+        {
+          "fold": 4,
+          "n": 8,
+          "profitFactor": 0.8649992756507953,
+          "expectancyR": -0.08004362028664605,
+          "pnl": -35.45384132641959
+        },
+        {
+          "fold": 5,
+          "n": 12,
+          "profitFactor": 0.872477582816116,
+          "expectancyR": -0.06498770043676215,
+          "pnl": -43.6469815760497
+        }
+      ],
+      "folds": 6,
+      "symbolConcentration": null,
+      "purge": {
+        "excludedByOutcomeOverlap": 1,
+        "prePurge": 61,
+        "kept": 60,
+        "labelOverlapFree": true
+      }
     }
   },
   "totalKeep": 0,
   "totalStrongKeep": 0,
-  "rawEvents": null,
-  "independentEvents": null,
-  "suppressedEvents": null,
-  "eventFrequency": null,
-  "horizonStudy": null,
+  "rawEvents": 2226,
+  "independentEvents": 1973,
+  "suppressedEvents": 253,
+  "eventFrequency": {
+    "mean": 82.20833333333333,
+    "median": 83,
+    "monthly": {
+      "2024-01": 49,
+      "2024-02": 101,
+      "2024-03": 93,
+      "2024-04": 75,
+      "2024-05": 88,
+      "2024-06": 75,
+      "2024-07": 53,
+      "2024-08": 89,
+      "2024-09": 111,
+      "2024-10": 95,
+      "2024-11": 87,
+      "2024-12": 79,
+      "2025-01": 76,
+      "2025-02": 81,
+      "2025-03": 85,
+      "2025-04": 95,
+      "2025-05": 68,
+      "2025-06": 68,
+      "2025-07": 89,
+      "2025-08": 89,
+      "2025-09": 75,
+      "2025-10": 76,
+      "2025-11": 79,
+      "2025-12": 97
+    }
+  },
+  "horizonStudy": {
+    "h4": {
+      "n": 725,
+      "mean": -0.0007765377871093075,
+      "median": -0.0006662338412799507
+    },
+    "h12": {
+      "n": 725,
+      "mean": -0.0027950957360558274,
+      "median": -0.0003229147106853514
+    },
+    "h24": {
+      "n": 725,
+      "mean": -0.003309199003700448,
+      "median": -0.0011274920341544092
+    },
+    "h72": {
+      "n": 725,
+      "mean": -0.0024662998453294865,
+      "median": -0.0012996658002227823
+    }
+  },
   "controls": {
     "method": "frozen exact month + side + regime + liquidity; market=BTCUSDT; dispersion=same symbol; ±72h contamination; no reuse",
-    "matched": null,
-    "unmatched": null,
+    "matched": 943,
+    "unmatched": 1283,
     "noReuse": true
   },
   "sixFoldAudit": {
     "outerFolds": 6,
     "purgeHours": 72,
-    "status": "NOT_RUN"
+    "noFitting": true,
+    "folds": 6,
+    "eventEndAware": true,
+    "status": "PASS"
   },
   "pitInvariantAudit": {
     "futureRowsDoNotChangePastUniverse": true,
@@ -669,10 +1482,1982 @@
     "spotFalseEvidenceRejected": true
   },
   "missingDataSensitivity": {
-    "status": "NOT_RUN_OBSERVED_PIT_DATA_BLOCKED",
-    "top100": null,
-    "all": null,
-    "directionReversal": null
+    "status": "COMPUTED",
+    "top100": {
+      "BREADTH_REGIME_TRANSITION": {
+        "family": "BREADTH_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 120,
+        "independent": 101,
+        "executable": 78,
+        "symbols": 1,
+        "months": 24,
+        "long": 39,
+        "short": 39,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 31,
+        "losses": 47,
+        "winRate": 0.3974358974358974,
+        "profitFactor": 0.7550872238587681,
+        "expectancyR": -0.10324172898934268,
+        "confidenceInterval": {
+          "lower": -0.29828743760151943,
+          "upper": 0.09180397962283406,
+          "level": 0.95
+        },
+        "pnl": -468.2401480921993,
+        "maxDrawdownPct": 0.05726469370329069,
+        "positiveFolds": 1,
+        "eventControlExpectancyUpliftR": 0.028512986733232284,
+        "eventControlProfitFactorUplift": 0.024563261314423324,
+        "mfe": {
+          "n": 78,
+          "mean": 0.03058677155358515,
+          "median": 0.024544804975405954,
+          "max": 0.0890272162269603
+        },
+        "mae": {
+          "n": 78,
+          "mean": -0.033401314561035296,
+          "median": -0.023924437783986396,
+          "min": -0.175936215653693
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 78,
+            "mean": 0.00002554874746018551,
+            "median": -0.00043585273574320293
+          },
+          "h12": {
+            "n": 78,
+            "mean": -0.0002499666377149211,
+            "median": 0.00012171073297762014
+          },
+          "h24": {
+            "n": 78,
+            "mean": 0.00040808362498043985,
+            "median": -0.0007206547880412306
+          },
+          "h72": {
+            "n": 78,
+            "mean": -0.004729877309165005,
+            "median": -0.003446338720441977
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 67,
+          "summary": {
+            "independent": 67,
+            "executable": 37,
+            "symbols": 1,
+            "wins": 15,
+            "losses": 22,
+            "winRate": 0.40540540540540543,
+            "profitFactor": 0.7305239625443448,
+            "expectancyR": -0.13175471572257497,
+            "confidenceInterval": {
+              "lower": -0.46190785348720126,
+              "upper": 0.19839842204205133,
+              "level": 0.95
+            },
+            "pnl": -292.5959360669083,
+            "maxDrawdownPct": 0.03933658512149686,
+            "positiveFolds": 2,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 2,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 7,
+                "profitFactor": 0.7363962296583004,
+                "expectancyR": -0.12710726263883232,
+                "pnl": -51.36206662532285
+              },
+              {
+                "fold": 1,
+                "n": 6,
+                "profitFactor": 1.6634021353837483,
+                "expectancyR": 0.20001481795554846,
+                "pnl": 72.10112751652309
+              },
+              {
+                "fold": 2,
+                "n": 7,
+                "profitFactor": 0.4192187088667955,
+                "expectancyR": -0.26526342254091817,
+                "pnl": -109.10435375084319
+              },
+              {
+                "fold": 3,
+                "n": 6,
+                "profitFactor": 1.278598022332789,
+                "expectancyR": 0.133478400157782,
+                "pnl": 39.16916638057811
+              },
+              {
+                "fold": 4,
+                "n": 5,
+                "profitFactor": 0.4587514007856417,
+                "expectancyR": -0.46345041929768305,
+                "pnl": -135.29234204780482
+              },
+              {
+                "fold": 5,
+                "n": 6,
+                "profitFactor": 0.46967405836135717,
+                "expectancyR": -0.30200614961143113,
+                "pnl": -108.10746754003866
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": null,
+            "mfe": {
+              "n": 37,
+              "mean": 0.03363014122426271,
+              "median": 0.027183241989356288,
+              "max": 0.12329550359369446
+            },
+            "mae": {
+              "n": 37,
+              "mean": -0.03823767414255312,
+              "median": -0.026958507278987076,
+              "min": -0.1230424162936351
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 1,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 12,
+            "profitFactor": 0.5315772861576712,
+            "expectancyR": -0.19864265245923685,
+            "pnl": -136.21936081960317
+          },
+          {
+            "fold": 1,
+            "n": 16,
+            "profitFactor": 0.6672539530593365,
+            "expectancyR": -0.15196759211990418,
+            "pnl": -143.03288182969848
+          },
+          {
+            "fold": 2,
+            "n": 14,
+            "profitFactor": 0.9045417621437728,
+            "expectancyR": -0.05206882029437314,
+            "pnl": -36.14044910438008
+          },
+          {
+            "fold": 3,
+            "n": 10,
+            "profitFactor": 0.8538390463772934,
+            "expectancyR": -0.048311459219186226,
+            "pnl": -31.25095074815838
+          },
+          {
+            "fold": 4,
+            "n": 15,
+            "profitFactor": 0.5549509735999826,
+            "expectancyR": -0.1767683209102938,
+            "pnl": -153.08096103616032
+          },
+          {
+            "fold": 5,
+            "n": 11,
+            "profitFactor": 1.1235513775085624,
+            "expectancyR": 0.056903757475279315,
+            "pnl": 31.48445544580118
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 78,
+          "kept": 78,
+          "labelOverlapFree": true
+        }
+      },
+      "MARKET_VOLATILITY_SHOCK": {
+        "family": "MARKET_VOLATILITY_SHOCK",
+        "status": "REJECT",
+        "raw": 281,
+        "independent": 177,
+        "executable": 138,
+        "symbols": 1,
+        "months": 24,
+        "long": 68,
+        "short": 70,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 55,
+        "losses": 83,
+        "winRate": 0.39855072463768115,
+        "profitFactor": 0.779136529547502,
+        "expectancyR": -0.09881628447425275,
+        "confidenceInterval": {
+          "lower": -0.25326247852802464,
+          "upper": 0.055629909579519105,
+          "level": 0.95
+        },
+        "pnl": -784.0510188682182,
+        "maxDrawdownPct": 0.10529022433881473,
+        "positiveFolds": 2,
+        "eventControlExpectancyUpliftR": 0.2307344226596326,
+        "eventControlProfitFactorUplift": 0.41774706343314566,
+        "mfe": {
+          "n": 138,
+          "mean": 0.035967642854164726,
+          "median": 0.026701037201528444,
+          "max": 0.19193655558163436
+        },
+        "mae": {
+          "n": 138,
+          "mean": -0.035738289458394634,
+          "median": -0.02681552903266393,
+          "min": -0.18530176389317043
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 138,
+            "mean": -0.0003227831443818917,
+            "median": -0.0007364687892292832
+          },
+          "h12": {
+            "n": 138,
+            "mean": 0.000329884604561319,
+            "median": 0.0007209236897906535
+          },
+          "h24": {
+            "n": 138,
+            "mean": -0.003879104700445622,
+            "median": -0.00488727945112255
+          },
+          "h72": {
+            "n": 138,
+            "mean": -0.0043654548770901795,
+            "median": -0.005807506258859285
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 79,
+          "summary": {
+            "independent": 79,
+            "executable": 45,
+            "symbols": 1,
+            "wins": 13,
+            "losses": 32,
+            "winRate": 0.28888888888888886,
+            "profitFactor": 0.36138946611435635,
+            "expectancyR": -0.32955070713388535,
+            "confidenceInterval": {
+              "lower": -0.5561459659667802,
+              "upper": -0.1029554483009904,
+              "level": 0.95
+            },
+            "pnl": -867.6359002893646,
+            "maxDrawdownPct": 0.08676359002893569,
+            "positiveFolds": 0,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 0,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 12,
+                "profitFactor": 0.5086709956268324,
+                "expectancyR": -0.2696443830591975,
+                "pnl": -192.28437871790445
+              },
+              {
+                "fold": 1,
+                "n": 9,
+                "profitFactor": 0.3871611031823808,
+                "expectancyR": -0.35470760480280994,
+                "pnl": -185.61974314040003
+              },
+              {
+                "fold": 2,
+                "n": 8,
+                "profitFactor": 0.6425984703337685,
+                "expectancyR": -0.11138313436917179,
+                "pnl": -52.06872096042262
+              },
+              {
+                "fold": 3,
+                "n": 7,
+                "profitFactor": 0.29762452591515043,
+                "expectancyR": -0.41199458666371175,
+                "pnl": -166.40490791218124
+              },
+              {
+                "fold": 4,
+                "n": 3,
+                "profitFactor": 0,
+                "expectancyR": -0.8468081256670256,
+                "pnl": -149.13705941355616
+              },
+              {
+                "fold": 5,
+                "n": 6,
+                "profitFactor": 0.07936506723943648,
+                "expectancyR": -0.34770487041479203,
+                "pnl": -122.12109014489992
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": null,
+            "mfe": {
+              "n": 45,
+              "mean": 0.02312894284919327,
+              "median": 0.01788475830437075,
+              "max": 0.08256694108289653
+            },
+            "mae": {
+              "n": 45,
+              "mean": -0.031665924824495005,
+              "median": -0.028045841553367312,
+              "min": -0.08435720637462807
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 2,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 23,
+            "profitFactor": 1.2705140754746547,
+            "expectancyR": 0.10495897161212776,
+            "pnl": 140.68596327101758
+          },
+          {
+            "fold": 1,
+            "n": 25,
+            "profitFactor": 1.0653202445300043,
+            "expectancyR": 0.0233625033246297,
+            "pnl": 40.184932406319746
+          },
+          {
+            "fold": 2,
+            "n": 23,
+            "profitFactor": 0.3610799833353168,
+            "expectancyR": -0.3731349432210399,
+            "pnl": -499.9935626010587
+          },
+          {
+            "fold": 3,
+            "n": 28,
+            "profitFactor": 0.814769151486971,
+            "expectancyR": -0.0691494621038599,
+            "pnl": -114.89880596323138
+          },
+          {
+            "fold": 4,
+            "n": 15,
+            "profitFactor": 0.645963534280174,
+            "expectancyR": -0.1635629921001576,
+            "pnl": -137.23498599937585
+          },
+          {
+            "fold": 5,
+            "n": 24,
+            "profitFactor": 0.6590797651260134,
+            "expectancyR": -0.15262636138113353,
+            "pnl": -212.79455998189002
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 6,
+          "prePurge": 144,
+          "kept": 138,
+          "labelOverlapFree": true
+        }
+      },
+      "DISPERSION_ROTATION": {
+        "family": "DISPERSION_ROTATION",
+        "status": "REJECT",
+        "raw": 1752,
+        "independent": 1616,
+        "executable": 437,
+        "symbols": 231,
+        "months": 24,
+        "long": 140,
+        "short": 297,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 171,
+        "losses": 266,
+        "winRate": 0.391304347826087,
+        "profitFactor": 0.8643866623541966,
+        "expectancyR": -0.07151365661030806,
+        "confidenceInterval": {
+          "lower": -0.17641354902525722,
+          "upper": 0.03338623580464109,
+          "level": 0.95
+        },
+        "pnl": -1880.789727659047,
+        "maxDrawdownPct": 0.20734543296754118,
+        "positiveFolds": 1,
+        "eventControlExpectancyUpliftR": -0.047791556780589516,
+        "eventControlProfitFactorUplift": -0.09245862328199383,
+        "mfe": {
+          "n": 437,
+          "mean": 0.09105419225950159,
+          "median": 0.0688763318433554,
+          "max": 0.561808409737591
+        },
+        "mae": {
+          "n": 437,
+          "mean": -0.11251760853084855,
+          "median": -0.07624707174715795,
+          "min": -0.8847487001733099
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 437,
+            "mean": -0.0016175955090344102,
+            "median": -0.0012953998694860136
+          },
+          "h12": {
+            "n": 437,
+            "mean": -0.003788912618546119,
+            "median": -0.0006732495511669878
+          },
+          "h24": {
+            "n": 437,
+            "mean": -0.004308302595473324,
+            "median": 0.0004095674967233842
+          },
+          "h72": {
+            "n": 437,
+            "mean": -0.011136877779886378,
+            "median": -0.005004076354333642
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 132,
+          "summary": {
+            "independent": 132,
+            "executable": 99,
+            "symbols": 69,
+            "wins": 40,
+            "losses": 59,
+            "winRate": 0.40404040404040403,
+            "profitFactor": 0.9568452856361904,
+            "expectancyR": -0.023722099829718547,
+            "confidenceInterval": {
+              "lower": -0.26050520500980673,
+              "upper": 0.21306100535036962,
+              "level": 0.95
+            },
+            "pnl": -139.95772063071536,
+            "maxDrawdownPct": 0.0850949777947504,
+            "positiveFolds": 2,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 2,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 8,
+                "profitFactor": 0.09816496760130226,
+                "expectancyR": -0.7247686981653392,
+                "pnl": -347.819460105803
+              },
+              {
+                "fold": 1,
+                "n": 35,
+                "profitFactor": 0.7176973062221566,
+                "expectancyR": -0.17287805500997275,
+                "pnl": -362.32003562547703
+              },
+              {
+                "fold": 2,
+                "n": 21,
+                "profitFactor": 3.550871842668831,
+                "expectancyR": 0.6567320402416179,
+                "pnl": 827.6053730806937
+              },
+              {
+                "fold": 3,
+                "n": 16,
+                "profitFactor": 0.5520092855122531,
+                "expectancyR": -0.2813484285697973,
+                "pnl": -269.93636823031886
+              },
+              {
+                "fold": 4,
+                "n": 14,
+                "profitFactor": 1.0733831177921191,
+                "expectancyR": 0.042883919979367184,
+                "pnl": 35.97162686411464
+              },
+              {
+                "fold": 5,
+                "n": 5,
+                "profitFactor": 0.8504455211947421,
+                "expectancyR": -0.07795584802774753,
+                "pnl": -23.458856613924738
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": null,
+            "mfe": {
+              "n": 99,
+              "mean": 0.08765045881169412,
+              "median": 0.06446770985778083,
+              "max": 0.5239436619718312
+            },
+            "mae": {
+              "n": 99,
+              "mean": -0.08909255340449258,
+              "median": -0.06557377049180313,
+              "min": -0.5324954135602482
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 1,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 66,
+            "profitFactor": 0.6810275481665594,
+            "expectancyR": -0.18403447733660555,
+            "pnl": -727.512468924939
+          },
+          {
+            "fold": 1,
+            "n": 90,
+            "profitFactor": 1.0219681115908625,
+            "expectancyR": 0.010158477592206958,
+            "pnl": 54.743575939096914
+          },
+          {
+            "fold": 2,
+            "n": 125,
+            "profitFactor": 0.9688054970327687,
+            "expectancyR": -0.01561935378562629,
+            "pnl": -123.4174804300711
+          },
+          {
+            "fold": 3,
+            "n": 61,
+            "profitFactor": 0.7748718829583006,
+            "expectancyR": -0.1343459615277062,
+            "pnl": -491.9370883303507
+          },
+          {
+            "fold": 4,
+            "n": 57,
+            "profitFactor": 0.8441291961372751,
+            "expectancyR": -0.08076496225660289,
+            "pnl": -276.27405354897
+          },
+          {
+            "fold": 5,
+            "n": 38,
+            "profitFactor": 0.7323306052297452,
+            "expectancyR": -0.13864025507282995,
+            "pnl": -316.39221236381434
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 11,
+          "prePurge": 448,
+          "kept": 437,
+          "labelOverlapFree": true
+        }
+      },
+      "LEVERAGE_STRESS_TRANSITION": {
+        "family": "LEVERAGE_STRESS_TRANSITION",
+        "status": "WATCH",
+        "raw": 0,
+        "independent": 0,
+        "executable": 0,
+        "symbols": 0,
+        "months": 0,
+        "long": 0,
+        "short": 0,
+        "marketRegimes": [],
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "profitFactor": null,
+        "expectancyR": null,
+        "confidenceInterval": {
+          "lower": null,
+          "upper": null,
+          "level": 0.95
+        },
+        "pnl": 0,
+        "maxDrawdownPct": 0,
+        "positiveFolds": 0,
+        "eventControlExpectancyUpliftR": null,
+        "eventControlProfitFactorUplift": null,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h12": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h24": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h72": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "MATCHED",
+          "rows": 0,
+          "summary": {
+            "independent": 0,
+            "executable": 0,
+            "symbols": 0,
+            "wins": 0,
+            "losses": 0,
+            "winRate": null,
+            "profitFactor": null,
+            "expectancyR": null,
+            "confidenceInterval": {
+              "lower": null,
+              "upper": null,
+              "level": 0.95
+            },
+            "pnl": 0,
+            "maxDrawdownPct": 0,
+            "positiveFolds": 0,
+            "sampleFolds": 0,
+            "positiveExpectancyFolds": 0,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 1,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 2,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 3,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 4,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 5,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              }
+            ],
+            "folds": 0,
+            "symbolConcentration": null,
+            "mfe": null,
+            "mae": null
+          }
+        },
+        "sampleFolds": 0,
+        "positiveExpectancyFolds": 0,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 1,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 2,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 3,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 4,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 5,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          }
+        ],
+        "folds": 0,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 0,
+          "kept": 0,
+          "labelOverlapFree": true
+        }
+      },
+      "TREND_REGIME_TRANSITION": {
+        "family": "TREND_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 97,
+        "independent": 84,
+        "executable": 60,
+        "symbols": 1,
+        "months": 24,
+        "long": 30,
+        "short": 30,
+        "marketRegimes": [
+          "BEAR",
+          "BULL"
+        ],
+        "wins": 29,
+        "losses": 31,
+        "winRate": 0.48333333333333334,
+        "profitFactor": 0.8992544239112994,
+        "expectancyR": -0.04417962649142935,
+        "confidenceInterval": {
+          "lower": -0.28631243045215354,
+          "upper": 0.19795317746929483,
+          "level": 0.95
+        },
+        "pnl": -148.1489586069394,
+        "maxDrawdownPct": 0.030327204388845168,
+        "positiveFolds": 1,
+        "eventControlExpectancyUpliftR": 0.2894508784280678,
+        "eventControlProfitFactorUplift": 0.4210750747591662,
+        "mfe": {
+          "n": 60,
+          "mean": 0.03269368178614263,
+          "median": 0.023904038622611368,
+          "max": 0.17594448311957134
+        },
+        "mae": {
+          "n": 60,
+          "mean": -0.033865825002451784,
+          "median": -0.024796061684268844,
+          "min": -0.15371039523544028
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 60,
+            "mean": 0.0005849375693002367,
+            "median": 0.000670117642663004
+          },
+          "h12": {
+            "n": 60,
+            "mean": 0.0007107345001366024,
+            "median": -0.0012663203144055446
+          },
+          "h24": {
+            "n": 60,
+            "mean": 0.00032492331540867245,
+            "median": -0.0009429840047007199
+          },
+          "h72": {
+            "n": 60,
+            "mean": -0.000663008713081383,
+            "median": 0.0021631123496352878
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 55,
+          "summary": {
+            "independent": 55,
+            "executable": 34,
+            "symbols": 1,
+            "wins": 8,
+            "losses": 26,
+            "winRate": 0.23529411764705882,
+            "profitFactor": 0.47817934915213317,
+            "expectancyR": -0.3336305049194972,
+            "confidenceInterval": {
+              "lower": -0.6691240272357748,
+              "upper": 0.0018630173967803532,
+              "level": 0.95
+            },
+            "pnl": -666.0740166296059,
+            "maxDrawdownPct": 0.0869001619329605,
+            "positiveFolds": 3,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 3,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 7,
+                "profitFactor": 1.0690325549016597,
+                "expectancyR": 0.025259352018704932,
+                "pnl": 13.10400774066094
+              },
+              {
+                "fold": 1,
+                "n": 9,
+                "profitFactor": 0,
+                "expectancyR": -0.9059459628201778,
+                "pnl": -477.47517441840637
+              },
+              {
+                "fold": 2,
+                "n": 4,
+                "profitFactor": 1.061838982811113,
+                "expectancyR": 0.033315909152016154,
+                "pnl": 7.855176763937877
+              },
+              {
+                "fold": 3,
+                "n": 8,
+                "profitFactor": 1.7829392311768635,
+                "expectancyR": 0.27010582294162916,
+                "pnl": 119.68854151515787
+              },
+              {
+                "fold": 4,
+                "n": 1,
+                "profitFactor": 0,
+                "expectancyR": -1.0945728709794682,
+                "pnl": -63.333080887743
+              },
+              {
+                "fold": 5,
+                "n": 5,
+                "profitFactor": 0,
+                "expectancyR": -0.9132552630347737,
+                "pnl": -265.9134873432133
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": null,
+            "mfe": {
+              "n": 34,
+              "mean": 0.03198100096722065,
+              "median": 0.01809109969799788,
+              "max": 0.12844803039605623
+            },
+            "mae": {
+              "n": 34,
+              "mean": -0.049234827260397525,
+              "median": -0.043163071359745286,
+              "min": -0.1230424162936351
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 1,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 10,
+            "profitFactor": 0.4743782436440192,
+            "expectancyR": -0.2062042177647699,
+            "pnl": -118.32118433941416
+          },
+          {
+            "fold": 1,
+            "n": 12,
+            "profitFactor": 1.8226584948253026,
+            "expectancyR": 0.2768723686421011,
+            "pnl": 193.87776857650314
+          },
+          {
+            "fold": 2,
+            "n": 9,
+            "profitFactor": 0.6103933213034689,
+            "expectancyR": -0.12968956635947998,
+            "pnl": -70.88748137453597
+          },
+          {
+            "fold": 3,
+            "n": 9,
+            "profitFactor": 0.6692979939676251,
+            "expectancyR": -0.14708848564151555,
+            "pnl": -73.71723856702316
+          },
+          {
+            "fold": 4,
+            "n": 8,
+            "profitFactor": 0.8649992756507953,
+            "expectancyR": -0.08004362028664605,
+            "pnl": -35.45384132641959
+          },
+          {
+            "fold": 5,
+            "n": 12,
+            "profitFactor": 0.872477582816116,
+            "expectancyR": -0.06498770043676215,
+            "pnl": -43.6469815760497
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 1,
+          "prePurge": 61,
+          "kept": 60,
+          "labelOverlapFree": true
+        }
+      }
+    },
+    "all": {
+      "BREADTH_REGIME_TRANSITION": {
+        "family": "BREADTH_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 112,
+        "independent": 95,
+        "executable": 74,
+        "symbols": 1,
+        "months": 22,
+        "long": 32,
+        "short": 42,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 31,
+        "losses": 43,
+        "winRate": 0.4189189189189189,
+        "profitFactor": 0.8897024333220311,
+        "expectancyR": -0.04405320202701042,
+        "confidenceInterval": {
+          "lower": -0.2456161891802861,
+          "upper": 0.15750978512626523,
+          "level": 0.95
+        },
+        "pnl": -186.06796953856548,
+        "maxDrawdownPct": 0.05872162298459607,
+        "positiveFolds": 3,
+        "eventControlExpectancyUpliftR": -0.24984631611890168,
+        "eventControlProfitFactorUplift": -0.5545999055068462,
+        "mfe": {
+          "n": 74,
+          "mean": 0.03095535474241421,
+          "median": 0.0245419756159021,
+          "max": 0.10942948166679689
+        },
+        "mae": {
+          "n": 74,
+          "mean": -0.03334015825851092,
+          "median": -0.023924437783986396,
+          "min": -0.175936215653693
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 74,
+            "mean": 0.00013086137476512447,
+            "median": -0.0006319586123636478
+          },
+          "h12": {
+            "n": 74,
+            "mean": -0.0022191551713110357,
+            "median": -0.00021798169727299532
+          },
+          "h24": {
+            "n": 74,
+            "mean": -0.003179016359724102,
+            "median": -0.0011623492911216338
+          },
+          "h72": {
+            "n": 74,
+            "mean": -0.001758900075371235,
+            "median": -0.0015709876281966295
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 60,
+          "summary": {
+            "independent": 60,
+            "executable": 37,
+            "symbols": 1,
+            "wins": 20,
+            "losses": 17,
+            "winRate": 0.5405405405405406,
+            "profitFactor": 1.4443023388288774,
+            "expectancyR": 0.20579311409189124,
+            "confidenceInterval": {
+              "lower": -0.19593150293383774,
+              "upper": 0.6075177311176202,
+              "level": 0.95
+            },
+            "pnl": 440.3328117639035,
+            "maxDrawdownPct": 0.03568123349226244,
+            "positiveFolds": 4,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 4,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 4,
+                "profitFactor": 1.1007171820771933,
+                "expectancyR": 0.045334940221825104,
+                "pnl": 11.932329931096987
+              },
+              {
+                "fold": 1,
+                "n": 10,
+                "profitFactor": 3.469485816600258,
+                "expectancyR": 0.7446942569484645,
+                "pnl": 441.00469459638066
+              },
+              {
+                "fold": 2,
+                "n": 4,
+                "profitFactor": 0.22415724489906472,
+                "expectancyR": -0.6078480011296887,
+                "pnl": -143.40663314191937
+              },
+              {
+                "fold": 3,
+                "n": 9,
+                "profitFactor": 1.0941123833046233,
+                "expectancyR": 0.044215876934515896,
+                "pnl": 22.818231245595015
+              },
+              {
+                "fold": 4,
+                "n": 4,
+                "profitFactor": 0.609422695638838,
+                "expectancyR": -0.3132512442841173,
+                "pnl": -73.49236322473298
+              },
+              {
+                "fold": 5,
+                "n": 6,
+                "profitFactor": 3.3103321265395684,
+                "expectancyR": 0.5454194967121021,
+                "pnl": 181.4765523574832
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": 1,
+            "mfe": {
+              "n": 37,
+              "mean": 0.03932078808544092,
+              "median": 0.02907791397317705,
+              "max": 0.18992946182537618
+            },
+            "mae": {
+              "n": 37,
+              "mean": -0.03710090547713506,
+              "median": -0.021575428099595895,
+              "min": -0.12103817672475792
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 3,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 13,
+            "profitFactor": 0.3462070160926219,
+            "expectancyR": -0.22319503916577374,
+            "pnl": -166.6309390547873
+          },
+          {
+            "fold": 1,
+            "n": 18,
+            "profitFactor": 0.424927704460796,
+            "expectancyR": -0.2901123150041426,
+            "pnl": -306.59301911628404
+          },
+          {
+            "fold": 2,
+            "n": 11,
+            "profitFactor": 1.2997538591680995,
+            "expectancyR": 0.11277584404999366,
+            "pnl": 72.70671898949993
+          },
+          {
+            "fold": 3,
+            "n": 12,
+            "profitFactor": 1.5538522814857498,
+            "expectancyR": 0.16188254446002723,
+            "pnl": 111.45553931605804
+          },
+          {
+            "fold": 4,
+            "n": 10,
+            "profitFactor": 0.6642216291927583,
+            "expectancyR": -0.14994190221347664,
+            "pnl": -88.78838226865176
+          },
+          {
+            "fold": 5,
+            "n": 10,
+            "profitFactor": 2.005463497223925,
+            "expectancyR": 0.317991443329536,
+            "pnl": 191.78211259559964
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 74,
+          "kept": 74,
+          "labelOverlapFree": true
+        }
+      },
+      "MARKET_VOLATILITY_SHOCK": {
+        "family": "MARKET_VOLATILITY_SHOCK",
+        "status": "REJECT",
+        "raw": 277,
+        "independent": 180,
+        "executable": 142,
+        "symbols": 1,
+        "months": 24,
+        "long": 62,
+        "short": 80,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 52,
+        "losses": 90,
+        "winRate": 0.36619718309859156,
+        "profitFactor": 0.7071616423207084,
+        "expectancyR": -0.14126121565695882,
+        "confidenceInterval": {
+          "lower": -0.2950173390972349,
+          "upper": 0.012494907783317244,
+          "level": 0.95
+        },
+        "pnl": -1153.6744117510395,
+        "maxDrawdownPct": 0.12889601141571694,
+        "positiveFolds": 1,
+        "eventControlExpectancyUpliftR": 0.1046378660720462,
+        "eventControlProfitFactorUplift": 0.17405449047518406,
+        "mfe": {
+          "n": 142,
+          "mean": 0.03534956032170051,
+          "median": 0.02550221729120189,
+          "max": 0.19193655558163436
+        },
+        "mae": {
+          "n": 142,
+          "mean": -0.03721712922514308,
+          "median": -0.028523239037099746,
+          "min": -0.18530176389317043
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 142,
+            "mean": -0.001886299116697494,
+            "median": -0.0014607590970469042
+          },
+          "h12": {
+            "n": 142,
+            "mean": -0.0005344556558968527,
+            "median": -0.0002658990275699047
+          },
+          "h24": {
+            "n": 142,
+            "mean": -0.005141003506331598,
+            "median": -0.006265477797972874
+          },
+          "h72": {
+            "n": 142,
+            "mean": -0.006528787397443698,
+            "median": -0.010525423808571133
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 88,
+          "summary": {
+            "independent": 88,
+            "executable": 55,
+            "symbols": 1,
+            "wins": 18,
+            "losses": 37,
+            "winRate": 0.32727272727272727,
+            "profitFactor": 0.5331071518455244,
+            "expectancyR": -0.24589908172900501,
+            "confidenceInterval": {
+              "lower": -0.4817733112185253,
+              "upper": -0.01002485223948471,
+              "level": 0.95
+            },
+            "pnl": -784.1122152649599,
+            "maxDrawdownPct": 0.08222468769895987,
+            "positiveFolds": 0,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 0,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 11,
+                "profitFactor": 0.49935976239918506,
+                "expectancyR": -0.3167136015536162,
+                "pnl": -207.00149349506958
+              },
+              {
+                "fold": 1,
+                "n": 8,
+                "profitFactor": 0.9609344605319369,
+                "expectancyR": -0.02310250037996317,
+                "pnl": -9.447635161183143
+              },
+              {
+                "fold": 2,
+                "n": 11,
+                "profitFactor": 0.289342685924679,
+                "expectancyR": -0.35990635397040366,
+                "pnl": -229.93649743692637
+              },
+              {
+                "fold": 3,
+                "n": 13,
+                "profitFactor": 0.4246821187658118,
+                "expectancyR": -0.3519185984857227,
+                "pnl": -260.4052324967622
+              },
+              {
+                "fold": 4,
+                "n": 6,
+                "profitFactor": 0.6055290118032122,
+                "expectancyR": -0.199069541512965,
+                "pnl": -69.88753893845745
+              },
+              {
+                "fold": 5,
+                "n": 6,
+                "profitFactor": 0.8949453479722562,
+                "expectancyR": -0.02124182531652741,
+                "pnl": -7.433817736560837
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": null,
+            "mfe": {
+              "n": 55,
+              "mean": 0.025785103845110662,
+              "median": 0.021953406749720794,
+              "max": 0.10603069142933874
+            },
+            "mae": {
+              "n": 55,
+              "mean": -0.03270817634131533,
+              "median": -0.028045841553367312,
+              "min": -0.08435720637462807
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 1,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 25,
+            "profitFactor": 1.0021013674406807,
+            "expectancyR": -0.0008523577860092769,
+            "pnl": 1.3732690783492743
+          },
+          {
+            "fold": 1,
+            "n": 23,
+            "profitFactor": 1.137493136535577,
+            "expectancyR": 0.05216279818644214,
+            "pnl": 76.1248799441378
+          },
+          {
+            "fold": 2,
+            "n": 25,
+            "profitFactor": 0.42235567717733835,
+            "expectancyR": -0.3356151551357383,
+            "pnl": -486.7195225331069
+          },
+          {
+            "fold": 3,
+            "n": 28,
+            "profitFactor": 0.6594174588711966,
+            "expectancyR": -0.14978031567516673,
+            "pnl": -247.70766708248277
+          },
+          {
+            "fold": 4,
+            "n": 18,
+            "profitFactor": 0.5738810839986874,
+            "expectancyR": -0.20955494966203428,
+            "pnl": -211.3355692469227
+          },
+          {
+            "fold": 5,
+            "n": 23,
+            "profitFactor": 0.571842120870028,
+            "expectancyR": -0.21223092285701514,
+            "pnl": -285.4098019110142
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 7,
+          "prePurge": 149,
+          "kept": 142,
+          "labelOverlapFree": true
+        }
+      },
+      "DISPERSION_ROTATION": {
+        "family": "DISPERSION_ROTATION",
+        "status": "REJECT",
+        "raw": 1740,
+        "independent": 1614,
+        "executable": 449,
+        "symbols": 233,
+        "months": 24,
+        "long": 146,
+        "short": 303,
+        "marketRegimes": [
+          "BEAR",
+          "BULL",
+          "SIDEWAYS"
+        ],
+        "wins": 185,
+        "losses": 264,
+        "winRate": 0.41202672605790647,
+        "profitFactor": 0.9337134544862894,
+        "expectancyR": -0.033995706104394306,
+        "confidenceInterval": {
+          "lower": -0.13824607512287398,
+          "upper": 0.07025466291408539,
+          "level": 0.95
+        },
+        "pnl": -919.4680501088161,
+        "maxDrawdownPct": 0.1630505886014327,
+        "positiveFolds": 1,
+        "eventControlExpectancyUpliftR": -0.1353405360373386,
+        "eventControlProfitFactorUplift": -0.271368583663795,
+        "mfe": {
+          "n": 449,
+          "mean": 0.09460702363895104,
+          "median": 0.0727634194831015,
+          "max": 0.561808409737591
+        },
+        "mae": {
+          "n": 449,
+          "mean": -0.1067401093535338,
+          "median": -0.07164160162446853,
+          "min": -0.8847487001733099
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 449,
+            "mean": -0.0007570499264450717,
+            "median": -0.0007590132827326457
+          },
+          "h12": {
+            "n": 449,
+            "mean": -0.004073448313662138,
+            "median": -0.000038257742410507944
+          },
+          "h24": {
+            "n": 449,
+            "mean": -0.0032369598398411465,
+            "median": 0.0015783674320259955
+          },
+          "h72": {
+            "n": 449,
+            "mean": -0.0015390655881169708,
+            "median": 0.007507340097372417
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 122,
+          "summary": {
+            "independent": 122,
+            "executable": 95,
+            "symbols": 75,
+            "wins": 41,
+            "losses": 54,
+            "winRate": 0.43157894736842106,
+            "profitFactor": 1.2050820381500844,
+            "expectancyR": 0.10134482993294427,
+            "confidenceInterval": {
+              "lower": -0.14575752206581094,
+              "upper": 0.3484471819316995,
+              "level": 0.95
+            },
+            "pnl": 578.397621166034,
+            "maxDrawdownPct": 0.09224678547282165,
+            "positiveFolds": 3,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 3,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 4,
+                "profitFactor": 0.27120425965524114,
+                "expectancyR": -0.42411708697763945,
+                "pnl": -101.74020809749994
+              },
+              {
+                "fold": 1,
+                "n": 20,
+                "profitFactor": 0.15071135048437023,
+                "expectancyR": -0.5587530382271609,
+                "pnl": -669.8818630237887
+              },
+              {
+                "fold": 2,
+                "n": 28,
+                "profitFactor": 2.9966458134218263,
+                "expectancyR": 0.5780989966445051,
+                "pnl": 971.3567601587628
+              },
+              {
+                "fold": 3,
+                "n": 14,
+                "profitFactor": 1.4765520262392604,
+                "expectancyR": 0.2492944413844199,
+                "pnl": 209.40073511242352
+              },
+              {
+                "fold": 4,
+                "n": 19,
+                "profitFactor": 1.3987093574342828,
+                "expectancyR": 0.1963841108506462,
+                "pnl": 223.74383051383026
+              },
+              {
+                "fold": 5,
+                "n": 10,
+                "profitFactor": 0.8654421834336831,
+                "expectancyR": -0.09089042355068296,
+                "pnl": -54.4816334976945
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": 0.26744633121781963,
+            "mfe": {
+              "n": 95,
+              "mean": 0.09803955890301279,
+              "median": 0.07430856381206263,
+              "max": 1.101728640716329
+            },
+            "mae": {
+              "n": 95,
+              "mean": -0.08452829821803194,
+              "median": -0.05467665834027202,
+              "min": -0.5324954135602482
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 1,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 76,
+            "profitFactor": 0.7927254192413521,
+            "expectancyR": -0.1127769845466753,
+            "pnl": -514.2733130363298
+          },
+          {
+            "fold": 1,
+            "n": 86,
+            "profitFactor": 1.2115330342397415,
+            "expectancyR": 0.09857367682657871,
+            "pnl": 508.28117129268924
+          },
+          {
+            "fold": 2,
+            "n": 129,
+            "profitFactor": 0.9446886074380053,
+            "expectancyR": -0.028342420151319995,
+            "pnl": -222.70531715048557
+          },
+          {
+            "fold": 3,
+            "n": 56,
+            "profitFactor": 0.9751132422856323,
+            "expectancyR": -0.012872747536268199,
+            "pnl": -42.92816987774858
+          },
+          {
+            "fold": 4,
+            "n": 67,
+            "profitFactor": 0.9526115859705014,
+            "expectancyR": -0.023794251241627398,
+            "pnl": -95.723289754418
+          },
+          {
+            "fold": 5,
+            "n": 35,
+            "profitFactor": 0.545895222209302,
+            "expectancyR": -0.26283132936203285,
+            "pnl": -552.1191315825233
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 11,
+          "prePurge": 460,
+          "kept": 449,
+          "labelOverlapFree": true
+        }
+      },
+      "LEVERAGE_STRESS_TRANSITION": {
+        "family": "LEVERAGE_STRESS_TRANSITION",
+        "status": "WATCH",
+        "raw": 0,
+        "independent": 0,
+        "executable": 0,
+        "symbols": 0,
+        "months": 0,
+        "long": 0,
+        "short": 0,
+        "marketRegimes": [],
+        "wins": 0,
+        "losses": 0,
+        "winRate": null,
+        "profitFactor": null,
+        "expectancyR": null,
+        "confidenceInterval": {
+          "lower": null,
+          "upper": null,
+          "level": 0.95
+        },
+        "pnl": 0,
+        "maxDrawdownPct": 0,
+        "positiveFolds": 0,
+        "eventControlExpectancyUpliftR": null,
+        "eventControlProfitFactorUplift": null,
+        "mfe": null,
+        "mae": null,
+        "forwardReturns": {
+          "h4": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h12": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h24": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          },
+          "h72": {
+            "n": 0,
+            "mean": null,
+            "median": null
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "MATCHED",
+          "rows": 0,
+          "summary": {
+            "independent": 0,
+            "executable": 0,
+            "symbols": 0,
+            "wins": 0,
+            "losses": 0,
+            "winRate": null,
+            "profitFactor": null,
+            "expectancyR": null,
+            "confidenceInterval": {
+              "lower": null,
+              "upper": null,
+              "level": 0.95
+            },
+            "pnl": 0,
+            "maxDrawdownPct": 0,
+            "positiveFolds": 0,
+            "sampleFolds": 0,
+            "positiveExpectancyFolds": 0,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 1,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 2,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 3,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 4,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              },
+              {
+                "fold": 5,
+                "n": 0,
+                "profitFactor": null,
+                "expectancyR": null,
+                "pnl": 0
+              }
+            ],
+            "folds": 0,
+            "symbolConcentration": null,
+            "mfe": null,
+            "mae": null
+          }
+        },
+        "sampleFolds": 0,
+        "positiveExpectancyFolds": 0,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 1,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 2,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 3,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 4,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          },
+          {
+            "fold": 5,
+            "n": 0,
+            "profitFactor": null,
+            "expectancyR": null,
+            "pnl": 0
+          }
+        ],
+        "folds": 0,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 0,
+          "prePurge": 0,
+          "kept": 0,
+          "labelOverlapFree": true
+        }
+      },
+      "TREND_REGIME_TRANSITION": {
+        "family": "TREND_REGIME_TRANSITION",
+        "status": "REJECT",
+        "raw": 97,
+        "independent": 84,
+        "executable": 60,
+        "symbols": 1,
+        "months": 24,
+        "long": 30,
+        "short": 30,
+        "marketRegimes": [
+          "BEAR",
+          "BULL"
+        ],
+        "wins": 29,
+        "losses": 31,
+        "winRate": 0.48333333333333334,
+        "profitFactor": 0.8992544239112994,
+        "expectancyR": -0.04417962649142935,
+        "confidenceInterval": {
+          "lower": -0.28631243045215354,
+          "upper": 0.19795317746929483,
+          "level": 0.95
+        },
+        "pnl": -148.1489586069394,
+        "maxDrawdownPct": 0.030327204388845168,
+        "positiveFolds": 1,
+        "eventControlExpectancyUpliftR": 0.2894508784280678,
+        "eventControlProfitFactorUplift": 0.4210750747591662,
+        "mfe": {
+          "n": 60,
+          "mean": 0.03269368178614263,
+          "median": 0.023904038622611368,
+          "max": 0.17594448311957134
+        },
+        "mae": {
+          "n": 60,
+          "mean": -0.033865825002451784,
+          "median": -0.024796061684268844,
+          "min": -0.15371039523544028
+        },
+        "forwardReturns": {
+          "h4": {
+            "n": 60,
+            "mean": 0.0005849375693002367,
+            "median": 0.000670117642663004
+          },
+          "h12": {
+            "n": 60,
+            "mean": 0.0007107345001366024,
+            "median": -0.0012663203144055446
+          },
+          "h24": {
+            "n": 60,
+            "mean": 0.00032492331540867245,
+            "median": -0.0009429840047007199
+          },
+          "h72": {
+            "n": 60,
+            "mean": -0.000663008713081383,
+            "median": 0.0021631123496352878
+          }
+        },
+        "eventStudy": "COMPLETED",
+        "control": {
+          "status": "UNMATCHED_CONTROL",
+          "rows": 55,
+          "summary": {
+            "independent": 55,
+            "executable": 34,
+            "symbols": 1,
+            "wins": 8,
+            "losses": 26,
+            "winRate": 0.23529411764705882,
+            "profitFactor": 0.47817934915213317,
+            "expectancyR": -0.3336305049194972,
+            "confidenceInterval": {
+              "lower": -0.6691240272357748,
+              "upper": 0.0018630173967803532,
+              "level": 0.95
+            },
+            "pnl": -666.0740166296059,
+            "maxDrawdownPct": 0.0869001619329605,
+            "positiveFolds": 3,
+            "sampleFolds": 6,
+            "positiveExpectancyFolds": 3,
+            "foldMetrics": [
+              {
+                "fold": 0,
+                "n": 7,
+                "profitFactor": 1.0690325549016597,
+                "expectancyR": 0.025259352018704932,
+                "pnl": 13.10400774066094
+              },
+              {
+                "fold": 1,
+                "n": 9,
+                "profitFactor": 0,
+                "expectancyR": -0.9059459628201778,
+                "pnl": -477.47517441840637
+              },
+              {
+                "fold": 2,
+                "n": 4,
+                "profitFactor": 1.061838982811113,
+                "expectancyR": 0.033315909152016154,
+                "pnl": 7.855176763937877
+              },
+              {
+                "fold": 3,
+                "n": 8,
+                "profitFactor": 1.7829392311768635,
+                "expectancyR": 0.27010582294162916,
+                "pnl": 119.68854151515787
+              },
+              {
+                "fold": 4,
+                "n": 1,
+                "profitFactor": 0,
+                "expectancyR": -1.0945728709794682,
+                "pnl": -63.333080887743
+              },
+              {
+                "fold": 5,
+                "n": 5,
+                "profitFactor": 0,
+                "expectancyR": -0.9132552630347737,
+                "pnl": -265.9134873432133
+              }
+            ],
+            "folds": 6,
+            "symbolConcentration": null,
+            "mfe": {
+              "n": 34,
+              "mean": 0.03198100096722065,
+              "median": 0.01809109969799788,
+              "max": 0.12844803039605623
+            },
+            "mae": {
+              "n": 34,
+              "mean": -0.049234827260397525,
+              "median": -0.043163071359745286,
+              "min": -0.1230424162936351
+            }
+          }
+        },
+        "sampleFolds": 6,
+        "positiveExpectancyFolds": 1,
+        "foldMetrics": [
+          {
+            "fold": 0,
+            "n": 10,
+            "profitFactor": 0.4743782436440192,
+            "expectancyR": -0.2062042177647699,
+            "pnl": -118.32118433941416
+          },
+          {
+            "fold": 1,
+            "n": 12,
+            "profitFactor": 1.8226584948253026,
+            "expectancyR": 0.2768723686421011,
+            "pnl": 193.87776857650314
+          },
+          {
+            "fold": 2,
+            "n": 9,
+            "profitFactor": 0.6103933213034689,
+            "expectancyR": -0.12968956635947998,
+            "pnl": -70.88748137453597
+          },
+          {
+            "fold": 3,
+            "n": 9,
+            "profitFactor": 0.6692979939676251,
+            "expectancyR": -0.14708848564151555,
+            "pnl": -73.71723856702316
+          },
+          {
+            "fold": 4,
+            "n": 8,
+            "profitFactor": 0.8649992756507953,
+            "expectancyR": -0.08004362028664605,
+            "pnl": -35.45384132641959
+          },
+          {
+            "fold": 5,
+            "n": 12,
+            "profitFactor": 0.872477582816116,
+            "expectancyR": -0.06498770043676215,
+            "pnl": -43.6469815760497
+          }
+        ],
+        "folds": 6,
+        "symbolConcentration": null,
+        "purge": {
+          "excludedByOutcomeOverlap": 1,
+          "prePurge": 61,
+          "kept": 60,
+          "labelOverlapFree": true
+        }
+      }
+    },
+    "directionReversal": false
   },
   "outcomeContract": {
     "decisionLatencyMinutes": 20,
@@ -815,7 +3600,7 @@
     "eventFrozenConfigSha256": "1a691b6eab065b6493cf7f4a6279f3a9d69306bd07471c355107380888369ba8",
     "datasetManifestSha256": "79d4f0623b6a9cbdbbf756c3a71a2c3ab224d6d26457d5e5101e72bdd4342a3a",
     "sourceArchiveIndexSha256": "7ff9cd5758ae99eaf66a6224ce75ae281007fd5a769cb076fabbb497cf49b169",
-    "snapshotDiagnosticsSha256": "bdd9a25877380d3d40ad024baad77b527a3f37282f082d4306c8c5b33c00a832"
+    "snapshotDiagnosticsSha256": "a250c76eac00a9de2afb9afc644b247071417c497ca91e9a8e4b8be962270065"
   },
   "knownLimitations": [
     "Observed-tradability membership intentionally does not claim official listing/delist evidence.",

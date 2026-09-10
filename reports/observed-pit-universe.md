@@ -1,6 +1,6 @@
 # Observed-Tradability PIT Universe
 
-Status: **OBSERVED_PIT_DATA_BLOCKED**
+Status: **OBSERVED_PIT_READY**
 
 This is the observed-tradability research universe. Binance Data Vision archive union is the source of candidate symbols; current exchangeInfo is classification/filter metadata only and announcements are diagnostics only.
 
@@ -17,8 +17,8 @@ Development window: 2024-01-01T00:00:00.000Z → 2026-01-01T00:00:00.000Z (end e
 - PIT mean / median / min / max: 166.90264477884176 / 163 / 112 / 254
 - Monthly median minimum: 117
 - BTC required coverage: 1
-- Data-loss observations (non-critical diagnostics): 250021
-- Gate: **OBSERVED_PIT_DATA_BLOCKED**
+- Data-loss observations (non-critical diagnostics): 1308
+- Gate: **OBSERVED_PIT_READY**
 
 ## Monthly PIT diagnostics
 
@@ -54,7 +54,7 @@ Every 4h snapshot writes compact diagnostics to observed-pit-snapshots.ndjson: a
 ## Artifact contract
 
 - price: present 676/678, non-empty 676/678, hash-verified 676/678, missing 2, hash failures 2
-- minute: present 676/678, non-empty 676/678, hash-verified 0/678, missing 2, hash failures 0
+- minute: present 676/678, non-empty 676/678, hash-verified 438/678, missing 2, hash failures 0
 - funding: present 677/678, non-empty 677/678, hash-verified 676/678, missing 1, hash failures 0
 
 ## PIT invariants and diagnostics
@@ -73,13 +73,18 @@ Every 4h snapshot writes compact diagnostics to observed-pit-snapshots.ndjson: a
 
 ## Corrected data-loss gate
 
-- Otherwise-eligible observations: 982056
-- Corruption-lost observations: 250021
-- Corruption retention / loss: 0.7454106486799124 / 0.25458935132008764
-- Top loss symbols: [{"symbol":"1000BTTCUSDT","count":4386},{"symbol":"ACUUSDT","count":4386},{"symbol":"AIGENSYNUSDT","count":4386},{"symbol":"AKROUSDT","count":4386},{"symbol":"ANCUSDT","count":4386},{"symbol":"ARXUSDT","count":4386},{"symbol":"AZTECUSDT","count":4386},{"symbol":"BASEDUSDT","count":4386},{"symbol":"BILLUSDT","count":4386},{"symbol":"BIRBUSDT","count":4386},{"symbol":"BSBUSDT","count":4386},{"symbol":"BTTUSDT","count":4386},{"symbol":"BTWUSDT","count":4386},{"symbol":"BZRXUSDT","count":4386},{"symbol":"CAPUSDT","count":4386},{"symbol":"CFGUSDT","count":4386},{"symbol":"CHIPUSDT","count":4386},{"symbol":"CTRUSDT","count":4386},{"symbol":"DATAIPUSDT","count":4386},{"symbol":"DODOUSDT","count":4386}]
-- Top loss reasons: [{"reason":"missing-or-incomplete-price-artifact","count":250021}]
-- Corruption gate: **false**
+- Otherwise-eligible observations: 733343
+- Corruption-lost observations: 1308
+- Corruption retention / loss: 0.998216387147624 / 0.001783612852376037
+- Top loss symbols: [{"symbol":"AERGOUSDT","count":180},{"symbol":"CTKUSDT","count":180},{"symbol":"CVXUSDT","count":180},{"symbol":"MAVIAUSDT","count":180},{"symbol":"PUMPUSDT","count":180},{"symbol":"SLPUSDT","count":180},{"symbol":"CVCUSDT","count":179},{"symbol":"LITUSDT","count":49}]
+- Top loss reasons: [{"reason":"local-1h-gap","count":1308}]
+- Corruption gate: **true**
 
 ## PIT invariant perturbations
 
-- futureRowsInvariant: **true**; compared 2196; changed 0\n- futureVolumeInvariant: **true**; compared 2196; changed 0\n- futureListingInvariant: **true**; compared 2196; changed 0\n- futureDelistInvariant: **true**; compared 2196; changed 0\n- currentExchangeInfoInvariant: **true**; compared 2196; changed 0\n- announcementInvariant: **true**; compared 2196; changed 0
+- futureRowsInvariant: **true**; compared 2196; changed 0
+- futureVolumeInvariant: **true**; compared 2196; changed 0
+- futureListingInvariant: **true**; compared 2196; changed 0
+- futureDelistInvariant: **true**; compared 2196; changed 0
+- currentExchangeInfoInvariant: **true**; compared 2196; changed 0
+- announcementInvariant: **true**; compared 2196; changed 0

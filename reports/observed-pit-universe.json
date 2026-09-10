@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-09T03:21:10.239Z",
-  "status": "OBSERVED_PIT_DATA_BLOCKED",
+  "generatedAt": "2026-09-09T11:43:06.385Z",
+  "status": "OBSERVED_PIT_READY",
   "source": "Binance official Data Vision USD-M archive union; current exchangeInfo classification-only; announcements diagnostics-only",
   "developmentWindow": {
     "start": "2024-01-01T00:00:00.000Z",
@@ -861,8 +861,8 @@
     }
   },
   "coverage": {
-    "pass": false,
-    "status": "OBSERVED_PIT_DATA_BLOCKED",
+    "pass": true,
+    "status": "OBSERVED_PIT_READY",
     "mean": 166.90264477884176,
     "median": 163,
     "min": 112,
@@ -877,7 +877,7 @@
         "max": 172,
         "coreMedian": 36,
         "expandedMedian": 130,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-02": {
         "snapshots": 174,
@@ -888,7 +888,7 @@
         "max": 165,
         "coreMedian": 35,
         "expandedMedian": 105,
-        "dataLossObservations": 9918
+        "dataLossObservations": 0
       },
       "2024-03": {
         "snapshots": 186,
@@ -899,7 +899,7 @@
         "max": 236,
         "coreMedian": 40,
         "expandedMedian": 185,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-04": {
         "snapshots": 180,
@@ -910,7 +910,7 @@
         "max": 237,
         "coreMedian": 39,
         "expandedMedian": 177,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-05": {
         "snapshots": 186,
@@ -921,7 +921,7 @@
         "max": 186,
         "coreMedian": 40,
         "expandedMedian": 116.5,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-06": {
         "snapshots": 180,
@@ -932,7 +932,7 @@
         "max": 164,
         "coreMedian": 40,
         "expandedMedian": 117,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-07": {
         "snapshots": 186,
@@ -943,7 +943,7 @@
         "max": 140,
         "coreMedian": 39,
         "expandedMedian": 93,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-08": {
         "snapshots": 186,
@@ -954,7 +954,7 @@
         "max": 134,
         "coreMedian": 40,
         "expandedMedian": 92.5,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-09": {
         "snapshots": 180,
@@ -965,7 +965,7 @@
         "max": 129,
         "coreMedian": 39,
         "expandedMedian": 78,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-10": {
         "snapshots": 186,
@@ -976,7 +976,7 @@
         "max": 146,
         "coreMedian": 39,
         "expandedMedian": 98,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2024-11": {
         "snapshots": 180,
@@ -987,7 +987,7 @@
         "max": 208,
         "coreMedian": 43,
         "expandedMedian": 111,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2024-12": {
         "snapshots": 186,
@@ -998,7 +998,7 @@
         "max": 254,
         "coreMedian": 46,
         "expandedMedian": 201,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2025-01": {
         "snapshots": 186,
@@ -1009,7 +1009,7 @@
         "max": 232,
         "coreMedian": 47,
         "expandedMedian": 146,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2025-02": {
         "snapshots": 168,
@@ -1020,7 +1020,7 @@
         "max": 195,
         "coreMedian": 46,
         "expandedMedian": 133,
-        "dataLossObservations": 9576
+        "dataLossObservations": 0
       },
       "2025-03": {
         "snapshots": 186,
@@ -1031,7 +1031,7 @@
         "max": 179,
         "coreMedian": 49,
         "expandedMedian": 111,
-        "dataLossObservations": 10606
+        "dataLossObservations": 31
       },
       "2025-04": {
         "snapshots": 180,
@@ -1042,7 +1042,7 @@
         "max": 163,
         "coreMedian": 48,
         "expandedMedian": 96,
-        "dataLossObservations": 10264
+        "dataLossObservations": 239
       },
       "2025-05": {
         "snapshots": 186,
@@ -1053,7 +1053,7 @@
         "max": 190,
         "coreMedian": 48,
         "expandedMedian": 130,
-        "dataLossObservations": 10604
+        "dataLossObservations": 363
       },
       "2025-06": {
         "snapshots": 180,
@@ -1064,7 +1064,7 @@
         "max": 185,
         "coreMedian": 49,
         "expandedMedian": 103,
-        "dataLossObservations": 10260
+        "dataLossObservations": 86
       },
       "2025-07": {
         "snapshots": 186,
@@ -1075,7 +1075,7 @@
         "max": 193,
         "coreMedian": 50,
         "expandedMedian": 104,
-        "dataLossObservations": 10607
+        "dataLossObservations": 232
       },
       "2025-08": {
         "snapshots": 186,
@@ -1086,7 +1086,7 @@
         "max": 201,
         "coreMedian": 50,
         "expandedMedian": 137,
-        "dataLossObservations": 10602
+        "dataLossObservations": 308
       },
       "2025-09": {
         "snapshots": 180,
@@ -1097,7 +1097,7 @@
         "max": 174,
         "coreMedian": 49,
         "expandedMedian": 116,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2025-10": {
         "snapshots": 186,
@@ -1108,7 +1108,7 @@
         "max": 192,
         "coreMedian": 52,
         "expandedMedian": 129,
-        "dataLossObservations": 10602
+        "dataLossObservations": 0
       },
       "2025-11": {
         "snapshots": 180,
@@ -1119,7 +1119,7 @@
         "max": 193,
         "coreMedian": 55,
         "expandedMedian": 120,
-        "dataLossObservations": 10260
+        "dataLossObservations": 0
       },
       "2025-12": {
         "snapshots": 186,
@@ -1130,7 +1130,7 @@
         "max": 166,
         "coreMedian": 54,
         "expandedMedian": 91.5,
-        "dataLossObservations": 10606
+        "dataLossObservations": 49
       }
     },
     "monthlyMedianMin": 117,
@@ -1140,98 +1140,50 @@
     "btcDataLossObservations": 0,
     "btcCoverage": 1,
     "btcCoveragePass": true,
-    "nonCriticalDataLossObservations": 250021,
-    "otherwiseEligibleObservations": 982056,
-    "corruptionLostObservations": 250021,
-    "corruptionRetentionRate": 0.7454106486799124,
-    "corruptionLossRate": 0.25458935132008764,
-    "corruptionPass": false,
+    "nonCriticalDataLossObservations": 1308,
+    "otherwiseEligibleObservations": 733343,
+    "corruptionLostObservations": 1308,
+    "corruptionRetentionRate": 0.998216387147624,
+    "corruptionLossRate": 0.001783612852376037,
+    "corruptionPass": true,
     "topLossSymbols": [
       {
-        "symbol": "1000BTTCUSDT",
-        "count": 4386
+        "symbol": "AERGOUSDT",
+        "count": 180
       },
       {
-        "symbol": "ACUUSDT",
-        "count": 4386
+        "symbol": "CTKUSDT",
+        "count": 180
       },
       {
-        "symbol": "AIGENSYNUSDT",
-        "count": 4386
+        "symbol": "CVXUSDT",
+        "count": 180
       },
       {
-        "symbol": "AKROUSDT",
-        "count": 4386
+        "symbol": "MAVIAUSDT",
+        "count": 180
       },
       {
-        "symbol": "ANCUSDT",
-        "count": 4386
+        "symbol": "PUMPUSDT",
+        "count": 180
       },
       {
-        "symbol": "ARXUSDT",
-        "count": 4386
+        "symbol": "SLPUSDT",
+        "count": 180
       },
       {
-        "symbol": "AZTECUSDT",
-        "count": 4386
+        "symbol": "CVCUSDT",
+        "count": 179
       },
       {
-        "symbol": "BASEDUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BILLUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BIRBUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BSBUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BTTUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BTWUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "BZRXUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CAPUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CFGUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CHIPUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "CTRUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "DATAIPUSDT",
-        "count": 4386
-      },
-      {
-        "symbol": "DODOUSDT",
-        "count": 4386
+        "symbol": "LITUSDT",
+        "count": 49
       }
     ],
     "topLossReasons": [
       {
-        "reason": "missing-or-incomplete-price-artifact",
-        "count": 250021
+        "reason": "local-1h-gap",
+        "count": 1308
       }
     ],
     "criteria": {
@@ -1241,74 +1193,17 @@
       "minimumCorruptionRetention": 0.95
     },
     "lossSymbolCounts": {
-      "1000BTTCUSDT": 4386,
-      "ACUUSDT": 4386,
-      "AERGOUSDT": 2,
-      "AIGENSYNUSDT": 4386,
-      "AKROUSDT": 4386,
-      "ANCUSDT": 4386,
-      "ARXUSDT": 4386,
-      "AZTECUSDT": 4386,
-      "BASEDUSDT": 4386,
-      "BILLUSDT": 4386,
-      "BIRBUSDT": 4386,
-      "BSBUSDT": 4386,
-      "BTTUSDT": 4386,
-      "BTWUSDT": 4386,
-      "BZRXUSDT": 4386,
-      "CAPUSDT": 4386,
-      "CFGUSDT": 4386,
-      "CHIPUSDT": 4386,
-      "CTKUSDT": 2,
-      "CTRUSDT": 4386,
-      "CVCUSDT": 2,
-      "CVXUSDT": 2,
-      "DATAIPUSDT": 4386,
-      "DODOUSDT": 4386,
-      "DOTECOUSDT": 4386,
-      "EDGEUSDT": 4386,
-      "ELSAUSDT": 4386,
-      "ESPUSDT": 4386,
-      "FIGHTUSDT": 4386,
-      "FOGOUSDT": 4386,
-      "FRAXUSDT": 4386,
-      "GAIBUSDT": 4386,
-      "GENIUSUSDT": 4386,
-      "GRAMUSDT": 4386,
-      "GRVTUSDT": 4386,
-      "GWEIUSDT": 4386,
-      "INXUSDT": 4386,
-      "KATUSDT": 4386,
-      "KEEPUSDT": 4386,
-      "LENDUSDT": 4386,
-      "LITUSDT": 4,
-      "LUNAUSDT": 4386,
-      "MANTRAUSDT": 4386,
-      "MAVIAUSDT": 4,
-      "MEGAUSDT": 4386,
-      "NUUSDT": 4386,
-      "OPGUSDT": 4386,
-      "OPNUSDT": 4386,
-      "OUSDT": 4386,
-      "PHAROSUSDT": 4386,
-      "PRLUSDT": 4386,
-      "PUMPUSDT": 1,
-      "REUSDT": 4386,
-      "ROBOUSDT": 4386,
-      "SKRUSDT": 4386,
-      "SLPUSDT": 2,
-      "SLXUSDT": 4386,
-      "SPACEUSDT": 4386,
-      "SPORTFUNUSDT": 4386,
-      "STARUSDT": 4386,
-      "TRIAUSDT": 4386,
-      "XAUTUSDT": 4386,
-      "YFIIUSDT": 4386,
-      "ZAMAUSDT": 4386,
-      "ZESTUSDT": 4386
+      "AERGOUSDT": 180,
+      "CTKUSDT": 180,
+      "CVCUSDT": 179,
+      "CVXUSDT": 180,
+      "LITUSDT": 49,
+      "MAVIAUSDT": 180,
+      "PUMPUSDT": 180,
+      "SLPUSDT": 180
     },
     "lossReasonCounts": {
-      "missing-or-incomplete-price-artifact": 250021
+      "local-1h-gap": 1308
     }
   },
   "derivativeCoverage": {
@@ -1337,7 +1232,7 @@
       "markets": 678,
       "present": 676,
       "nonEmpty": 676,
-      "hashVerified": 0,
+      "hashVerified": 438,
       "missingSymbols": [
         "GAIBUSDT",
         "LENDUSDT"
@@ -44636,7 +44531,7 @@
   "pitSnapshots": {
     "count": 4386,
     "diagnosticsFile": "reports/observed-pit-snapshots.ndjson",
-    "diagnosticsSha256": "bdd9a25877380d3d40ad024baad77b527a3f37282f082d4306c8c5b33c00a832",
+    "diagnosticsSha256": "a250c76eac00a9de2afb9afc644b247071417c497ca91e9a8e4b8be962270065",
     "firstTimestamp": "2024-01-01T00:00:00.000Z",
     "lastTimestamp": "2025-12-31T20:00:00.000Z"
   },

@@ -458,9 +458,12 @@ function createOutcomeProvider({dataRoot, markets, featurePointsBySymbol, start,
     const fundingRows = normalizeFundingRows(fundingRaw.rows);
     const value = {minuteIndex, fundingRows};
     cache.set(symbol, value);
-    // Keep BTC plus a small LRU.  The index retains compressed JSON's
+    // Keep BTC plus a bounded LRU. The index retains compressed JSON's
     // decompressed text and typed offsets, not millions of parsed row objects.
-    while (cache.size > 3) {
+    // Sixteen entries avoid repeatedly gunzipping the same symbols during the
+    // timestamp-ordered event/control pass while staying within the runner's
+    // bounded-memory contract.
+    while (cache.size > 16) {
       const oldest = cache.keys().next().value;
       if (oldest === 'BTCUSDT' && cache.size > 1) {
         const btc = cache.get(oldest); cache.delete(oldest); cache.set(oldest, btc); continue;
@@ -470,7 +473,7 @@ function createOutcomeProvider({dataRoot, markets, featurePointsBySymbol, start,
     }
     return value;
   };
-  return event => {
+  const resolve = (event, instrument = null) => {
     const symbol = event.level === 'market' ? 'BTCUSDT' : event.symbol;
     const market = marketBySymbol.get(symbol);
     const point = pointAt(featurePointsBySymbol.get(symbol), event.eventTime);
@@ -478,7 +481,7 @@ function createOutcomeProvider({dataRoot, markets, featurePointsBySymbol, start,
     if (!market || !point || !episode) return {executable: false, canonicalExecutable: false, labelUsable: false, rejectionReason: 'canonical-outcome-unavailable'};
     const stop = stopForPoint(point, event.sideHypothesis);
     if (!stop) return {executable: false, canonicalExecutable: false, labelUsable: false, rejectionReason: 'deterministic-stop-unavailable'};
-    const data = loadInstrument(symbol);
+    const data = instrument || loadInstrument(symbol);
     const activeEnd = Math.min(Number(end), Number(episode.observedEnd));
     const decisionTime = Number(event.eventTime) + CANONICAL_OUTCOME_CONTRACT.decisionLatencyMinutes * 60_000;
     const executionWindowEnd = Math.min(activeEnd, decisionTime + (CANONICAL_OUTCOME_CONTRACT.verticalBarrierHours + 1) * H1);
@@ -524,6 +527,23 @@ function createOutcomeProvider({dataRoot, markets, featurePointsBySymbol, start,
       noFutureData: Number(event.eventTime) < Number(end) && (!Number.isFinite(canonicalBarrierTime) || canonicalBarrierTime <= Number(end)),
     };
   };
+  const provider = event => resolve(event);
+  provider.preload = events => {
+    const bySymbol = new Map();
+    for (const event of events || []) {
+      const symbol = event.level === 'market' ? 'BTCUSDT' : event.symbol;
+      const rows = bySymbol.get(symbol) || [];
+      rows.push(event);
+      bySymbol.set(symbol, rows);
+    }
+    const outcomes = new Map();
+    for (const [symbol, rows] of bySymbol) {
+      const instrument = loadInstrument(symbol);
+      for (const event of rows) outcomes.set(String(event.eventId), resolve(event, instrument));
+    }
+    return outcomes;
+  };
+  return provider;
 }
 
 function aggregateSubsetSnapshot(snapshot, members, previous) {
@@ -787,7 +807,7 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
   const pitStatusBySymbol = new Map();
   let btcSeries = null;
   const btc = loaded.find(row => row.symbol === 'BTCUSDT');
-  if (btc?.dataIntegrity?.priceComplete !== false) {
+  if (btc && btc.dataIntegrity?.priceComplete !== false) {
     const fundingFile = artifactFile(dataRoot, 'funding', 'BTCUSDT');
     const fundingRaw = readArtifact(fundingFile, manifestData.byKey.get('funding|BTCUSDT'), artifactTracker, 'funding|BTCUSDT');
     const btcFeatureMarket = withRowIndexes(btc, featureRowsForMarket(btc, dataRoot, manifestData.byKey, artifactTracker, {start, end}));
@@ -796,14 +816,20 @@ export function runObservedPitEventResearch({dataRoot = DEFAULT_DATA_ROOT, repor
     btcSeries = btcFeatures.series ? {points: btcFeatures.series.points} : null;
     featurePointsBySymbol.set('BTCUSDT', btcFeatures.points);
     pitStatusBySymbol.set('BTCUSDT', precomputePitStatusCodes(btcFeatureMarket, btcFeatures.points, pitTimestamps));
+  } else if (btc) {
+    featurePointsBySymbol.set('BTCUSDT', []);
+    const btcFeatureMarket = withRowIndexes(btc, featureRowsForMarket(btc, dataRoot, manifestData.byKey, artifactTracker, {start, end}));
+    pitStatusBySymbol.set('BTCUSDT', precomputePitStatusCodes(btcFeatureMarket, [], pitTimestamps));
   } else {
+    featurePointsBySymbol.set('BTCUSDT', []);
     pitStatusBySymbol.set('BTCUSDT', new Uint8Array(pitTimestamps.length).fill(32));
   }
   for (const market of loaded.sort((left, right) => left.symbol.localeCompare(right.symbol))) {
     if (market.symbol === 'BTCUSDT') continue;
     if (market.dataIntegrity?.priceComplete === false) {
       featurePointsBySymbol.set(market.symbol, []);
-      pitStatusBySymbol.set(market.symbol, new Uint8Array(pitTimestamps.length).fill(32));
+      const featureMarket = withRowIndexes(market, featureRowsForMarket(market, dataRoot, manifestData.byKey, artifactTracker, {start, end}));
+      pitStatusBySymbol.set(market.symbol, precomputePitStatusCodes(featureMarket, [], pitTimestamps));
       continue;
     }
     const fundingFile = artifactFile(dataRoot, 'funding', market.symbol);
