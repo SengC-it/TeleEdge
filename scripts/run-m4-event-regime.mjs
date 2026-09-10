@@ -12,6 +12,7 @@ import {
   EVENT_FAMILIES,
   EVENT_KEEP_GATE,
   EVENT_REFRACTORY_HOURS,
+  buildEventControlIndex,
   detectEvents,
   dedupeEventEpisodes,
   matchEventControls,
@@ -454,8 +455,8 @@ function forwardHorizonStudy(rows) {
 }
 
 function familyReport(family, eventRows, controlRows, controlStatuses, horizonStudy, {rawCount = eventRows.length, independentCount = eventRows.length} = {}) {
-  const summary = summarizeEventOutcomes(eventRows);
-  const control = summarizeEventOutcomes(controlRows);
+  const summary = summarizeEventOutcomes(eventRows, {foldCount: 6});
+  const control = summarizeEventOutcomes(controlRows, {foldCount: 6});
   const comparison = compareEventToControl(eventRows, controlRows);
   const status = evaluateEventKeepGate({...summary, expectancyUpliftR: comparison.expectancyUpliftR, profitFactorUplift: comparison.profitFactorUplift}, {strong: true});
   const long = eventRows.filter(row => row.sideHypothesis === 'long').length;
@@ -509,15 +510,33 @@ export function runEventResearch({snapshots = [], featurePoints = [], markets = 
   const statusesByFamily = Object.fromEntries(EVENT_FAMILIES.map(family => [family, []]));
   const usedByFamilyFold = new Map();
   const allControlObservations = controlObservations || observations;
+  const controlIndex = buildEventControlIndex(allControlObservations, detected.independentEvents);
   const labeled = [];
   let purgeExcluded = 0;
+  const matchedEvents = [];
   for (const event of detected.independentEvents) {
     const fold = outerFoldAt(event.eventTime, start, end);
     const used = usedByFamilyFold.get(`${event.eventFamily}|${fold}`) || new Set();
     usedByFamilyFold.set(`${event.eventFamily}|${fold}`, used);
-    const controls = matchEventControls({...event, outerFold: fold}, allControlObservations, {eventRows: detected.independentEvents, usedControlIds: used, fold});
-    const control = controls[0];
-    const outcome = eventOutcome(event, {outcomesByEvent, outcomeForEvent, marketDataBySymbol});
+    const controls = matchEventControls({...event, outerFold: fold}, allControlObservations, {eventRows: detected.independentEvents, usedControlIds: used, fold, controlIndex});
+    const control = controls[0] || null;
+    const controlEvent = control ? {
+      ...event,
+      eventId: `control:${control.id || control.eventId || pointTime(control)}`,
+      sideHypothesis: control.side || event.sideHypothesis,
+      eventTime: pointTime(control),
+      level: event.level,
+      symbol: event.symbol,
+    } : null;
+    matchedEvents.push({event, fold, control, controlEvent});
+  }
+  const outcomeRequests = matchedEvents.flatMap(({event, controlEvent}) => controlEvent ? [event, controlEvent] : [event]);
+  const preparedOutcomes = typeof outcomeForEvent?.preload === 'function'
+    ? outcomeForEvent.preload(outcomeRequests)
+    : null;
+  const outcomeOptions = {outcomesByEvent: preparedOutcomes || outcomesByEvent, outcomeForEvent, marketDataBySymbol};
+  for (const {event, fold, control, controlEvent} of matchedEvents) {
+    const outcome = eventOutcome(event, outcomeOptions);
     const row = {
       ...event,
       outerFold: fold,
@@ -530,7 +549,7 @@ export function runEventResearch({snapshots = [], featurePoints = [], markets = 
     if (!control) statusesByFamily[event.eventFamily].push('UNMATCHED_CONTROL');
     else {
       statusesByFamily[event.eventFamily].push('MATCHED');
-      const controlOutcome = eventOutcome({...event, eventId: `control:${control.id || control.eventId || pointTime(control)}`, sideHypothesis: control.side || event.sideHypothesis, eventTime: pointTime(control), level: event.level, symbol: event.symbol}, {outcomesByEvent, outcomeForEvent, marketDataBySymbol});
+      const controlOutcome = eventOutcome(controlEvent, outcomeOptions);
       if (controlOutcome) controlRowsByFamily[event.eventFamily].push({...control, ...controlOutcome, eventId: event.eventId, pairedEventId: event.eventId, outerFold: fold});
     }
   }

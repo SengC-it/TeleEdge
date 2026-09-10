@@ -379,6 +379,31 @@ test('event summary and gate do not convert a small positive point estimate into
   assert.equal(EVENT_DEFINITIONS.MARKET_VOLATILITY_SHOCK.realizedVolZ, 2);
 });
 
+test('event fold positivity uses fold expectancy, not the existence of one winning trade', () => {
+  const summary = summarizeEventOutcomes([
+    {executable: true, outerFold: 0, netR: 1, netPnlUsdt: 1},
+    {executable: true, outerFold: 0, netR: -2, netPnlUsdt: -2},
+    {executable: true, outerFold: 1, netR: 0.2, netPnlUsdt: 0.2},
+    {executable: true, outerFold: 2, netR: -0.1, netPnlUsdt: -0.1},
+  ], {foldCount: 6});
+  assert.equal(summary.sampleFolds, 3);
+  assert.equal(summary.positiveExpectancyFolds, 1);
+  assert.equal(summary.positiveFolds, 1);
+  assert.deepEqual(summary.foldMetrics.map(row => row.n), [2, 1, 1, 0, 0, 0]);
+  assert.equal(summary.foldMetrics[0].expectancyR, -0.5);
+});
+
+test('event outcome summary aggregates valid MFE and MAE observations', () => {
+  const summary = summarizeEventOutcomes([
+    {executable: true, netR: 0.2, netPnlUsdt: 1, mfe: 0.04, mae: -0.02},
+    {executable: true, netR: -0.1, netPnlUsdt: -1, mfe: 0.08, mae: -0.03},
+  ]);
+  assert.equal(summary.mfe.n, 2);
+  assert.equal(summary.mfe.mean, 0.06);
+  assert.equal(summary.mae.n, 2);
+  assert.equal(summary.mae.mean, -0.025);
+});
+
 test('forward snapshot records immutable source hashes and refuses overwrite', () => {
   const snapshot = buildForwardSnapshot({
     captureTime: '2026-09-04T00:00:00.000Z',

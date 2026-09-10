@@ -236,6 +236,10 @@ function consistentStress(row) {
 export function detectLeverageStressTransitions(rows) {
   const events = [];
   for (const row of sortedRows(rows)) {
+    // Formal observed-PIT snapshots fail closed unless at least 100 symbols
+    // have valid derivative dimensions at this timestamp.  Legacy unit
+    // fixtures without the field retain the frozen detector semantics.
+    if (row.leverageFeatureAvailable === false || (finite(row.derivativeReadyCount) != null && Number(row.derivativeReadyCount) < 100)) continue;
     const stress = finite(row.crowdingStressZ);
     if (stress == null || Math.abs(stress) < 2) continue;
     const consistency = consistentStress(row);
@@ -307,28 +311,95 @@ export function dedupeEventEpisodes(events, refractoryHours = EVENT_REFRACTORY_H
   return {rawEvents: sorted, independentEvents: independent, suppressedEvents: suppressed};
 }
 
+function controlStratumKey(row, level = row.level) {
+  const subject = level === 'symbol' ? String(row.symbol || '') : 'BTCUSDT';
+  const side = row.side ?? row.sideHypothesis ?? '';
+  const regime = row.marketRegime ?? row.regime ?? '';
+  const liquidity = row.liquidityBucket ?? '';
+  return [level || '', subject, side, month(eventTime(row)), regime, liquidity].join('\u001f');
+}
+
+function hasNearbyTimestamp(rows, timestamp) {
+  if (!rows?.length || timestamp == null) return false;
+  let low = 0; let high = rows.length;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (rows[middle] < timestamp) low = middle + 1;
+    else high = middle;
+  }
+  const window = EVENT_REFRACTORY_HOURS * 3_600_000;
+  return (low < rows.length && Math.abs(rows[low] - timestamp) <= window)
+    || (low > 0 && Math.abs(rows[low - 1] - timestamp) <= window);
+}
+
+/**
+ * Build an index for exact event-control strata.  It is an execution aid for
+ * the formal research runner only; the indexed candidate set and
+ * contamination rules are identical to the linear matcher below.
+ */
+export function buildEventControlIndex(observations = [], eventRows = []) {
+  const byStratum = new Map();
+  for (const row of observations || []) {
+    if (row?.eventId || row?.eventFamily || row?.isEvent) continue;
+    if (row?.completed === false || row?.isComplete === false) continue;
+    const timestamp = eventTime(row);
+    if (timestamp == null) continue;
+    if (row.controlLevel === 'market' && (String(row.symbol || '') !== 'BTCUSDT')) continue;
+    const level = row.controlLevel === 'market' ? 'market' : 'symbol';
+    const key = controlStratumKey({...row, level}, level);
+    if (!byStratum.has(key)) byStratum.set(key, []);
+    byStratum.get(key).push(row);
+  }
+  for (const rows of byStratum.values()) rows.sort((left, right) => eventTime(left) - eventTime(right) || stableId(left).localeCompare(stableId(right)));
+  const eventTimesByFamily = new Map();
+  const unscopedEventTimes = [];
+  const allEventTimes = [];
+  for (const row of eventRows || []) {
+    const timestamp = eventTime(row);
+    if (timestamp == null) continue;
+    allEventTimes.push(timestamp);
+    if (row.eventFamily) {
+      if (!eventTimesByFamily.has(row.eventFamily)) eventTimesByFamily.set(row.eventFamily, []);
+      eventTimesByFamily.get(row.eventFamily).push(timestamp);
+    } else unscopedEventTimes.push(timestamp);
+  }
+  for (const rows of eventTimesByFamily.values()) rows.sort((left, right) => left - right);
+  unscopedEventTimes.sort((left, right) => left - right);
+  allEventTimes.sort((left, right) => left - right);
+  return {byStratum, eventTimesByFamily, unscopedEventTimes, allEventTimes};
+}
+
 export function matchEventControls(event, observations, {
   maxControls = 1,
   usedControlIds = null,
   eventRows = null,
   fold = null,
+  controlIndex = null,
 } = {}) {
   const eventMonth = month(event.eventTime);
   const side = event.sideHypothesis;
   if (!side) return [];
   const used = usedControlIds instanceof Set ? usedControlIds : new Set(usedControlIds || []);
-  const contamination = [...(eventRows || []), ...(observations || []).filter(row => row.eventId || row.eventFamily || row.isEvent)]
+  const indexed = controlIndex?.byStratum instanceof Map;
+  const contamination = indexed ? null : [...(eventRows || []), ...(observations || []).filter(row => row.eventId || row.eventFamily || row.isEvent)]
     .filter(row => !event.eventFamily || !row.eventFamily || row.eventFamily === event.eventFamily);
   const contaminated = row => {
     const timestamp = eventTime(row);
     if (timestamp == null) return true;
+    if (indexed) {
+      const familyRows = event.eventFamily ? controlIndex.eventTimesByFamily.get(event.eventFamily) : controlIndex.allEventTimes;
+      return hasNearbyTimestamp(familyRows, timestamp) || hasNearbyTimestamp(controlIndex.unscopedEventTimes, timestamp);
+    }
     return contamination.some(other => {
       const otherTime = eventTime(other);
       if (otherTime == null) return false;
       return Math.abs(otherTime - timestamp) <= EVENT_REFRACTORY_HOURS * 3_600_000;
     });
   };
-  const candidates = (observations || []).filter(row => {
+  const source = indexed
+    ? (controlIndex.byStratum.get(controlStratumKey(event, event.level)) || [])
+    : (observations || []);
+  const candidates = source.filter(row => {
     if (row.eventId || row.eventFamily || row.isEvent) return false;
     if (row.completed === false || row.isComplete === false) return false;
     const timestamp = eventTime(row);
@@ -377,6 +448,13 @@ function mean(values) {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
 }
 
+function median(values) {
+  const sorted = [...values].sort((left, right) => left - right);
+  if (!sorted.length) return null;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 function standardDeviation(values) {
   if (values.length < 2) return 0;
   const average = mean(values);
@@ -390,7 +468,7 @@ function confidenceInterval(values) {
   return {lower: margin == null ? null : average - margin, upper: margin == null ? null : average + margin, level: 0.95};
 }
 
-export function summarizeEventOutcomes(rows, {initialEquity = 10_000} = {}) {
+export function summarizeEventOutcomes(rows, {initialEquity = 10_000, foldCount = null} = {}) {
   const executable = (rows || []).filter(row => row.executable !== false && Number.isFinite(Number(row.netR ?? row.r)));
   const pnl = executable.map(row => Number(row.netPnlUsdt ?? row.pnl ?? row.netR ?? row.r));
   const wins = pnl.filter(value => value > 0);
@@ -405,8 +483,33 @@ export function summarizeEventOutcomes(rows, {initialEquity = 10_000} = {}) {
   const totalPnl = pnl.reduce((sum, value) => sum + value, 0);
   let equity = initialEquity; let peak = initialEquity; let maxDrawdown = 0;
   for (const value of pnl) { equity += value; peak = Math.max(peak, equity); maxDrawdown = Math.max(maxDrawdown, peak - equity); }
-  const folds = new Set(executable.map(row => row.outerFold).filter(value => value != null));
-  const positiveFolds = new Set((executable.filter(row => Number(row.netR ?? row.r) > 0).map(row => row.outerFold).filter(value => value != null)));
+  const foldRows = new Map();
+  for (const row of executable) {
+    if (row.outerFold == null) continue;
+    if (!foldRows.has(row.outerFold)) foldRows.set(row.outerFold, []);
+    foldRows.get(row.outerFold).push(row);
+  }
+  const foldEntries = foldCount == null
+    ? [...foldRows.entries()]
+    : Array.from({length: Number(foldCount)}, (_, fold) => [fold, foldRows.get(fold) || []]);
+  const foldMetrics = foldEntries.sort(([left], [right]) => Number(left) - Number(right)).map(([fold, foldRowsForFold]) => {
+    if (!foldRowsForFold.length) return {fold: Number(fold), n: 0, profitFactor: null, expectancyR: null, pnl: 0};
+    const foldPnl = foldRowsForFold.map(row => Number(row.netPnlUsdt ?? row.pnl ?? row.netR ?? row.r));
+    const foldWins = foldPnl.filter(value => value > 0).reduce((sum, value) => sum + value, 0);
+    const foldLosses = foldPnl.filter(value => value < 0).reduce((sum, value) => sum + value, 0);
+    return {
+      fold: Number(fold),
+      n: foldRowsForFold.length,
+      profitFactor: foldLosses < 0 ? foldWins / Math.abs(foldLosses) : null,
+      expectancyR: mean(foldRowsForFold.map(row => Number(row.netR ?? row.r)).filter(Number.isFinite)),
+      pnl: foldPnl.reduce((sum, value) => sum + value, 0),
+    };
+  });
+  const sampledFoldMetrics = foldMetrics.filter(row => row.n > 0);
+  const folds = new Set(sampledFoldMetrics.map(row => row.fold));
+  const positiveExpectancyFolds = sampledFoldMetrics.filter(row => Number(row.expectancyR) > 0).length;
+  const mfeValues = executable.map(row => Number(row.mfe)).filter(Number.isFinite);
+  const maeValues = executable.map(row => Number(row.mae)).filter(Number.isFinite);
   const largestSymbol = Math.max(0, ...bySymbol.values());
   return {
     independent: Number(rows?.length || 0),
@@ -420,9 +523,14 @@ export function summarizeEventOutcomes(rows, {initialEquity = 10_000} = {}) {
     confidenceInterval: confidenceInterval(expectancyValues),
     pnl: totalPnl,
     maxDrawdownPct: maxDrawdown / initialEquity,
-    positiveFolds: positiveFolds.size,
+    positiveFolds: positiveExpectancyFolds,
+    sampleFolds: sampledFoldMetrics.length,
+    positiveExpectancyFolds,
+    foldMetrics,
     folds: folds.size,
     symbolConcentration: totalPnl > 0 ? largestSymbol / totalPnl : null,
+    mfe: mfeValues.length ? {n: mfeValues.length, mean: mean(mfeValues), median: median(mfeValues), max: Math.max(...mfeValues)} : null,
+    mae: maeValues.length ? {n: maeValues.length, mean: mean(maeValues), median: median(maeValues), min: Math.min(...maeValues)} : null,
   };
 }
 
