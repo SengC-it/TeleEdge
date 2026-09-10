@@ -1,0 +1,62 @@
+{
+  "baseMainSha": "21d2b8a1cdfed3e84153dce8491ed8448128727d",
+  "v75StrategySha256": "a336dddad5ee92565faf5df9ee1b93670dc16d76b58f1230f615b2e829ca49cd",
+  "v8StrategySha256": "b31cfcbddc88cfbd5c4895536904f8abadd4cbed238b6bb0252dd6ec8d28847b",
+  "strategyFreezeManifestSha256": "ec031475b4d4331e0655758b23a9cf894f4761cb386661bea6da6a2727648daa",
+  "v75Files": [
+    {
+      "path": "src/config.mjs",
+      "sha256": "fdc4433881eafbc383795df9602b667d1f9b8033ef0d8f3c96e0d6814eb96dd8"
+    },
+    {
+      "path": "src/fill-risk.mjs",
+      "sha256": "71b289b686188cb6cb01d93c6348fbe606737fcbaba6a55509d9933564aed6f5"
+    },
+    {
+      "path": "src/portfolio.mjs",
+      "sha256": "b51e313ca4bca0058240d6feef8f7bf902e2f53a424c874b54083b19fa64f85a"
+    },
+    {
+      "path": "src/strategy.mjs",
+      "sha256": "b913ef35f484873c8bc2562a62db10ae5729d950f4a2218d2f303e44fc4145a0"
+    }
+  ],
+  "v8Files": [
+    {
+      "path": "src/config.mjs",
+      "sha256": "fdc4433881eafbc383795df9602b667d1f9b8033ef0d8f3c96e0d6814eb96dd8"
+    },
+    {
+      "path": "src/fill-risk.mjs",
+      "sha256": "71b289b686188cb6cb01d93c6348fbe606737fcbaba6a55509d9933564aed6f5"
+    },
+    {
+      "path": "src/v8-shadow.mjs",
+      "sha256": "e5b1456397c6aaa44f6daae9dc98085b6705dce6a915eed4daf6d2faaa2e3e37"
+    }
+  ],
+  "validationRules": {
+    "minimumDurationDays": 90,
+    "minimumIndependentSignals": 50,
+    "verdictBeforeBothMinimums": "INSUFFICIENT_FORWARD_SAMPLE",
+    "paperMode": true,
+    "automaticOrders": false,
+    "historicalBackfill": false,
+    "manualLedgerAffectsSystemPaper": false
+  },
+  "minimumDays": 90,
+  "minimumSignals": 50,
+  "finalGate": {
+    "durationDays": 90,
+    "independentClosedSignals": 50,
+    "profitFactor": 1.35,
+    "expectancyR": 0.15,
+    "netPnlPositive": true,
+    "maxDrawdownPct": 0.06,
+    "uniqueSymbols": 10,
+    "dataIntegrity": true,
+    "strategyHashesUnchanged": true
+  },
+  "status": "PREPARED",
+  "createdAt": "2026-09-10T02:17:01.994Z"
+}
