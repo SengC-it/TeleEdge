@@ -25,3 +25,7 @@ jobs:
         run: npm test
       - name: Run syntax checks
         run: npm run check
+      - name: Verify forward-validation audits
+        run: npm run forward:verify
+      - name: Check patch whitespace
+        run: git diff --check HEAD^ HEAD
