@@ -254,7 +254,7 @@ begin
     overlap_group_id, dedupe_key, independent_id, independent, duplicate_of, data_quality_status
   ) values (
     coalesce(v_id, v_dedupe_key), p_run_id, v_strategy, p_signal->>'strategy_hash',
-    p_runtime_strategy_hash, p_runtime_production_semantic_sha256, 'forward-validation', p_signal->>'symbol', p_signal->>'market_id', p_signal->>'side', v_signal_time, v_observed_at,
+    p_runtime_production_semantic_sha256, 'forward-validation', p_signal->>'symbol', p_signal->>'market_id', p_signal->>'side', v_signal_time, v_observed_at,
     (p_signal->>'signal_price')::numeric, (p_signal->>'reference_entry')::numeric,
     (p_signal->>'stop_loss')::numeric, (p_signal->>'take_profit')::numeric,
     (p_signal->>'stop_pct')::numeric, (p_signal->>'target_r')::numeric,

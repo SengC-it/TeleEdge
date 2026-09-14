@@ -196,6 +196,85 @@ test('prepared runs can only bind the generated runtime fingerprint', () => {
   assert.throws(() => createPreparedRunFromRuntime({runtimeFingerprint: {...adaptRuntime(), v8StrategySha256: 'client-value'}, baseMainSha: 'main', strategyFreezeManifestSha256: 'freeze'}), /generated runtime fingerprint/);
 });
 
+function splitSqlExpressions(source) {
+  const expressions = [];
+  let start = 0;
+  let depth = 0;
+  let quoted = false;
+  for (let index = 0; index < source.length; index++) {
+    const character = source[index];
+    if (quoted) {
+      if (character === "'" && source[index + 1] === "'") {
+        index++;
+      } else if (character === "'") {
+        quoted = false;
+      }
+      continue;
+    }
+    if (character === "'") {
+      quoted = true;
+    } else if (character === '(') {
+      depth++;
+    } else if (character === ')') {
+      depth--;
+    } else if (character === ',' && depth === 0) {
+      expressions.push(source.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  const last = source.slice(start).trim();
+  if (last) expressions.push(last);
+  return expressions;
+}
+
+function loadRecordSignalInsert() {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const sql = fs.readFileSync(path.join(root, 'supabase/migrations/20260910100000_teleeg_frozen_forward_validation.sql'), 'utf8');
+  const functionStart = sql.indexOf('create or replace function public.forward_validation_record_signal');
+  const nextFunction = sql.indexOf('create or replace function public.forward_validation_record_outcome', functionStart);
+  const functionBody = sql.slice(functionStart, nextFunction);
+  const match = functionBody.match(/insert\s+into\s+public\.forward_validation_signals\s*\(([\s\S]*?)\)\s*values\s*\(([\s\S]*?)\)\s*on\s+conflict\s*\(dedupe_key\)/i);
+  assert.ok(match, 'forward_validation_record_signal INSERT must be structurally parseable');
+  return {
+    functionBody,
+    columns: splitSqlExpressions(match[1]),
+    values: splitSqlExpressions(match[2]),
+  };
+}
+
+test('migration SQL smoke keeps record_signal INSERT columns and values aligned', () => {
+  const {columns, values} = loadRecordSignalInsert();
+  assert.equal(columns.length, values.length);
+  assert.deepEqual(columns.slice(0, 6), ['id', 'run_id', 'strategy', 'strategy_hash', 'production_semantic_hash', 'origin']);
+  assert.equal(values[3].replace(/\s+/g, ''), "p_signal->>'strategy_hash'");
+  assert.equal(values[4].replace(/\s+/g, ''), 'p_runtime_production_semantic_sha256');
+  assert.equal(values[5].replace(/\s+/g, ''), "'forward-validation'");
+  assert.equal(values.some(value => value.replace(/\s+/g, '') === 'p_runtime_strategy_hash'), false);
+});
+
+test('record_signal RPC fixture maps runtime hashes and preserves mutation invalidation', () => {
+  const {functionBody, columns, values} = loadRecordSignalInsert();
+  const fixture = {
+    signal: {strategy_hash: RUNTIME_V75_STRATEGY_SHA256},
+    runtimeStrategyHash: RUNTIME_V75_STRATEGY_SHA256,
+    runtimeProductionSemanticHash: RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+  };
+  const mapped = Object.fromEntries(columns.slice(3, 6).map((column, offset) => {
+    const expression = values[offset + 3].replace(/\s+/g, '');
+    if (expression === "p_signal->>'strategy_hash'") return [column, fixture.signal.strategy_hash];
+    if (expression === 'p_runtime_production_semantic_sha256') return [column, fixture.runtimeProductionSemanticHash];
+    if (expression === "'forward-validation'") return [column, 'forward-validation'];
+    throw new Error('unexpected record_signal fixture expression: ' + expression);
+  }));
+  assert.deepEqual(mapped, {
+    strategy_hash: fixture.runtimeStrategyHash,
+    production_semantic_hash: fixture.runtimeProductionSemanticHash,
+    origin: 'forward-validation',
+  });
+  assert.match(functionBody, /\(p_signal->>'strategy_hash'\) is distinct from p_runtime_strategy_hash/);
+  assert.match(functionBody, /reason', 'STRATEGY_MUTATION'/);
+});
+
 test('forward RPC receives explicit runtime validation parameters', () => {
   const sql = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase/migrations/20260910100000_teleeg_frozen_forward_validation.sql'), 'utf8');
   assert.match(sql, /p_runtime_strategy_hash text/);
