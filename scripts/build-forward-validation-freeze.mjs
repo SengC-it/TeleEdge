@@ -19,7 +19,7 @@ Status: **PREPARED only**. Phase 1 does not activate a run, apply a migration, o
 
 1. Apply the additive forward-validation migration.
 2. Deploy the reviewed application/functions and run the smoke checks.
-3. Verify \`v75StrategySha256\`, \`v8StrategySha256\`, and \`strategyFreezeManifestSha256\` against the freeze manifest.
+3. Verify \`v75StrategySha256\`, \`v8StrategySha256\`, \`productionWorkerSha256\`, and \`strategyFreezeManifestSha256\` against the freeze manifest.
 4. Create a \`PREPARED\` run with the deployment reference.
 5. Use an explicit authenticated activation operation; record \`startedAt\`.
 6. Begin immutable signal collection. Only observations at or after \`startedAt\` are eligible; historical backfill is rejected.
@@ -36,4 +36,4 @@ The final evaluation requires both 90 elapsed days and 50 combined independent c
 
 Research/admin export contains the run manifest, immutable signals, system-paper outcomes, metrics, manual decision ledger, and audit history. Manual ledger edits never change system-paper results.\n`;
 fs.writeFileSync(path.join(APP_DIR, 'reports', 'forward-validation-runbook.md'), runbook);
-console.log(JSON.stringify({status: manifest.status, baseMainSha: manifest.baseMainSha, v75StrategySha256: manifest.v75StrategySha256, v8StrategySha256: manifest.v8StrategySha256, strategyFreezeManifestSha256: manifest.strategyFreezeManifestSha256}));
+console.log(JSON.stringify({status: manifest.status, baseMainSha: manifest.baseMainSha, v75StrategySha256: manifest.v75StrategySha256, v8StrategySha256: manifest.v8StrategySha256, productionWorkerSha256: manifest.productionWorkerSha256, strategyFreezeManifestSha256: manifest.strategyFreezeManifestSha256}));

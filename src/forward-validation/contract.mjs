@@ -65,6 +65,7 @@ export function createPreparedRun({
   baseMainSha,
   v75StrategySha256,
   v8StrategySha256,
+  productionWorkerSha256 = null,
   strategyFreezeManifestSha256,
   deploymentReference = null,
   notes = 'Prepared only; explicit activation is required.',
@@ -85,6 +86,7 @@ export function createPreparedRun({
     baseMainSha,
     v75StrategySha256,
     v8StrategySha256,
+    productionWorkerSha256,
     strategyFreezeManifestSha256,
     deploymentReference,
     notes,
@@ -106,9 +108,10 @@ export function invalidateRun(run, reason, {at = Date.now()} = {}) {
   return {...run, status: 'INVALIDATED', invalidatedAt: iso(at), invalidationReason: reason};
 }
 
-export function enforceStrategyHashes(run, {v75StrategySha256, v8StrategySha256, at = Date.now()} = {}) {
+export function enforceStrategyHashes(run, {v75StrategySha256, v8StrategySha256, productionWorkerSha256 = null, at = Date.now()} = {}) {
   if (run.status !== 'ACTIVE') return run;
-  if (run.v75StrategySha256 !== v75StrategySha256 || run.v8StrategySha256 !== v8StrategySha256) {
+  if (run.v75StrategySha256 !== v75StrategySha256 || run.v8StrategySha256 !== v8StrategySha256
+    || (run.productionWorkerSha256 && productionWorkerSha256 && run.productionWorkerSha256 !== productionWorkerSha256)) {
     return invalidateRun(run, 'STRATEGY_MUTATION', {at});
   }
   return run;
@@ -124,9 +127,9 @@ export function assertImmutableSignalUpdate(previous, next) {
 function priorSameEpisode(signals, signal) {
   const time = numberTime(signal.signalTime);
   return signals
-    .filter(row => row.dataQualityStatus !== 'INVALID_SIGNAL_DATA' && row.symbol === signal.symbol && row.side === signal.side)
-    .filter(row => Math.abs(numberTime(row.signalTime) - time) < COOLDOWN_MS)
-    .sort((a, b) => numberTime(a.signalTime) - numberTime(b.signalTime) || String(a.id).localeCompare(String(b.id)))[0] || null;
+    .filter(row => (row.dataQualityStatus ?? row.data_quality_status) !== 'INVALID_SIGNAL_DATA' && row.symbol === signal.symbol && row.side === signal.side)
+    .filter(row => numberTime(row.signalTime ?? row.signal_time) <= time && time - numberTime(row.signalTime ?? row.signal_time) < COOLDOWN_MS)
+    .sort((a, b) => numberTime(a.signalTime ?? a.signal_time) - numberTime(b.signalTime ?? b.signal_time) || String(a.id).localeCompare(String(b.id)))[0] || null;
 }
 
 export function buildForwardSignal(signal, {run, existingSignals = []} = {}) {
@@ -134,8 +137,12 @@ export function buildForwardSignal(signal, {run, existingSignals = []} = {}) {
   const fields = requiredSignalFields(signal);
   const dataQualityStatus = fields.every(([, valid]) => valid) ? 'VALID' : 'INVALID_SIGNAL_DATA';
   const observedAt = numberTime(signal.observedAt);
-  if (Number.isFinite(observedAt) && observedAt < numberTime(run.startedAt)) throw new Error('historical backfill is forbidden');
   const signalTime = numberTime(signal.signalTime);
+  const runStart = numberTime(run.startedAt);
+  if ((Number.isFinite(observedAt) && observedAt < runStart)
+    || (Number.isFinite(signalTime) && signalTime < runStart)) throw new Error('historical backfill is forbidden');
+  const expectedStrategyHash = signal.strategy === 'V8' ? run.v8StrategySha256 : run.v75StrategySha256;
+  if (signal.strategyHash && expectedStrategyHash && signal.strategyHash !== expectedStrategyHash) throw new Error('STRATEGY_MUTATION');
   const id = signal.id || deterministicSignalKey({...signal, signalTime});
   const built = {
     id,

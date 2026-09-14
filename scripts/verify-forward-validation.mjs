@@ -3,7 +3,7 @@ import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {APP_DIR} from '../src/config.mjs';
 import {auditNoOrderPaths} from '../src/forward-validation/no-order-audit.mjs';
-import {auditProductionIsolation, auditStrategyFreeze} from '../src/forward-validation/freeze.mjs';
+import {auditProductionIsolation, auditProductionSemanticIsolation, auditStrategyFreeze} from '../src/forward-validation/freeze.mjs';
 
 const changed = (() => {
   try {
@@ -17,6 +17,7 @@ const freeze = JSON.parse(fs.readFileSync(path.join(APP_DIR, 'reports', 'forward
 const noOrder = auditNoOrderPaths(APP_DIR);
 const strategy = auditStrategyFreeze(changed);
 const isolation = auditProductionIsolation(changed);
-const result = {status: noOrder.pass && strategy.pass && isolation.pass ? 'PASS' : 'FAIL', repoNoOrderAudit: noOrder, strategyFreezeAudit: strategy, productionBehaviorIsolation: isolation, changedFiles: changed, freezeManifest: freeze};
+const semanticIsolation = auditProductionSemanticIsolation(APP_DIR, changed);
+const result = {status: noOrder.pass && strategy.pass && isolation.pass && semanticIsolation.pass ? 'PASS' : 'FAIL', repoNoOrderAudit: noOrder, strategyFreezeAudit: strategy, productionBehaviorIsolation: isolation, strategySemanticsUnchanged: semanticIsolation, changedFiles: changed, freezeManifest: freeze};
 console.log(JSON.stringify(result, null, 2));
 if (result.status !== 'PASS') process.exitCode = 1;

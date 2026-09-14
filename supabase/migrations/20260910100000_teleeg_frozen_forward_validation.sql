@@ -13,6 +13,7 @@ create table if not exists public.forward_validation_runs (
   base_main_sha text not null,
   v75_strategy_sha256 text not null,
   v8_strategy_sha256 text not null,
+  production_worker_sha256 text,
   strategy_freeze_manifest_sha256 text not null,
   deployment_reference text,
   notes text,
@@ -171,6 +172,138 @@ begin
   end if;
 end;
 $$;
+
+-- The production bridge uses these RPCs instead of direct table writes. They
+-- are intentionally additive and fail closed for inactive/mutated runs.
+create or replace function public.forward_validation_record_signal(p_run_id text, p_signal jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_run public.forward_validation_runs%rowtype;
+  v_existing public.forward_validation_signals%rowtype;
+  v_prior public.forward_validation_signals%rowtype;
+  v_id text := nullif(p_signal->>'id', '');
+  v_strategy text := p_signal->>'strategy';
+  v_signal_time timestamptz := (p_signal->>'signal_time')::timestamptz;
+  v_observed_at timestamptz := (p_signal->>'observed_at')::timestamptz;
+  v_dedupe_key text := nullif(p_signal->>'dedupe_key', '');
+  v_independent_id text;
+  v_independent boolean;
+  v_duplicate_of text;
+begin
+  select * into v_run from public.forward_validation_runs where run_id = p_run_id for update;
+  if not found or v_run.status <> 'ACTIVE' then
+    raise exception 'forward validation run is not ACTIVE';
+  end if;
+  if v_run.started_at is null then raise exception 'ACTIVE forward validation run has no started_at'; end if;
+  if v_strategy not in ('V7.5', 'V8') then raise exception 'invalid forward strategy'; end if;
+  if (v_strategy = 'V7.5' and p_signal->>'strategy_hash' <> v_run.v75_strategy_sha256)
+    or (v_strategy = 'V8' and p_signal->>'strategy_hash' <> v_run.v8_strategy_sha256) then
+    update public.forward_validation_runs
+      set status = 'INVALIDATED', invalidated_at = now(), invalidation_reason = 'STRATEGY_MUTATION', updated_at = now()
+      where run_id = p_run_id;
+    return jsonb_build_object('recorded', false, 'invalidated', true, 'reason', 'STRATEGY_MUTATION');
+  end if;
+  if v_signal_time is null or v_observed_at is null
+    or v_signal_time < v_run.started_at or v_observed_at < v_run.started_at or v_observed_at < v_signal_time then
+    raise exception 'historical backfill is forbidden';
+  end if;
+  if v_dedupe_key is null then raise exception 'forward signal dedupe key is required'; end if;
+  perform pg_advisory_xact_lock(hashtext('forward-validation|' || p_run_id || '|' || (p_signal->>'symbol') || '|' || (p_signal->>'side')));
+
+  select * into v_existing from public.forward_validation_signals
+    where dedupe_key = v_dedupe_key;
+  if found then
+    return jsonb_build_object('recorded', true, 'duplicate', true,
+      'signal_id', v_existing.id, 'independent', v_existing.independent,
+      'independent_id', v_existing.independent_id, 'overlap_group_id', v_existing.overlap_group_id);
+  end if;
+
+  select * into v_prior from public.forward_validation_signals
+    where run_id = p_run_id
+      and symbol = p_signal->>'symbol'
+      and side = p_signal->>'side'
+      and data_quality_status = 'VALID'
+      and signal_time <= v_signal_time
+      and signal_time > v_signal_time - interval '72 hours'
+    order by signal_time desc, id asc limit 1;
+  v_independent := not found;
+  v_independent_id := coalesce(v_prior.independent_id,
+    md5('independent|' || p_run_id || '|' || (p_signal->>'symbol') || '|' || (p_signal->>'side') || '|' || v_signal_time::text));
+  v_duplicate_of := case when v_independent then null else v_prior.id end;
+  insert into public.forward_validation_signals (
+    id, run_id, strategy, strategy_hash, origin, symbol, side, signal_time, observed_at,
+    signal_price, reference_entry, stop_loss, take_profit, stop_pct, target_r,
+    market_regime, score, confidence, funding, context, email_eligible, email_sent,
+    overlap_group_id, dedupe_key, independent_id, independent, duplicate_of, data_quality_status
+  ) values (
+    coalesce(v_id, v_dedupe_key), p_run_id, v_strategy, p_signal->>'strategy_hash',
+    'forward-validation', p_signal->>'symbol', p_signal->>'side', v_signal_time, v_observed_at,
+    (p_signal->>'signal_price')::numeric, (p_signal->>'reference_entry')::numeric,
+    (p_signal->>'stop_loss')::numeric, (p_signal->>'take_profit')::numeric,
+    (p_signal->>'stop_pct')::numeric, (p_signal->>'target_r')::numeric,
+    p_signal->>'market_regime', (p_signal->>'score')::numeric, (p_signal->>'confidence')::numeric,
+    p_signal->'funding', p_signal->'context', coalesce((p_signal->>'email_eligible')::boolean, false),
+    coalesce((p_signal->>'email_sent')::boolean, false), p_signal->>'overlap_group_id', v_dedupe_key,
+    v_independent_id, v_independent, v_duplicate_of, 'VALID'
+  ) on conflict (dedupe_key) do nothing;
+  select * into v_existing from public.forward_validation_signals where dedupe_key = v_dedupe_key;
+  return jsonb_build_object('recorded', true, 'duplicate', v_existing.id <> coalesce(v_id, v_dedupe_key),
+    'signal_id', v_existing.id, 'independent', v_existing.independent,
+    'independent_id', v_existing.independent_id, 'overlap_group_id', v_existing.overlap_group_id);
+end;
+$$;
+
+create or replace function public.forward_validation_record_outcome(p_run_id text, p_signal_id text, p_outcome jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_catalog
+as $$
+declare
+  v_signal public.forward_validation_signals%rowtype;
+  v_existing public.forward_validation_outcomes%rowtype;
+  v_status text := coalesce(p_outcome->>'status', 'open');
+begin
+  select * into v_signal from public.forward_validation_signals
+    where id = p_signal_id and run_id = p_run_id;
+  if not found then raise exception 'forward signal not found'; end if;
+  if v_status not in ('open', 'closed') then raise exception 'invalid forward outcome status'; end if;
+  insert into public.forward_validation_outcomes (
+    signal_id, run_id, position_id, opened_at, entry_price, closed_at, exit_price, exit_reason,
+    gross_pnl, fees_cost, funding, net_pnl, gross_r, net_r, status, settled_at
+  ) values (
+    p_signal_id, p_run_id, p_outcome->>'position_id', (p_outcome->>'opened_at')::timestamptz,
+    (p_outcome->>'entry_price')::numeric, (p_outcome->>'closed_at')::timestamptz,
+    (p_outcome->>'exit_price')::numeric, p_outcome->>'exit_reason', (p_outcome->>'gross_pnl')::numeric,
+    (p_outcome->>'fees_cost')::numeric, (p_outcome->>'funding')::numeric, (p_outcome->>'net_pnl')::numeric,
+    (p_outcome->>'gross_r')::numeric, (p_outcome->>'net_r')::numeric, v_status,
+    (p_outcome->>'settled_at')::timestamptz
+  ) on conflict (signal_id) do update set
+    position_id = coalesce(public.forward_validation_outcomes.position_id, excluded.position_id),
+    closed_at = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.closed_at else public.forward_validation_outcomes.closed_at end,
+    exit_price = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.exit_price else public.forward_validation_outcomes.exit_price end,
+    exit_reason = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.exit_reason else public.forward_validation_outcomes.exit_reason end,
+    gross_pnl = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.gross_pnl else public.forward_validation_outcomes.gross_pnl end,
+    fees_cost = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.fees_cost else public.forward_validation_outcomes.fees_cost end,
+    funding = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.funding else public.forward_validation_outcomes.funding end,
+    net_pnl = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.net_pnl else public.forward_validation_outcomes.net_pnl end,
+    gross_r = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.gross_r else public.forward_validation_outcomes.gross_r end,
+    net_r = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.net_r else public.forward_validation_outcomes.net_r end,
+    status = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then 'closed' else public.forward_validation_outcomes.status end,
+    settled_at = case when public.forward_validation_outcomes.status = 'open' and excluded.status = 'closed' then excluded.settled_at else public.forward_validation_outcomes.settled_at end;
+  select * into v_existing from public.forward_validation_outcomes where signal_id = p_signal_id;
+  return jsonb_build_object('recorded', true, 'signal_id', p_signal_id, 'status', v_existing.status, 'closed_at', v_existing.closed_at);
+end;
+$$;
+
+revoke all on function public.forward_validation_record_signal(text, jsonb) from public, anon, authenticated;
+grant execute on function public.forward_validation_record_signal(text, jsonb) to service_role;
+revoke all on function public.forward_validation_record_outcome(text, text, jsonb) from public, anon, authenticated;
+grant execute on function public.forward_validation_record_outcome(text, text, jsonb) to service_role;
 
 alter table public.forward_validation_runs enable row level security;
 alter table public.forward_validation_signals enable row level security;

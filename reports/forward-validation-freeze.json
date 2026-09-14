@@ -1,8 +1,9 @@
 {
   "baseMainSha": "21d2b8a1cdfed3e84153dce8491ed8448128727d",
-  "v75StrategySha256": "a336dddad5ee92565faf5df9ee1b93670dc16d76b58f1230f615b2e829ca49cd",
-  "v8StrategySha256": "b31cfcbddc88cfbd5c4895536904f8abadd4cbed238b6bb0252dd6ec8d28847b",
-  "strategyFreezeManifestSha256": "ec031475b4d4331e0655758b23a9cf894f4761cb386661bea6da6a2727648daa",
+  "v75StrategySha256": "2150c7bf4591260bc786803466ef18b4d68a63696d40c6bf392a9d5084d6b757",
+  "v8StrategySha256": "e274a7e68e1d831684f63fa69e31b3e966a887c0d22d249957db05c1d7ad3aa8",
+  "productionWorkerSha256": "8060b2857d5caa7519458bfd299b958d82a444703f22509f1da306451f395461",
+  "strategyFreezeManifestSha256": "77af81870783399892bfc3b23c92286e96048143f4589b2a30cdd8f20214718e",
   "v75Files": [
     {
       "path": "src/config.mjs",
@@ -19,6 +20,38 @@
     {
       "path": "src/strategy.mjs",
       "sha256": "b913ef35f484873c8bc2562a62db10ae5729d950f4a2218d2f303e44fc4145a0"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/auth.mjs",
+      "sha256": "d6e50a1310eb7ddafa0d0a591188528ac4e9da468250e899e804282a2dce9b39"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/finalize.mjs",
+      "sha256": "8ad1626e6ca82a35ad490efcbb88ae0cc9251f6fb2434eb14ca8323acba98854"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/funnel.mjs",
+      "sha256": "45f21efb4ccd99562debb809d0260338f221b7c29a810d9b063f881f9105add7"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/forward-validation.mjs",
+      "sha256": "2fb24b2360683f229fd0c632b04a3a47e7f3db84ffc8a9e64091cebdf6e532e1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/index.ts",
+      "sha256": "344881069aaacaa26822b4b6d1dd165360bedf9c59ffe6340ccb19cb71f696a7"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/risk.mjs",
+      "sha256": "471f56fc6d7e6c349077498b08cc097899e80bb4f4cc96267fbb7dc5c23ead79"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/strategy.mjs",
+      "sha256": "6c287388738ec9795ae7ffc1f4026e6726aa7f54de3956c769118db22f0c7541"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/v8-shadow.mjs",
+      "sha256": "093fe0f210e72b1aa00779ab5924751d7d9a0cdabe35539e517f02fddcd595e3"
     }
   ],
   "v8Files": [
@@ -33,6 +66,72 @@
     {
       "path": "src/v8-shadow.mjs",
       "sha256": "e5b1456397c6aaa44f6daae9dc98085b6705dce6a915eed4daf6d2faaa2e3e37"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/auth.mjs",
+      "sha256": "d6e50a1310eb7ddafa0d0a591188528ac4e9da468250e899e804282a2dce9b39"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/finalize.mjs",
+      "sha256": "8ad1626e6ca82a35ad490efcbb88ae0cc9251f6fb2434eb14ca8323acba98854"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/funnel.mjs",
+      "sha256": "45f21efb4ccd99562debb809d0260338f221b7c29a810d9b063f881f9105add7"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/forward-validation.mjs",
+      "sha256": "2fb24b2360683f229fd0c632b04a3a47e7f3db84ffc8a9e64091cebdf6e532e1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/index.ts",
+      "sha256": "344881069aaacaa26822b4b6d1dd165360bedf9c59ffe6340ccb19cb71f696a7"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/risk.mjs",
+      "sha256": "471f56fc6d7e6c349077498b08cc097899e80bb4f4cc96267fbb7dc5c23ead79"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/strategy.mjs",
+      "sha256": "6c287388738ec9795ae7ffc1f4026e6726aa7f54de3956c769118db22f0c7541"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/v8-shadow.mjs",
+      "sha256": "093fe0f210e72b1aa00779ab5924751d7d9a0cdabe35539e517f02fddcd595e3"
+    }
+  ],
+  "productionWorkerFiles": [
+    {
+      "path": "supabase/functions/teleeg-worker/auth.mjs",
+      "sha256": "d6e50a1310eb7ddafa0d0a591188528ac4e9da468250e899e804282a2dce9b39"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/finalize.mjs",
+      "sha256": "8ad1626e6ca82a35ad490efcbb88ae0cc9251f6fb2434eb14ca8323acba98854"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/funnel.mjs",
+      "sha256": "45f21efb4ccd99562debb809d0260338f221b7c29a810d9b063f881f9105add7"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/forward-validation.mjs",
+      "sha256": "2fb24b2360683f229fd0c632b04a3a47e7f3db84ffc8a9e64091cebdf6e532e1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/index.ts",
+      "sha256": "344881069aaacaa26822b4b6d1dd165360bedf9c59ffe6340ccb19cb71f696a7"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/risk.mjs",
+      "sha256": "471f56fc6d7e6c349077498b08cc097899e80bb4f4cc96267fbb7dc5c23ead79"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/strategy.mjs",
+      "sha256": "6c287388738ec9795ae7ffc1f4026e6726aa7f54de3956c769118db22f0c7541"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/v8-shadow.mjs",
+      "sha256": "093fe0f210e72b1aa00779ab5924751d7d9a0cdabe35539e517f02fddcd595e3"
     }
   ],
   "validationRules": {
@@ -58,5 +157,5 @@
     "strategyHashesUnchanged": true
   },
   "status": "PREPARED",
-  "createdAt": "2026-09-10T02:17:01.994Z"
+  "createdAt": "2026-09-14T06:03:28.699Z"
 }

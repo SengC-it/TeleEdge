@@ -8,8 +8,18 @@ function sameToken(supplied, expected) {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+export function getHeader(request, name) {
+  const headers = request?.headers;
+  if (headers && typeof headers.get === 'function') return headers.get(name) || '';
+  if (!headers || typeof headers !== 'object') return '';
+  const wanted = name.toLowerCase();
+  const key = Object.keys(headers).find(candidate => candidate.toLowerCase() === wanted);
+  const value = key ? headers[key] : '';
+  return Array.isArray(value) ? value[0] || '' : String(value || '');
+}
+
 export function authorizeForwardRequest(request, expected = process.env.TELEEDGE_REVIEWS_TOKEN || '') {
-  return sameToken(request.headers.get('x-teleeg-reviews-token') || '', expected);
+  return sameToken(getHeader(request, 'x-teleeg-reviews-token'), expected);
 }
 
 async function supabaseRequest(pathname, options = {}) {
@@ -41,11 +51,12 @@ export default async function handler(request, response) {
     const runs = await supabaseRequest('forward_validation_runs?select=*&order=prepared_at.desc&limit=1');
     const run = runs[0] || null;
     if (!run) return response.status(200).json({ok: true, run: null, signals: [], outcomes: [], manualDecisions: []});
-    const [signals, outcomes] = await Promise.all([
+    const [signals, outcomes, manualDecisions] = await Promise.all([
       supabaseRequest(`forward_validation_signals?run_id=eq.${encodeURIComponent(run.run_id)}&select=*`),
       supabaseRequest(`forward_validation_outcomes?run_id=eq.${encodeURIComponent(run.run_id)}&select=*`),
+      supabaseRequest(`forward_manual_decisions?run_id=eq.${encodeURIComponent(run.run_id)}&select=*`),
     ]);
-    return response.status(200).json({ok: true, run, signals, outcomes, metrics: calculateForwardMetrics(signals, outcomes)});
+    return response.status(200).json({ok: true, run, signals, outcomes, manualDecisions, metrics: calculateForwardMetrics(signals, outcomes)});
   } catch (error) {
     return response.status(502).json({ok: false, error: String(error)});
   }

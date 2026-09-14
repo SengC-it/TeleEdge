@@ -6,10 +6,10 @@ import {buildForwardSignal, recordAdvisoryWithForwardLogging} from './contract.m
  * The production scan/email path can inject this bridge after the additive
  * migration and an explicit run activation; Phase 1 does not activate it.
  */
-export async function recordAcceptedAdvisory({run, advisory, existingSignals = [], persist}) {
+export async function recordAcceptedAdvisory({run, advisory, existingSignals = [], persist, strategy = advisory?.strategy, observedAt = Date.now()}) {
   if (run?.status !== 'ACTIVE') return {recorded: false, reason: 'no-active-forward-run', advisorySuppressed: false};
   const result = await recordAdvisoryWithForwardLogging(advisory, async input => {
-    const signal = buildForwardSignal(input, {run, existingSignals});
+    const signal = buildForwardSignal({...input, strategy: strategy || input.strategy}, {run, existingSignals});
     if (!persist) return signal;
     return persist(signal);
   });

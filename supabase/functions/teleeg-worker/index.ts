@@ -15,6 +15,7 @@ import {classifyFinalizeFailure} from './finalize.mjs';
 import {authorizeWorkerToken} from './auth.mjs';
 import {V8_SHADOW_VERSION, generateV8ShadowCandidates, rankV8ShadowCandidates} from './v8-shadow.mjs';
 import {allocateResearchRisk} from './risk.mjs';
+import {recordForwardAccepted, recordForwardOutcome} from './forward-validation.mjs';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const ADMIN_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -490,6 +491,7 @@ async function runFinalize(now: number, cycle: number, v8Shadow: Record<string, 
       if (decision.accepted) {
         accepted++;
         funnel.record({stage: 'accepted', passed: true, ...context});
+        await recordForwardAccepted({db, rpc, advisory: {...candidate, strategy_hash: candidate.strategy_hash, fill_price: fillPrice}, strategy: 'V7.5', observedAt: Date.now()});
       } else {
         await rejectFinalizeCandidate(candidate, decision.reason || 'acceptance-rpc-error', reasons, funnel);
       }
@@ -636,6 +638,7 @@ async function runV8ShadowFinalize(now: number, cycle: number) {
         notificationErrors++;
         console.error('TeleEdge V8 advisory alert queue failed after shadow acceptance', {signalId: candidate.signal_id, error: String(error)});
       }
+      await recordForwardAccepted({db, rpc, advisory: {...candidate, fill_price: filledRisk.fillPrice}, strategy: 'V8', observedAt: Date.now()});
       openPositions.push({market_id: candidate.market_id, side: candidate.side, risk_usdt: allocation.riskUsdt, features: candidate.features ?? {}});
       accepted++;
     } catch (error) {
@@ -720,6 +723,7 @@ async function monitorPosition(position: any, now: number) {
     p_net_pnl: net,
     p_net_r: net / +position.risk_usdt,
   });
+  await recordForwardOutcome({db, rpc, position, outcome: {status: 'closed', closed_at: iso(touch.time), exit_price: touch.price, exit_reason: touch.reason, gross_pnl: gross, fees_cost: cost, funding: fundingPnl, net_pnl: net, net_r: net / +position.risk_usdt}});
   return {closed: Boolean(settled), reason: touch.reason};
 }
 
@@ -790,6 +794,7 @@ async function runV8ShadowMonitor(now: number) {
           last_checked_at: iso(touch.time), updated_at: new Date().toISOString(),
         },
       });
+      await recordForwardOutcome({db, rpc, position, outcome: {status: 'closed', closed_at: iso(touch.time), exit_price: touch.price, exit_reason: touch.reason, gross_pnl: gross, fees_cost: cost, funding: fundingPnl, net_pnl: net, net_r: Number(position.risk_usdt) ? net / Number(position.risk_usdt) : null}});
       return {closed: true, net};
     } catch (error) {
       return {closed: false, error: String(error)};

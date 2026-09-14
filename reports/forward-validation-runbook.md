@@ -6,7 +6,7 @@ Status: **PREPARED only**. Phase 1 does not activate a run, apply a migration, o
 
 1. Apply the additive forward-validation migration.
 2. Deploy the reviewed application/functions and run the smoke checks.
-3. Verify `v75StrategySha256`, `v8StrategySha256`, and `strategyFreezeManifestSha256` against the freeze manifest.
+3. Verify `v75StrategySha256`, `v8StrategySha256`, `productionWorkerSha256`, and `strategyFreezeManifestSha256` against the freeze manifest.
 4. Create a `PREPARED` run with the deployment reference.
 5. Use an explicit authenticated activation operation; record `startedAt`.
 6. Begin immutable signal collection. Only observations at or after `startedAt` are eligible; historical backfill is rejected.
