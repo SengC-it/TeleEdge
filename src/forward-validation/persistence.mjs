@@ -20,6 +20,7 @@ export function toSignalRpcPayload(signal) {
     strategy_hash: signal.strategyHash,
     origin: signal.origin,
     symbol: signal.symbol,
+    market_id: signal.marketId,
     side: signal.side,
     signal_time: signal.signalTime,
     observed_at: signal.observedAt,

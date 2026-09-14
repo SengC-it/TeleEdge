@@ -30,6 +30,7 @@ create table if not exists public.forward_validation_signals (
   strategy_hash text not null,
   origin text not null default 'forward-validation' check (origin = 'forward-validation'),
   symbol text not null,
+  market_id text,
   side text not null check (side in ('long', 'short')),
   signal_time timestamptz not null,
   observed_at timestamptz not null,
@@ -235,13 +236,13 @@ begin
     md5('independent|' || p_run_id || '|' || (p_signal->>'symbol') || '|' || (p_signal->>'side') || '|' || v_signal_time::text));
   v_duplicate_of := case when v_independent then null else v_prior.id end;
   insert into public.forward_validation_signals (
-    id, run_id, strategy, strategy_hash, origin, symbol, side, signal_time, observed_at,
+    id, run_id, strategy, strategy_hash, origin, symbol, market_id, side, signal_time, observed_at,
     signal_price, reference_entry, stop_loss, take_profit, stop_pct, target_r,
     market_regime, score, confidence, funding, context, email_eligible, email_sent,
     overlap_group_id, dedupe_key, independent_id, independent, duplicate_of, data_quality_status
   ) values (
     coalesce(v_id, v_dedupe_key), p_run_id, v_strategy, p_signal->>'strategy_hash',
-    'forward-validation', p_signal->>'symbol', p_signal->>'side', v_signal_time, v_observed_at,
+    'forward-validation', p_signal->>'symbol', p_signal->>'market_id', p_signal->>'side', v_signal_time, v_observed_at,
     (p_signal->>'signal_price')::numeric, (p_signal->>'reference_entry')::numeric,
     (p_signal->>'stop_loss')::numeric, (p_signal->>'take_profit')::numeric,
     (p_signal->>'stop_pct')::numeric, (p_signal->>'target_r')::numeric,

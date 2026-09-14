@@ -151,6 +151,7 @@ export function buildForwardSignal(signal, {run, existingSignals = []} = {}) {
     strategyHash: signal.strategyHash ?? null,
     origin: signal.origin || 'forward-validation',
     symbol: signal.symbol ?? null,
+    marketId: signal.marketId ?? signal.market_id ?? null,
     side: signal.side ?? null,
     signalTime: iso(signalTime),
     observedAt: iso(observedAt),

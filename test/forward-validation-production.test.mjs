@@ -32,6 +32,7 @@ test('production adapter maps actual V7.5 and V8 worker shapes and active-run ha
   assert.equal(v75.strategy, 'V7.5');
   assert.equal(v75.strategyHash, HASH75);
   assert.equal(v75.symbol, 'BTC');
+  assert.equal(v75.marketId, 'BTCUSDT');
   assert.equal(v75.referenceEntry, 100);
   assert.equal(v75.stopLoss, 98);
   assert.equal(v75.takeProfit, 104);
@@ -45,6 +46,7 @@ test('worker adapter accepts the persisted candidate shape without a second sign
   assert.equal(row.strategy, 'V7.5');
   assert.equal(row.strategy_hash, HASH75);
   assert.equal(row.symbol, 'BTC');
+  assert.equal(row.market_id, 'BTCUSDT');
   assert.equal(row.signal_time, '2026-04-01T00:00:00Z');
   assert.equal(row.reference_entry, 100);
   assert.equal(row.stop_loss, 98);

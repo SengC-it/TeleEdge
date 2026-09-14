@@ -58,6 +58,7 @@ export function adaptWorkerAdvisory(input, {run, strategy, observedAt = Date.now
     strategy_hash: suppliedHash || expectedHash,
     origin: 'forward-validation',
     symbol: first(input, 'symbol', 'baseAsset') || marketId,
+    market_id: marketId,
     side: first(input, 'side'),
     signal_time: signalTime,
     observed_at: first(input, 'observed_at', 'observedAt') || new Date(observedAt).toISOString(),
