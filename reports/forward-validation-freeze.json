@@ -1,0 +1,154 @@
+{
+  "baseMainSha": "21d2b8a1cdfed3e84153dce8491ed8448128727d",
+  "v75StrategySha256": "b9fdd4c449059f537a75c41c70781ac758f36cf5f23430df43dffc7723898c9a",
+  "v8StrategySha256": "ab1ce418fc5ef9b804e5ca555daf6f03468df73ffee11bd465575db152758ac8",
+  "productionWorkerSha256": "5fc91e69b8c13b299e58a63b578600ca6e3c9390b4076ffc87b085cd8653e51f",
+  "productionSemanticSha256": "5fc91e69b8c13b299e58a63b578600ca6e3c9390b4076ffc87b085cd8653e51f",
+  "strategyFreezeManifestSha256": "bd43cf0740219ba5ed2ecbba5deb10ef42ddcd692a6af95f048e1898d3cdb21d",
+  "v75Files": [
+    {
+      "path": "src/config.mjs",
+      "sha256": "280229c281c162d97fb7eb1379807c17e826bb0056f2315d67e06e7184e9b79a"
+    },
+    {
+      "path": "src/fill-risk.mjs",
+      "sha256": "2d53c9d59688058ea0faf653006e38242a77909133ee303c4727ba6a755eb883"
+    },
+    {
+      "path": "src/portfolio.mjs",
+      "sha256": "1329e309a9a45b1c13c54e23c63414fe940fd59ce39731ed89d33d4c0d7a2695"
+    },
+    {
+      "path": "src/strategy.mjs",
+      "sha256": "4a9fcdff7cfd961df8dc508048ed80b097f68fe8b9c2cb4f8c18807ff993ee16"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/auth.mjs",
+      "sha256": "aab6e039b4504c1a0b76e292461c4966091dde07738101320db15968fcf83409"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/finalize.mjs",
+      "sha256": "0cb0f8cf4f9c332efbd752ab7bb599e58d12f45c21f66910ea8359443c19836c"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/funnel.mjs",
+      "sha256": "dbf76d9e81686035efaacfc269ac15b90f4935f98164accbb370c21c3fef26fd"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/index.ts",
+      "sha256": "22b066dac0f4909ad3fc053a2978f9a4d2a089b53f9e90e4654a0251989bffb1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/risk.mjs",
+      "sha256": "ab45faf7ba55051272122434d82276df533254fb24a2229781f151e8bf53ec41"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/strategy.mjs",
+      "sha256": "3f1a332f2355893d32b8f806947442e04a3171b1d14b1384f5ebcf06802e6be1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/v8-shadow.mjs",
+      "sha256": "219c25813e0740fc5f7e5c3931d1383ca97f370d6986d36494f90b137729ceab"
+    }
+  ],
+  "v8Files": [
+    {
+      "path": "src/config.mjs",
+      "sha256": "280229c281c162d97fb7eb1379807c17e826bb0056f2315d67e06e7184e9b79a"
+    },
+    {
+      "path": "src/fill-risk.mjs",
+      "sha256": "2d53c9d59688058ea0faf653006e38242a77909133ee303c4727ba6a755eb883"
+    },
+    {
+      "path": "src/v8-shadow.mjs",
+      "sha256": "e90e2bbee796816f56dc9c587f37fa638300ed5d74b920cb83c1493a7e279c53"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/auth.mjs",
+      "sha256": "aab6e039b4504c1a0b76e292461c4966091dde07738101320db15968fcf83409"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/finalize.mjs",
+      "sha256": "0cb0f8cf4f9c332efbd752ab7bb599e58d12f45c21f66910ea8359443c19836c"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/funnel.mjs",
+      "sha256": "dbf76d9e81686035efaacfc269ac15b90f4935f98164accbb370c21c3fef26fd"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/index.ts",
+      "sha256": "22b066dac0f4909ad3fc053a2978f9a4d2a089b53f9e90e4654a0251989bffb1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/risk.mjs",
+      "sha256": "ab45faf7ba55051272122434d82276df533254fb24a2229781f151e8bf53ec41"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/strategy.mjs",
+      "sha256": "3f1a332f2355893d32b8f806947442e04a3171b1d14b1384f5ebcf06802e6be1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/v8-shadow.mjs",
+      "sha256": "219c25813e0740fc5f7e5c3931d1383ca97f370d6986d36494f90b137729ceab"
+    }
+  ],
+  "productionWorkerFiles": [
+    {
+      "path": "supabase/functions/teleeg-worker/auth.mjs",
+      "sha256": "aab6e039b4504c1a0b76e292461c4966091dde07738101320db15968fcf83409"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/finalize.mjs",
+      "sha256": "0cb0f8cf4f9c332efbd752ab7bb599e58d12f45c21f66910ea8359443c19836c"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/funnel.mjs",
+      "sha256": "dbf76d9e81686035efaacfc269ac15b90f4935f98164accbb370c21c3fef26fd"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/index.ts",
+      "sha256": "22b066dac0f4909ad3fc053a2978f9a4d2a089b53f9e90e4654a0251989bffb1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/risk.mjs",
+      "sha256": "ab45faf7ba55051272122434d82276df533254fb24a2229781f151e8bf53ec41"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/strategy.mjs",
+      "sha256": "3f1a332f2355893d32b8f806947442e04a3171b1d14b1384f5ebcf06802e6be1"
+    },
+    {
+      "path": "supabase/functions/teleeg-worker/v8-shadow.mjs",
+      "sha256": "219c25813e0740fc5f7e5c3931d1383ca97f370d6986d36494f90b137729ceab"
+    }
+  ],
+  "productionInstrumentationFiles": [
+    "supabase/functions/teleeg-worker/forward-validation.mjs",
+    "supabase/functions/teleeg-worker/index.ts"
+  ],
+  "validationRules": {
+    "minimumDurationDays": 90,
+    "minimumIndependentSignals": 50,
+    "verdictBeforeBothMinimums": "INSUFFICIENT_FORWARD_SAMPLE",
+    "paperMode": true,
+    "automaticOrders": false,
+    "historicalBackfill": false,
+    "manualLedgerAffectsSystemPaper": false
+  },
+  "minimumDays": 90,
+  "minimumSignals": 50,
+  "finalGate": {
+    "durationDays": 90,
+    "independentClosedSignals": 50,
+    "profitFactor": 1.35,
+    "expectancyR": 0.15,
+    "netPnlPositive": true,
+    "maxDrawdownPct": 0.06,
+    "uniqueSymbols": 10,
+    "dataIntegrity": true,
+    "strategyHashesUnchanged": true
+  },
+  "status": "PREPARED",
+  "createdAt": "2026-09-14T08:03:29.052Z"
+}
