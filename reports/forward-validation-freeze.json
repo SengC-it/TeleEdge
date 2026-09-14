@@ -1,9 +1,9 @@
 {
   "baseMainSha": "21d2b8a1cdfed3e84153dce8491ed8448128727d",
-  "v75StrategySha256": "2150c7bf4591260bc786803466ef18b4d68a63696d40c6bf392a9d5084d6b757",
-  "v8StrategySha256": "e274a7e68e1d831684f63fa69e31b3e966a887c0d22d249957db05c1d7ad3aa8",
-  "productionWorkerSha256": "8060b2857d5caa7519458bfd299b958d82a444703f22509f1da306451f395461",
-  "strategyFreezeManifestSha256": "77af81870783399892bfc3b23c92286e96048143f4589b2a30cdd8f20214718e",
+  "v75StrategySha256": "639d777bd36bbaa908a76d8c601a42746021cc900fdd10f19c3f7876a7edc898",
+  "v8StrategySha256": "8e05562283bb30e243c8bbac119d21ddfa93a4b2b5acb2d5ff790530245ae243",
+  "productionWorkerSha256": "0b91e1993688345b5d7cca69d4a228a75ce62ded7837fb3599de43a9fb9dfa77",
+  "strategyFreezeManifestSha256": "ffc9a33d37e1783361e93d503cb5c303631c41cd9f892949290286b3df3da4d2",
   "v75Files": [
     {
       "path": "src/config.mjs",
@@ -35,7 +35,7 @@
     },
     {
       "path": "supabase/functions/teleeg-worker/forward-validation.mjs",
-      "sha256": "2fb24b2360683f229fd0c632b04a3a47e7f3db84ffc8a9e64091cebdf6e532e1"
+      "sha256": "520b9c7dc06326716af5428abccb0d54adff5409e974dbb01d7dfd345fbf0b8b"
     },
     {
       "path": "supabase/functions/teleeg-worker/index.ts",
@@ -81,7 +81,7 @@
     },
     {
       "path": "supabase/functions/teleeg-worker/forward-validation.mjs",
-      "sha256": "2fb24b2360683f229fd0c632b04a3a47e7f3db84ffc8a9e64091cebdf6e532e1"
+      "sha256": "520b9c7dc06326716af5428abccb0d54adff5409e974dbb01d7dfd345fbf0b8b"
     },
     {
       "path": "supabase/functions/teleeg-worker/index.ts",
@@ -115,7 +115,7 @@
     },
     {
       "path": "supabase/functions/teleeg-worker/forward-validation.mjs",
-      "sha256": "2fb24b2360683f229fd0c632b04a3a47e7f3db84ffc8a9e64091cebdf6e532e1"
+      "sha256": "520b9c7dc06326716af5428abccb0d54adff5409e974dbb01d7dfd345fbf0b8b"
     },
     {
       "path": "supabase/functions/teleeg-worker/index.ts",
@@ -157,5 +157,5 @@
     "strategyHashesUnchanged": true
   },
   "status": "PREPARED",
-  "createdAt": "2026-09-14T06:03:28.699Z"
+  "createdAt": "2026-09-14T06:36:59.885Z"
 }
