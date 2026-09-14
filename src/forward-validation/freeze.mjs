@@ -35,7 +35,9 @@ function withoutForwardInstrumentation(source) {
 
 function semanticSource(root, file) {
   const source = fs.readFileSync(path.join(root, file), 'utf8');
-  return file === 'supabase/functions/teleeg-worker/index.ts' ? withoutForwardInstrumentation(source) : source;
+  return file === 'supabase/functions/teleeg-worker/index.ts'
+    ? withoutForwardInstrumentation(source)
+    : source.replace(/\r\n/g, '\n');
 }
 
 function hashFiles(root, files) {
