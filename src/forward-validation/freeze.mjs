@@ -105,7 +105,14 @@ export function auditProductionSemanticIsolation(root, changedPaths = []) {
   if (workerChanges.includes('supabase/functions/teleeg-worker/index.ts')) {
     try {
       const current = fs.readFileSync(path.join(root, 'supabase/functions/teleeg-worker/index.ts'), 'utf8');
-      const base = execFileSync('git', ['show', `main:supabase/functions/teleeg-worker/index.ts`], {cwd: root, encoding: 'utf8'});
+      let base = null;
+      for (const ref of ['main', 'origin/main']) {
+        try {
+          base = execFileSync('git', ['show', `${ref}:supabase/functions/teleeg-worker/index.ts`], {cwd: root, encoding: 'utf8'});
+          break;
+        } catch { /* checkout providers differ on whether main is local or remote-tracking */ }
+      }
+      if (base == null) throw new Error('main worker baseline is unavailable');
       indexSemanticUnchanged = withoutForwardInstrumentation(current) === withoutForwardInstrumentation(base);
     } catch (error) {
       comparisonError = String(error);
