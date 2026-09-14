@@ -1,4 +1,9 @@
 import crypto from 'node:crypto';
+import {
+  RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+  RUNTIME_V75_STRATEGY_SHA256,
+  RUNTIME_V8_STRATEGY_SHA256,
+} from '../../supabase/functions/teleeg-worker/forward-freeze.generated.mjs';
 
 export const DAY = 86_400_000;
 // Production cooldown is 72 hours, not 72 calendar days.
@@ -12,6 +17,12 @@ export const MANUAL_DECISIONS = Object.freeze(['SKIPPED', 'TAKEN', 'WATCHED']);
 export const IMMUTABLE_SIGNAL_FIELDS = Object.freeze([
   'signalTime', 'side', 'referenceEntry', 'stopLoss', 'takeProfit', 'strategy', 'strategyHash',
 ]);
+
+export const CURRENT_RUNTIME_FINGERPRINT = Object.freeze({
+  v75StrategySha256: RUNTIME_V75_STRATEGY_SHA256,
+  v8StrategySha256: RUNTIME_V8_STRATEGY_SHA256,
+  productionSemanticSha256: RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+});
 
 function numberTime(value) {
   if (Number.isFinite(Number(value))) return Number(value);
@@ -95,6 +106,18 @@ export function createPreparedRun({
   };
 }
 
+export function createPreparedRunFromRuntime({runtimeFingerprint = CURRENT_RUNTIME_FINGERPRINT, ...options} = {}) {
+  if (stableJson(runtimeFingerprint) !== stableJson(CURRENT_RUNTIME_FINGERPRINT)) {
+    throw new Error('prepared run fingerprint must come from the generated runtime fingerprint');
+  }
+  return createPreparedRun({
+    ...options,
+    v75StrategySha256: CURRENT_RUNTIME_FINGERPRINT.v75StrategySha256,
+    v8StrategySha256: CURRENT_RUNTIME_FINGERPRINT.v8StrategySha256,
+    productionWorkerSha256: CURRENT_RUNTIME_FINGERPRINT.productionSemanticSha256,
+  });
+}
+
 export function activateRun(run, {startedAt = Date.now()} = {}) {
   if (run.status !== 'PREPARED') throw new Error(`only PREPARED runs may activate; got ${run.status}`);
   const start = numberTime(startedAt);
@@ -108,10 +131,10 @@ export function invalidateRun(run, reason, {at = Date.now()} = {}) {
   return {...run, status: 'INVALIDATED', invalidatedAt: iso(at), invalidationReason: reason};
 }
 
-export function enforceStrategyHashes(run, {v75StrategySha256, v8StrategySha256, productionWorkerSha256 = null, at = Date.now()} = {}) {
+export function enforceStrategyHashes(run, {v75StrategySha256, v8StrategySha256, productionWorkerSha256 = null, productionSemanticSha256 = productionWorkerSha256, at = Date.now()} = {}) {
   if (run.status !== 'ACTIVE') return run;
   if (run.v75StrategySha256 !== v75StrategySha256 || run.v8StrategySha256 !== v8StrategySha256
-    || (run.productionWorkerSha256 && productionWorkerSha256 && run.productionWorkerSha256 !== productionWorkerSha256)) {
+    || (run.productionWorkerSha256 && run.productionWorkerSha256 !== productionSemanticSha256)) {
     return invalidateRun(run, 'STRATEGY_MUTATION', {at});
   }
   return run;

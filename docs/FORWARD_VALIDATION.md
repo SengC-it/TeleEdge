@@ -6,11 +6,20 @@ the migration, deploy a function, deploy Vercel, or submit an order.
 
 ## Freeze boundary
 
-`v75StrategySha256` and `v8StrategySha256` include the production worker
-runtime dependencies used by their respective paths. `productionWorkerSha256`
-is the digest of the complete `supabase/functions/teleeg-worker` runtime.
-While the run is ACTIVE, a hash mismatch invalidates that run as
-`STRATEGY_MUTATION`.
+`supabase/functions/teleeg-worker/forward-freeze.generated.mjs` is generated
+by `npm run forward:freeze`. Its `RUNTIME_V75_STRATEGY_SHA256`,
+`RUNTIME_V8_STRATEGY_SHA256`, and `RUNTIME_PRODUCTION_SEMANTIC_SHA256`
+constants are computed from the current production semantic files. The
+generated file and `forward-validation.mjs` are excluded from their own
+semantic digest, so instrumentation cannot create a recursive or false
+mutation. `npm run forward:verify` recomputes the digest and fails on stale
+generated constants or a stale report.
+
+`v75StrategySha256`, `v8StrategySha256`, and `productionWorkerSha256` cover
+the production worker semantic dependencies used by their respective paths.
+While a run is ACTIVE, the worker sends the generated strategy and production
+semantic hashes to the guarded RPC; any mismatch with the run invalidates it
+as `STRATEGY_MUTATION`.
 
 The only permitted worker changes in this wiring are the explicit
 `forward-validation.mjs` bridge and its call sites in `index.ts`. A semantic
@@ -37,9 +46,10 @@ paper workflow. Historic backfill is rejected when either `observedAt` or
 
 Migration `20260910100000_teleeg_frozen_forward_validation.sql` is additive and
 prepared-only. It adds guarded service-role RPCs for active-run status,
-strategy-hash and time-boundary checks, deterministic dedupe, 72-hour
-independence, and open-to-closed outcome idempotency. It has **not** been
-applied in this research change.
+runtime strategy/production-semantic hash checks, time-boundary checks,
+deterministic dedupe, 72-hour independence, and open-to-closed outcome
+idempotency. Prepared-run creation must bind the generated runtime
+fingerprint; the migration has **not** been applied in this research change.
 
 ## API and dashboard
 

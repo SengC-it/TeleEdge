@@ -1,4 +1,16 @@
+import {
+  RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+  RUNTIME_V75_STRATEGY_SHA256,
+  RUNTIME_V8_STRATEGY_SHA256,
+} from './forward-freeze.generated.mjs';
+
 const encoder = new TextEncoder();
+
+export const RUNTIME_FINGERPRINT = Object.freeze({
+  v75StrategySha256: RUNTIME_V75_STRATEGY_SHA256,
+  v8StrategySha256: RUNTIME_V8_STRATEGY_SHA256,
+  productionSemanticSha256: RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+});
 
 function first(input, ...keys) {
   for (const key of keys) if (input?.[key] !== undefined && input?.[key] !== null) return input[key];
@@ -45,17 +57,19 @@ async function outcomeRun(db, signalId) {
   return runShape(runs?.[0]);
 }
 
-export function adaptWorkerAdvisory(input, {run, strategy, observedAt = Date.now()} = {}) {
+export function adaptWorkerAdvisory(input, {run, strategy, observedAt = Date.now(), runtimeFingerprint = RUNTIME_FINGERPRINT} = {}) {
   const resolved = strategy || (String(first(input, 'strategy', 'model_version', 'modelVersion') || '').toUpperCase().includes('V8') ? 'V8' : 'V7.5');
-  const expectedHash = resolved === 'V8' ? run?.v8StrategySha256 : run?.v75StrategySha256;
+  const runtimeStrategyHash = resolved === 'V8' ? runtimeFingerprint.v8StrategySha256 : runtimeFingerprint.v75StrategySha256;
+  const runtimeSemanticHash = runtimeFingerprint.productionSemanticSha256;
   const suppliedHash = first(input, 'strategy_hash', 'strategyHash');
-  if (suppliedHash && expectedHash && suppliedHash !== expectedHash) throw new Error('STRATEGY_MUTATION');
   const marketId = first(input, 'market_id', 'marketId') || first(input, 'symbol');
   const signalTime = first(input, 'signal_time', 'signalTime', 't');
   const signal = {
     id: first(input, 'signal_id', 'signalId', 'id'),
     strategy: resolved,
-    strategy_hash: suppliedHash || expectedHash,
+    strategy_hash: runtimeStrategyHash,
+    production_semantic_hash: runtimeSemanticHash,
+    source_strategy_hash: suppliedHash,
     origin: 'forward-validation',
     symbol: first(input, 'symbol', 'baseAsset') || marketId,
     market_id: marketId,
@@ -79,24 +93,29 @@ export function adaptWorkerAdvisory(input, {run, strategy, observedAt = Date.now
   return signal;
 }
 
-async function recordSignal({db, rpc, advisory, strategy, observedAt = Date.now()}) {
+async function recordSignal({db, rpc, advisory, strategy, observedAt = Date.now(), runtimeFingerprint = RUNTIME_FINGERPRINT}) {
   const run = await activeRun(db);
   if (!run) return {recorded: false, reason: 'no-active-forward-run'};
-  const signal = adaptWorkerAdvisory(advisory, {run, strategy, observedAt});
+  const signal = adaptWorkerAdvisory(advisory, {run, strategy, observedAt, runtimeFingerprint});
   if (!signal.signal_time || !signal.side || !signal.symbol) throw new Error('invalid forward advisory shape');
   const time = Date.parse(signal.signal_time);
   if (!Number.isFinite(time) || time < Date.parse(run.startedAt)) throw new Error('historical backfill is forbidden');
   const existing = await db(`forward_validation_signals?run_id=eq.${encodeURIComponent(run.runId)}&symbol=eq.${encodeURIComponent(signal.symbol)}&side=eq.${encodeURIComponent(signal.side)}&signal_time=lte.${encodeURIComponent(signal.signal_time)}&select=id,independent_id,signal_time&order=signal_time.desc&limit=4`);
   signal.overlap_group_id = await digest(['overlap', signal.symbol, signal.side, time].join('|'));
   signal.dedupe_key = await digest([signal.strategy, signal.symbol, signal.side, time].join('|'));
-  const result = await rpc('forward_validation_record_signal', {p_run_id: run.runId, p_signal: signal});
+  const result = await rpc('forward_validation_record_signal', {
+    p_run_id: run.runId,
+    p_signal: signal,
+    p_runtime_strategy_hash: signal.strategy_hash,
+    p_runtime_production_semantic_sha256: signal.production_semantic_hash,
+  });
   if (result?.invalidated || result?.reason === 'STRATEGY_MUTATION') throw new Error('STRATEGY_MUTATION');
   return {recorded: true, runId: run.runId, signalId: signal.id, existingSignals: existing.length, result};
 }
 
-export async function recordForwardAccepted({db, rpc, advisory, strategy, observedAt = Date.now(), timeoutMs = 8_000} = {}) {
+export async function recordForwardAccepted({db, rpc, advisory, strategy, observedAt = Date.now(), timeoutMs = 8_000, runtimeFingerprint = RUNTIME_FINGERPRINT} = {}) {
   try {
-    return await bounded(() => recordSignal({db, rpc, advisory, strategy, observedAt}), timeoutMs);
+    return await bounded(() => recordSignal({db, rpc, advisory, strategy, observedAt, runtimeFingerprint}), timeoutMs);
   } catch (error) {
     console.error('TeleEdge forward signal logging failed', {signalId: first(advisory, 'signal_id', 'signalId', 'id'), error: String(error)});
     return {recorded: false, error: String(error)};

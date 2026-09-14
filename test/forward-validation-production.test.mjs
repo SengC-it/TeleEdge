@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import {fileURLToPath} from 'node:url';
 import {authorizeForwardRequest, getHeader} from '../api/forward-validation.mjs';
-import {activateRun, createPreparedRun, enforceStrategyHashes, sha256} from '../src/forward-validation/contract.mjs';
+import {activateRun, createPreparedRun, createPreparedRunFromRuntime, enforceStrategyHashes, recordAdvisoryWithForwardLogging, sha256} from '../src/forward-validation/contract.mjs';
 import {adaptV75ProductionAdvisory, adaptV8ProductionAdvisory, mapProductionOutcome} from '../src/forward-validation/production-adapter.mjs';
 import {createForwardPersistence, recordProductionAdvisory, recordProductionOutcome} from '../src/forward-validation/persistence.mjs';
-import {auditProductionIsolation, auditProductionSemanticIsolation, auditStrategyFreeze, computeStrategyFreeze} from '../src/forward-validation/freeze.mjs';
+import {auditProductionIsolation, auditProductionSemanticIsolation, auditStrategyFreeze, computeStrategyFreeze, PRODUCTION_WORKER_FILES, V75_FROZEN_FILES, V8_FROZEN_FILES, verifyRuntimeFingerprint} from '../src/forward-validation/freeze.mjs';
 import {adaptWorkerAdvisory, recordForwardAccepted} from '../supabase/functions/teleeg-worker/forward-validation.mjs';
+import {RUNTIME_PRODUCTION_SEMANTIC_SHA256, RUNTIME_V75_STRATEGY_SHA256, RUNTIME_V8_STRATEGY_SHA256} from '../supabase/functions/teleeg-worker/forward-freeze.generated.mjs';
 
 const HASH75 = sha256('v75-production');
 const HASH8 = sha256('v8-production');
@@ -44,7 +47,8 @@ test('production adapter maps actual V7.5 and V8 worker shapes and active-run ha
 test('worker adapter accepts the persisted candidate shape without a second signal schema', () => {
   const row = adaptWorkerAdvisory(control({signal_id: 'worker-shape'}), {run: RUN, strategy: 'V7.5', observedAt: '2026-04-01T00:20:00Z'});
   assert.equal(row.strategy, 'V7.5');
-  assert.equal(row.strategy_hash, HASH75);
+  assert.equal(row.strategy_hash, RUNTIME_V75_STRATEGY_SHA256);
+  assert.equal(row.production_semantic_hash, RUNTIME_PRODUCTION_SEMANTIC_SHA256);
   assert.equal(row.symbol, 'BTC');
   assert.equal(row.market_id, 'BTCUSDT');
   assert.equal(row.signal_time, '2026-04-01T00:00:00Z');
@@ -52,6 +56,161 @@ test('worker adapter accepts the persisted candidate shape without a second sign
   assert.equal(row.stop_loss, 98);
   assert.equal(row.take_profit, 104);
   assert.equal(row.email_eligible, true);
+});
+
+function runtimeRun() {
+  return activateRun(createPreparedRun({
+    runId: 'generated-runtime-run', baseMainSha: 'main',
+    v75StrategySha256: RUNTIME_V75_STRATEGY_SHA256,
+    v8StrategySha256: RUNTIME_V8_STRATEGY_SHA256,
+    productionWorkerSha256: RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+    strategyFreezeManifestSha256: sha256('generated-freeze'),
+    preparedAt: '2026-01-01T00:00:00Z',
+  }), {startedAt: '2026-01-02T00:00:00Z'});
+}
+
+function runtimeDb() {
+  const run = runtimeRun();
+  return async endpoint => endpoint.startsWith('forward_validation_runs') ? [{
+    run_id: run.runId, status: run.status, started_at: run.startedAt,
+    v75_strategy_sha256: run.v75StrategySha256, v8_strategy_sha256: run.v8StrategySha256,
+    production_worker_sha256: run.productionWorkerSha256,
+  }] : [];
+}
+
+test('unchanged generated production runtime is accepted and sent with runtime hashes', async () => {
+  let call;
+  const result = await recordForwardAccepted({
+    db: runtimeDb(),
+    rpc: async (name, payload) => { call = {name, payload}; return {recorded: true}; },
+    advisory: control({signal_id: 'runtime-accepted'}), strategy: 'V7.5',
+    observedAt: '2026-04-01T00:20:00Z', timeoutMs: 100,
+  });
+  assert.equal(result.recorded, true);
+  assert.equal(call.name, 'forward_validation_record_signal');
+  assert.equal(call.payload.p_runtime_strategy_hash, RUNTIME_V75_STRATEGY_SHA256);
+  assert.equal(call.payload.p_runtime_production_semantic_sha256, RUNTIME_PRODUCTION_SEMANTIC_SHA256);
+  assert.equal(call.payload.p_signal.strategy_hash, RUNTIME_V75_STRATEGY_SHA256);
+});
+
+async function mutationResult(strategy, runtimeFingerprint) {
+  let call;
+  const result = await recordForwardAccepted({
+    db: runtimeDb(),
+    rpc: async (name, payload) => {
+      call = {name, payload};
+      return {recorded: false, invalidated: true, reason: 'STRATEGY_MUTATION'};
+    },
+    advisory: control({signal_id: `mutation-${strategy}`}), strategy, runtimeFingerprint, timeoutMs: 100,
+  });
+  return {result, call};
+}
+
+test('runtime V7.5 hash mismatch invalidates the active run', async () => {
+  const {result, call} = await mutationResult('V7.5', {...adaptRuntime(), v75StrategySha256: 'changed-v75'});
+  assert.equal(result.recorded, false);
+  assert.match(result.error, /STRATEGY_MUTATION/);
+  assert.equal(call.payload.p_runtime_strategy_hash, 'changed-v75');
+});
+
+test('runtime V8 hash mismatch invalidates the active run', async () => {
+  const {result, call} = await mutationResult('V8', {...adaptRuntime(), v8StrategySha256: 'changed-v8'});
+  assert.equal(result.recorded, false);
+  assert.match(result.error, /STRATEGY_MUTATION/);
+  assert.equal(call.payload.p_runtime_strategy_hash, 'changed-v8');
+});
+
+test('runtime production semantic hash mismatch invalidates the active run', async () => {
+  const {result, call} = await mutationResult('V7.5', {...adaptRuntime(), productionSemanticSha256: 'changed-production'});
+  assert.equal(result.recorded, false);
+  assert.match(result.error, /STRATEGY_MUTATION/);
+  assert.equal(call.payload.p_runtime_production_semantic_sha256, 'changed-production');
+});
+
+function adaptRuntime() {
+  return {
+    v75StrategySha256: RUNTIME_V75_STRATEGY_SHA256,
+    v8StrategySha256: RUNTIME_V8_STRATEGY_SHA256,
+    productionSemanticSha256: RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+  };
+}
+
+function freezeFixture(mutator) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'teleedge-forward-freeze-'));
+  const files = [...new Set([...V75_FROZEN_FILES, ...V8_FROZEN_FILES, ...PRODUCTION_WORKER_FILES])];
+  for (const file of files) {
+    const target = path.join(root, file);
+    fs.mkdirSync(path.dirname(target), {recursive: true});
+    fs.copyFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', file), target);
+  }
+  try {
+    mutator(root);
+    return computeStrategyFreeze({root, baseMainSha: 'main'});
+  } finally {
+    fs.rmSync(root, {recursive: true, force: true});
+  }
+}
+
+test('generated runtime fingerprint changes when a production strategy fixture changes', () => {
+  const baseline = computeStrategyFreeze({root: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')});
+  const modified = freezeFixture(root => fs.appendFileSync(path.join(root, 'supabase/functions/teleeg-worker/strategy.mjs'), '\n// semantic fixture mutation\n'));
+  assert.notEqual(modified.productionSemanticSha256, baseline.productionSemanticSha256);
+});
+
+test('dashboard and forward instrumentation changes do not change strategy fingerprint', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const baseline = computeStrategyFreeze({root, baseMainSha: 'main'});
+  assert.deepEqual(computeStrategyFreeze({root, baseMainSha: 'main'}), baseline);
+  const instrumented = freezeFixture(temp => {
+    const helper = path.join(temp, 'supabase/functions/teleeg-worker/forward-validation.mjs');
+    fs.mkdirSync(path.dirname(helper), {recursive: true});
+    fs.copyFileSync(path.join(root, 'supabase/functions/teleeg-worker/forward-validation.mjs'), helper);
+    fs.appendFileSync(helper, '\n// forward instrumentation fixture mutation\n');
+  });
+  assert.equal(instrumented.productionSemanticSha256, baseline.productionSemanticSha256);
+});
+
+test('worker risk or settlement semantic changes change the production fingerprint', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const baseline = computeStrategyFreeze({root, baseMainSha: 'main'});
+  const modified = freezeFixture(temp => fs.appendFileSync(path.join(temp, 'supabase/functions/teleeg-worker/risk.mjs'), '\n// semantic fixture mutation\n'));
+  assert.notEqual(modified.productionSemanticSha256, baseline.productionSemanticSha256);
+});
+
+test('stale generated fingerprint fails verification', () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const manifest = computeStrategyFreeze({root, baseMainSha: 'main'});
+  const stale = verifyRuntimeFingerprint({root, manifest, runtimeFingerprint: {
+    RUNTIME_V75_STRATEGY_SHA256: '0'.repeat(64),
+    RUNTIME_V8_STRATEGY_SHA256: manifest.v8StrategySha256,
+    RUNTIME_PRODUCTION_SEMANTIC_SHA256: manifest.productionSemanticSha256,
+  }});
+  assert.equal(stale.pass, false);
+});
+
+test('prepared runs can only bind the generated runtime fingerprint', () => {
+  const prepared = createPreparedRunFromRuntime({baseMainSha: 'main', strategyFreezeManifestSha256: 'freeze', preparedAt: '2026-01-01T00:00:00Z'});
+  assert.equal(prepared.v75StrategySha256, RUNTIME_V75_STRATEGY_SHA256);
+  assert.equal(prepared.v8StrategySha256, RUNTIME_V8_STRATEGY_SHA256);
+  assert.equal(prepared.productionWorkerSha256, RUNTIME_PRODUCTION_SEMANTIC_SHA256);
+  assert.throws(() => createPreparedRunFromRuntime({runtimeFingerprint: {...adaptRuntime(), v8StrategySha256: 'client-value'}, baseMainSha: 'main', strategyFreezeManifestSha256: 'freeze'}), /generated runtime fingerprint/);
+});
+
+test('forward RPC receives explicit runtime validation parameters', () => {
+  const sql = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'supabase/migrations/20260910100000_teleeg_frozen_forward_validation.sql'), 'utf8');
+  assert.match(sql, /p_runtime_strategy_hash text/);
+  assert.match(sql, /p_runtime_production_semantic_sha256 text/);
+  assert.match(sql, /production_semantic_hash text not null/);
+  assert.match(sql, /STRATEGY_MUTATION/);
+});
+
+test('strategy mutation logging failure does not suppress advisory execution', async () => {
+  let paperExecution = 0;
+  const result = await recordAdvisoryWithForwardLogging(control(), async () => { throw new Error('STRATEGY_MUTATION'); });
+  paperExecution++;
+  assert.equal(result.advisorySuppressed, false);
+  assert.match(result.forwardLoggingError, /STRATEGY_MUTATION/);
+  assert.equal(paperExecution, 1);
 });
 
 test('production forward logging is inert before activation and uses persisted cross-strategy episodes', async () => {

@@ -28,6 +28,7 @@ create table if not exists public.forward_validation_signals (
   run_id text not null references public.forward_validation_runs(run_id),
   strategy text not null check (strategy in ('V7.5', 'V8')),
   strategy_hash text not null,
+  production_semantic_hash text not null,
   origin text not null default 'forward-validation' check (origin = 'forward-validation'),
   symbol text not null,
   market_id text,
@@ -176,7 +177,12 @@ $$;
 
 -- The production bridge uses these RPCs instead of direct table writes. They
 -- are intentionally additive and fail closed for inactive/mutated runs.
-create or replace function public.forward_validation_record_signal(p_run_id text, p_signal jsonb)
+create or replace function public.forward_validation_record_signal(
+  p_run_id text,
+  p_signal jsonb,
+  p_runtime_strategy_hash text,
+  p_runtime_production_semantic_sha256 text
+)
 returns jsonb
 language plpgsql
 security definer
@@ -201,8 +207,14 @@ begin
   end if;
   if v_run.started_at is null then raise exception 'ACTIVE forward validation run has no started_at'; end if;
   if v_strategy not in ('V7.5', 'V8') then raise exception 'invalid forward strategy'; end if;
-  if (v_strategy = 'V7.5' and p_signal->>'strategy_hash' <> v_run.v75_strategy_sha256)
-    or (v_strategy = 'V8' and p_signal->>'strategy_hash' <> v_run.v8_strategy_sha256) then
+  if p_runtime_strategy_hash is null
+    or p_runtime_production_semantic_sha256 is null
+    or (p_signal->>'strategy_hash') is distinct from p_runtime_strategy_hash
+    or (p_signal->>'production_semantic_hash') is distinct from p_runtime_production_semantic_sha256
+    or (p_signal->>'source_strategy_hash') is not null and (p_signal->>'source_strategy_hash') is distinct from p_runtime_strategy_hash
+    or (v_strategy = 'V7.5' and p_runtime_strategy_hash is distinct from v_run.v75_strategy_sha256)
+    or (v_strategy = 'V8' and p_runtime_strategy_hash is distinct from v_run.v8_strategy_sha256)
+    or p_runtime_production_semantic_sha256 is distinct from v_run.production_worker_sha256 then
     update public.forward_validation_runs
       set status = 'INVALIDATED', invalidated_at = now(), invalidation_reason = 'STRATEGY_MUTATION', updated_at = now()
       where run_id = p_run_id;
@@ -236,13 +248,13 @@ begin
     md5('independent|' || p_run_id || '|' || (p_signal->>'symbol') || '|' || (p_signal->>'side') || '|' || v_signal_time::text));
   v_duplicate_of := case when v_independent then null else v_prior.id end;
   insert into public.forward_validation_signals (
-    id, run_id, strategy, strategy_hash, origin, symbol, market_id, side, signal_time, observed_at,
+    id, run_id, strategy, strategy_hash, production_semantic_hash, origin, symbol, market_id, side, signal_time, observed_at,
     signal_price, reference_entry, stop_loss, take_profit, stop_pct, target_r,
     market_regime, score, confidence, funding, context, email_eligible, email_sent,
     overlap_group_id, dedupe_key, independent_id, independent, duplicate_of, data_quality_status
   ) values (
     coalesce(v_id, v_dedupe_key), p_run_id, v_strategy, p_signal->>'strategy_hash',
-    'forward-validation', p_signal->>'symbol', p_signal->>'market_id', p_signal->>'side', v_signal_time, v_observed_at,
+    p_runtime_strategy_hash, p_runtime_production_semantic_sha256, 'forward-validation', p_signal->>'symbol', p_signal->>'market_id', p_signal->>'side', v_signal_time, v_observed_at,
     (p_signal->>'signal_price')::numeric, (p_signal->>'reference_entry')::numeric,
     (p_signal->>'stop_loss')::numeric, (p_signal->>'take_profit')::numeric,
     (p_signal->>'stop_pct')::numeric, (p_signal->>'target_r')::numeric,
@@ -301,8 +313,8 @@ begin
 end;
 $$;
 
-revoke all on function public.forward_validation_record_signal(text, jsonb) from public, anon, authenticated;
-grant execute on function public.forward_validation_record_signal(text, jsonb) to service_role;
+revoke all on function public.forward_validation_record_signal(text, jsonb, text, text) from public, anon, authenticated;
+grant execute on function public.forward_validation_record_signal(text, jsonb, text, text) to service_role;
 revoke all on function public.forward_validation_record_outcome(text, text, jsonb) from public, anon, authenticated;
 grant execute on function public.forward_validation_record_outcome(text, text, jsonb) to service_role;
 

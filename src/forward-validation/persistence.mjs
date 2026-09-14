@@ -18,6 +18,8 @@ export function toSignalRpcPayload(signal) {
     id: signal.id,
     strategy: signal.strategy,
     strategy_hash: signal.strategyHash,
+    production_semantic_hash: signal.productionSemanticHash,
+    source_strategy_hash: signal.sourceStrategyHash,
     origin: signal.origin,
     symbol: signal.symbol,
     market_id: signal.marketId,
@@ -71,7 +73,12 @@ export function createForwardPersistence({rpc, listSignals, attempts = 3} = {}) 
   if (typeof rpc !== 'function') throw new Error('forward persistence requires rpc');
   return {
     async recordSignal(signal, run) {
-      return retry(() => rpc('forward_validation_record_signal', {p_run_id: run.runId ?? run.run_id, p_signal: toSignalRpcPayload(signal)}), {attempts});
+      return retry(() => rpc('forward_validation_record_signal', {
+        p_run_id: run.runId ?? run.run_id,
+        p_signal: toSignalRpcPayload(signal),
+        p_runtime_strategy_hash: signal.runtimeStrategyHash ?? signal.strategyHash,
+        p_runtime_production_semantic_sha256: signal.runtimeProductionSemanticSha256 ?? signal.productionSemanticHash,
+      }), {attempts});
     },
     async recordOutcome(outcome, run) {
       return retry(() => rpc('forward_validation_record_outcome', {p_run_id: run.runId ?? run.run_id, p_signal_id: outcome.signalId, p_outcome: toOutcomeRpcPayload(outcome)}), {attempts});

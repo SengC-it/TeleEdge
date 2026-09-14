@@ -13,7 +13,6 @@ export const PRODUCTION_WORKER_FILES = Object.freeze([
   'supabase/functions/teleeg-worker/auth.mjs',
   'supabase/functions/teleeg-worker/finalize.mjs',
   'supabase/functions/teleeg-worker/funnel.mjs',
-  'supabase/functions/teleeg-worker/forward-validation.mjs',
   'supabase/functions/teleeg-worker/index.ts',
   'supabase/functions/teleeg-worker/risk.mjs',
   'supabase/functions/teleeg-worker/strategy.mjs',
@@ -23,13 +22,31 @@ export const PRODUCTION_INSTRUMENTATION_FILES = Object.freeze([
   'supabase/functions/teleeg-worker/forward-validation.mjs',
   'supabase/functions/teleeg-worker/index.ts',
 ]);
+export const PRODUCTION_FINGERPRINT_FILES = Object.freeze([
+  'supabase/functions/teleeg-worker/forward-freeze.generated.mjs',
+]);
+
+function withoutForwardInstrumentation(source) {
+  return String(source).split(/\r?\n/)
+    .filter(line => !line.includes('forward-validation') && !line.includes('recordForward'))
+    .join('\n')
+    .replace(/\n+$/, '');
+}
+
+function semanticSource(root, file) {
+  const source = fs.readFileSync(path.join(root, file), 'utf8');
+  return file === 'supabase/functions/teleeg-worker/index.ts' ? withoutForwardInstrumentation(source) : source;
+}
 
 function hashFiles(root, files) {
-  const payload = files.map(file => ({path: file, sha256: sha256(fs.readFileSync(path.join(root, file)))}));
+  const payload = files.map(file => ({path: file, sha256: sha256(semanticSource(root, file))}));
   return {sha256: sha256(stableJson(payload)), files: payload};
 }
 
 export function computeStrategyFreeze({root, baseMainSha = '21d2b8a1cdfed3e84153dce8491ed8448128727d'} = {}) {
+  // The generated fingerprint and forward-validation helper are deliberately
+  // excluded: neither is production strategy semantics, and including either
+  // would make the generated value self-referential or instrumentation-sensitive.
   const worker = hashFiles(root, PRODUCTION_WORKER_FILES);
   const v75 = hashFiles(root, [...V75_FROZEN_FILES, ...PRODUCTION_WORKER_FILES]);
   const v8 = hashFiles(root, [...V8_FROZEN_FILES, ...PRODUCTION_WORKER_FILES]);
@@ -49,10 +66,12 @@ export function computeStrategyFreeze({root, baseMainSha = '21d2b8a1cdfed3e84153
     v75StrategySha256: v75.sha256,
     v8StrategySha256: v8.sha256,
     productionWorkerSha256: worker.sha256,
+    productionSemanticSha256: worker.sha256,
     strategyFreezeManifestSha256,
     v75Files: v75.files,
     v8Files: v8.files,
     productionWorkerFiles: worker.files,
+    productionInstrumentationFiles: [...PRODUCTION_INSTRUMENTATION_FILES],
     validationRules,
     minimumDays: 90,
     minimumSignals: 50,
@@ -71,35 +90,56 @@ export function computeStrategyFreeze({root, baseMainSha = '21d2b8a1cdfed3e84153
   };
 }
 
+export function verifyRuntimeFingerprint({root, manifest, runtimeFingerprint} = {}) {
+  const recomputed = computeStrategyFreeze({root, baseMainSha: manifest?.baseMainSha});
+  const generated = {
+    v75StrategySha256: runtimeFingerprint?.RUNTIME_V75_STRATEGY_SHA256,
+    v8StrategySha256: runtimeFingerprint?.RUNTIME_V8_STRATEGY_SHA256,
+    productionSemanticSha256: runtimeFingerprint?.RUNTIME_PRODUCTION_SEMANTIC_SHA256,
+  };
+  const expected = {
+    v75StrategySha256: recomputed.v75StrategySha256,
+    v8StrategySha256: recomputed.v8StrategySha256,
+    productionSemanticSha256: recomputed.productionSemanticSha256,
+  };
+  return {
+    pass: generated.v75StrategySha256 === expected.v75StrategySha256
+      && generated.v8StrategySha256 === expected.v8StrategySha256
+      && generated.productionSemanticSha256 === expected.productionSemanticSha256
+      && manifest?.v75StrategySha256 === expected.v75StrategySha256
+      && manifest?.v8StrategySha256 === expected.v8StrategySha256
+      && manifest?.productionWorkerSha256 === recomputed.productionWorkerSha256
+      && manifest?.productionSemanticSha256 === expected.productionSemanticSha256,
+    generated,
+    recomputed: expected,
+  };
+}
+
 export function auditStrategyFreeze(changedPaths = []) {
+  const allowed = new Set([...PRODUCTION_INSTRUMENTATION_FILES, ...PRODUCTION_FINGERPRINT_FILES]);
   const forbidden = new Set([...V75_FROZEN_FILES, ...V8_FROZEN_FILES, ...PRODUCTION_WORKER_FILES]
-    .filter(file => !PRODUCTION_INSTRUMENTATION_FILES.includes(file)));
+    .filter(file => !allowed.has(file)));
   const changedFrozenFiles = changedPaths.filter(file => forbidden.has(file));
   return {pass: changedFrozenFiles.length === 0, changedFrozenFiles, frozenFiles: [...forbidden].sort()};
 }
 
 export function auditProductionIsolation(changedPaths = []) {
+  const allowed = new Set([...PRODUCTION_INSTRUMENTATION_FILES, ...PRODUCTION_FINGERPRINT_FILES]);
   const blockedPrefixes = [
     'supabase/functions/teleeg-reviews/', 'vercel.json',
     'supabase/config.toml', 'api/status.mjs', 'api/send-mail.mjs', 'api/reviews.mjs',
   ];
   const productionFiles = changedPaths.filter(file => {
-    if (file.startsWith('supabase/functions/teleeg-worker/')) return !PRODUCTION_INSTRUMENTATION_FILES.includes(file);
+    if (file.startsWith('supabase/functions/teleeg-worker/')) return !allowed.has(file);
     return blockedPrefixes.some(prefix => file === prefix || file.startsWith(prefix));
   });
   return {pass: productionFiles.length === 0, productionFiles};
 }
 
-function withoutForwardInstrumentation(source) {
-  return String(source).split(/\r?\n/)
-    .filter(line => !line.includes('forward-validation') && !line.includes('recordForward'))
-    .join('\n')
-    .replace(/\n+$/, '');
-}
-
 export function auditProductionSemanticIsolation(root, changedPaths = []) {
+  const allowed = new Set([...PRODUCTION_INSTRUMENTATION_FILES, ...PRODUCTION_FINGERPRINT_FILES]);
   const workerChanges = changedPaths.filter(file => file.startsWith('supabase/functions/teleeg-worker/'));
-  const forbidden = workerChanges.filter(file => !PRODUCTION_INSTRUMENTATION_FILES.includes(file));
+  const forbidden = workerChanges.filter(file => !allowed.has(file));
   let indexSemanticUnchanged = true;
   let comparisonError = null;
   if (workerChanges.includes('supabase/functions/teleeg-worker/index.ts')) {
@@ -124,6 +164,6 @@ export function auditProductionSemanticIsolation(root, changedPaths = []) {
     productionFiles: forbidden,
     indexSemanticUnchanged,
     comparisonError,
-    allowedInstrumentationFiles: [...PRODUCTION_INSTRUMENTATION_FILES],
+    allowedInstrumentationFiles: [...allowed],
   };
 }
